@@ -1,0 +1,194 @@
+#include "CSimpleHttpServer.h"
+
+CSimpleHttpServer::CSimpleHttpServer()
+{
+    m_server.Get("/",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            std::string htmlpath = GetExeDirectory() + "\\flicksy.html";
+            std::string html = LoadTextFile(htmlpath);
+
+            if (html.empty())
+            {
+                res.status = 404;
+                res.set_content(
+                    htmlpath + " not found",
+                    "text/plain; charset=UTF-8");
+                return;
+            }
+
+            res.set_content(
+                html,
+                "text/html; charset=UTF-8");
+
+            res.status = 200;
+        });
+
+    m_server.Post("/input",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            std::string text;
+
+            if (req.has_param("text"))
+                text = req.get_param_value("text");
+            else
+                text = req.body;
+
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_messages.push(text);
+            }
+
+            PostMsg(UM_HTTPPOPMSG);
+
+            res.status = 200;
+        });
+
+    m_server.Post("/key",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!req.has_param("vk"))
+            {
+                res.status = 400;
+                return;
+            }
+
+            int vk = std::stoi(
+                req.get_param_value("vk"));
+
+            if (vk < 0 || vk > 0xFF)
+            {
+                res.status = 400;
+                return;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_keys.push(static_cast<WORD>(vk));
+            }
+
+            PostMsg(UM_HTTPPOPKEY);
+
+            res.status = 200;
+        });
+}
+
+CSimpleHttpServer::~CSimpleHttpServer()
+{
+    Stop();
+}
+
+std::string CSimpleHttpServer::GetExeDirectory()
+{
+    char path[MAX_PATH] = {};
+
+    GetModuleFileNameA(NULL, path, MAX_PATH);
+
+    std::string fullPath(path);
+
+    size_t pos = fullPath.find_last_of("\\/");
+
+    if (pos == std::string::npos)
+        return "";
+
+    return fullPath.substr(0, pos);
+}
+
+std::string CSimpleHttpServer::LoadTextFile(const std::string& path)
+{
+    std::ifstream ifs(path, std::ios::binary);
+
+    if (!ifs)
+        return {};
+
+    std::ostringstream oss;
+    oss << ifs.rdbuf();
+
+    return oss.str();
+}
+
+bool CSimpleHttpServer::Start(HWND hMainWnd, int port)
+{
+    if (m_thread.joinable())
+        return false;
+
+    m_hMainWnd = hMainWnd;
+
+    m_thread = std::thread(
+        &CSimpleHttpServer::ServerThread,
+        this,
+        port
+    );
+
+    return true;
+}
+
+void CSimpleHttpServer::Stop()
+{
+    m_state = ServerState::Stopping;
+    PostMsg(UM_HTTPSTATE);
+
+    m_server.stop();
+
+    if (m_thread.joinable())
+        m_thread.join();
+}
+
+void CSimpleHttpServer::ServerThread(int port)
+{
+    m_state = ServerState::Starting;
+    PostMsg(UM_HTTPSTATE);
+
+    int ret = m_server.bind_to_port("0.0.0.0", port);
+
+    if (ret < 0)
+    {
+        m_state = ServerState::Error;
+        PostMsg(UM_HTTPSTATE);
+        return;
+    }
+
+    m_state = ServerState::Running;
+    PostMsg(UM_HTTPSTATE);
+
+    bool result = m_server.listen_after_bind();
+
+    if (!result)
+    {
+        m_state = ServerState::Error;
+    }
+    else
+    {
+        m_state = ServerState::Stopped;
+    }
+    PostMsg(UM_HTTPSTATE);
+}
+
+bool CSimpleHttpServer::PopMessage(std::string& message)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_messages.empty())
+        return false;
+
+    message = std::move(m_messages.front());
+    m_messages.pop();
+
+    return true;
+}
+
+bool CSimpleHttpServer::PopKey(WORD& vk)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_keys.empty())
+        return false;
+
+    vk = m_keys.front();
+    m_keys.pop();
+
+    return true;
+}
