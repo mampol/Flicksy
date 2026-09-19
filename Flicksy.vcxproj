@@ -141,6 +141,7 @@
     <ClInclude Include="CSimpleHttpServer.h" />
     <ClInclude Include="qrcodegen.hpp" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Win32VisualStyle.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Flicksy.rc" />
