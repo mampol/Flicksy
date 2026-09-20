@@ -1,0 +1,28 @@
+Third Party Licenses
+
+==================================================
+QR-Code-generator (qrcodegen)
+==================================================
+
+Copyright (c) Project Nayuki
+
+Licensed under the MIT License.
+
+https://github.com/nayuki/QR-Code-generator
+
+The full license text is available at:
+https://github.com/nayuki/QR-Code-generator
+
+
+==================================================
+cpp-httplib
+==================================================
+
+Copyright (c) Yuji Hirose
+
+Licensed under the MIT License.
+
+https://github.com/yhirose/cpp-httplib
+
+The full license text is available at:
+https://github.com/yhirose/cpp-httplib

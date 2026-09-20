@@ -53,10 +53,12 @@ Windows Application
 
 ## Dependencies
 
-Flicksy uses the following libraries:
+- [QR-Code-generator](https://github.com/nayuki/QR-Code-generator)
+- [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 
-- [QR-Code-generator (qrcodegen)](https://github.com/nayuki/QR-Code-generator)  
-  Used for QR code generation.
+Both libraries are licensed under the MIT License.
+See `THIRD_PARTY_LICENSES.txt` for details.
 
-- [cpp-httplib](https://github.com/yhirose/cpp-httplib)  
-  Used for the local HTTP server.
+## License
+
+This project is licensed under the MIT License.
