@@ -21,3 +21,6 @@ x86/
 *.tmp
 *.log
 *.zip
+
+qrcodegen.cpp
+qrcodegen.hpp

@@ -50,3 +50,13 @@ Windows Application
 - Win32 API
 - Visual Studio 2022
 - HTML / JavaScript
+
+## Dependencies
+
+Flicksy uses the following libraries:
+
+- [QR-Code-generator (qrcodegen)](https://github.com/nayuki/QR-Code-generator)  
+  Used for QR code generation.
+
+- [cpp-httplib](https://github.com/yhirose/cpp-httplib)  
+  Used for the local HTTP server.
