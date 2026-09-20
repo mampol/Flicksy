@@ -32,6 +32,8 @@ public:
     bool Start(HWND hMainWnd, int port = 10000);
     void Stop();
 
+    int GetPort() { return m_port; };
+
     ServerState GetState() const
     {
         return m_state.load();
@@ -46,6 +48,7 @@ public:
     bool PopKey(WORD& vk);
 
 private:
+    int m_port = 0;
     std::string GetExeDirectory();
     std::string LoadTextFile(const std::string& path);
     void ServerThread(int port);

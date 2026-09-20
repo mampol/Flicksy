@@ -116,6 +116,7 @@ bool CSimpleHttpServer::Start(HWND hMainWnd, int port)
         return false;
 
     m_hMainWnd = hMainWnd;
+    m_port = port;
 
     m_thread = std::thread(
         &CSimpleHttpServer::ServerThread,

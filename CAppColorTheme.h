@@ -12,6 +12,9 @@ struct AppColors
 {
     COLORREF windowBg;
 
+    COLORREF headerBg;
+    COLORREF headerBorder;
+
     COLORREF panelBg[4];
     COLORREF panelBorder[4];
 
@@ -30,6 +33,9 @@ struct AppColors
 static const AppColors LIGHT_COLORS =
 {
     RGB(245, 247, 250),   // windowBg
+
+    RGB(233, 245, 250),   // headerBg
+    RGB(187, 206, 204),   // headerBorder
 
     RGB(243, 251, 244),   // panelBg1
     RGB(252, 249, 242),   // panelBg2
@@ -56,6 +62,9 @@ static const AppColors LIGHT_COLORS =
 static const AppColors DARK_COLORS =
 {
     RGB(30, 31, 34),      // windowBg
+
+    RGB(233, 245, 250),   // headerBg
+    RGB(187, 206, 204),   // headerBorder
 
     RGB(243, 251, 244),   // panelBg1
     RGB(252, 249, 242),   // panelBg2
@@ -86,9 +95,11 @@ class CAppColorTheme
     AppColors m_colors;
 
     HBRUSH m_hWindowBrush;
+    HBRUSH m_hHeaderBrush;
     HBRUSH m_hPanelBrush[4];
     HBRUSH m_hButtonBrush;
 
+    HPEN m_hHeaderPen;
     HPEN m_hPanelPen[4];
 
 public:
@@ -96,14 +107,14 @@ public:
     CAppColorTheme()
     {
         m_hWindowBrush = nullptr;
-
+        m_hHeaderBrush = nullptr;
         for (int i = 0; i < _countof(m_hPanelBrush); i++)
         {
             m_hPanelBrush[i] = nullptr;
         }
-
         m_hButtonBrush = nullptr;
 
+        m_hHeaderPen = nullptr;
         for (int i = 0; i < _countof(m_hPanelPen); i++)
         {
             m_hPanelPen[i] = nullptr;
@@ -115,14 +126,14 @@ public:
     ~CAppColorTheme()
     {
         if (m_hWindowBrush) DeleteObject(m_hWindowBrush);
-
+        if (m_hHeaderBrush) DeleteObject(m_hHeaderBrush);
         for (int i = 0; i < _countof(m_hPanelBrush); i++)
         {
             if (m_hPanelBrush[i]) DeleteObject(m_hPanelBrush[i]);
         }
-
         if (m_hButtonBrush) DeleteObject(m_hButtonBrush);
 
+        if (m_hHeaderPen) DeleteObject(m_hHeaderPen);
         for (int i = 0; i < _countof(m_hPanelPen); i++)
         {
             if (m_hPanelPen[i]) DeleteObject(m_hPanelPen[i]);
@@ -150,7 +161,11 @@ public:
             DeleteObject(m_hWindowBrush);
             m_hWindowBrush = nullptr;
         }
-
+        if (m_hHeaderBrush)
+        {
+            DeleteObject(m_hHeaderBrush);
+            m_hHeaderBrush = nullptr;
+        }
         for (int i = 0; i < _countof(m_hPanelBrush); i++)
         {
             if (m_hPanelBrush[i])
@@ -159,13 +174,17 @@ public:
                 m_hPanelBrush[i] = nullptr;
             }
         }
-
         if (m_hButtonBrush)
         {
             DeleteObject(m_hButtonBrush);
             m_hButtonBrush = nullptr;
         }
 
+        if (m_hHeaderPen)
+        {
+            DeleteObject(m_hHeaderPen);
+            m_hHeaderPen = nullptr;
+        }
         for (int i = 0; i < _countof(m_hPanelPen); i++)
         {
             if (m_hPanelPen[i])
@@ -176,14 +195,14 @@ public:
         }
 
         m_hWindowBrush = CreateSolidBrush(m_colors.windowBg);
-
+        m_hHeaderBrush = CreateSolidBrush(m_colors.headerBg);
         for (int i = 0; i < _countof(m_hPanelBrush); i++)
         {
             m_hPanelBrush[i] = CreateSolidBrush(m_colors.panelBg[i]);
         }
-
         m_hButtonBrush = CreateSolidBrush(m_colors.buttonBg);
 
+        m_hHeaderPen = CreatePen(PS_SOLID, 0, m_colors.headerBorder);
         for (int i = 0; i < _countof(m_hPanelPen); i++)
         {
             m_hPanelPen[i] = CreatePen(PS_SOLID, 0, m_colors.panelBorder[i]);
@@ -205,12 +224,22 @@ public:
         return m_hWindowBrush;
     }
 
+    HBRUSH HeaderBrush() const
+    {
+        return m_hHeaderBrush;
+    }
+
     HBRUSH PanelBrush(int nPanel) const
     {
         if (nPanel >= 0 && nPanel < _countof(m_hPanelBrush))
             return m_hPanelBrush[nPanel];
 
         return nullptr;
+    }
+
+    HPEN HeaderPen() const
+    {
+        return m_hHeaderPen;
     }
 
     HPEN PanelPen(int nPanel) const

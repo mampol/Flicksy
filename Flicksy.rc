@@ -52,8 +52,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,0,0,3
- PRODUCTVERSION 0,0,0,3
+ FILEVERSION 0,0,1,0
+ PRODUCTVERSION 0,0,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -68,14 +68,14 @@ BEGIN
     BEGIN
         BLOCK "041104b0"
         BEGIN
-            VALUE "CompanyName", "TODO: <会社名>"
-            VALUE "FileDescription", "TODO: <ファイルの説明>"
-            VALUE "FileVersion", "0.0.0.3"
+            VALUE "CompanyName", "Pol"
+            VALUE "FileDescription", "Smartphone-to-PC Input Tool"
+            VALUE "FileVersion", "0.0.1.0"
             VALUE "InternalName", "Flicksy.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2026"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Pol."
             VALUE "OriginalFilename", "Flicksy.exe"
-            VALUE "ProductName", "TODO: <製品名>"
-            VALUE "ProductVersion", "0.0.0.3"
+            VALUE "ProductName", "Flicksy"
+            VALUE "ProductVersion", "0.0.1.0"
         END
     END
     BLOCK "VarFileInfo"
