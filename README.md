@@ -37,7 +37,7 @@ Windows Application
 
 ## Screenshot
 
-<img src="images/flicksy_main.png">
+<img src="images/flicksy_v0010.png">
 
 ## 今後は、
 
