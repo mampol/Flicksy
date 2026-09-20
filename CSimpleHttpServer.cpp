@@ -129,13 +129,22 @@ bool CSimpleHttpServer::Start(HWND hMainWnd, int port)
 
 void CSimpleHttpServer::Stop()
 {
+    if (!m_thread.joinable())
+    {
+        m_state = ServerState::Stopped;
+        PostMsg(UM_HTTPSTATE);
+        return;
+    }
+
     m_state = ServerState::Stopping;
     PostMsg(UM_HTTPSTATE);
 
     m_server.stop();
 
-    if (m_thread.joinable())
-        m_thread.join();
+    m_thread.join();
+
+    m_state = ServerState::Stopped;
+    PostMsg(UM_HTTPSTATE);
 }
 
 void CSimpleHttpServer::ServerThread(int port)

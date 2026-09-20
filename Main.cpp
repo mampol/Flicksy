@@ -890,6 +890,11 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		nullptr);
 	SendMessage(hRadio2, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
 
+	CheckRadioButton(hWnd,
+		IDC_RADIO_SENDINPUT,
+		IDC_RADIO_CLIPBOARD,
+		IDC_RADIO_SENDINPUT);
+
 	return (0L);
 }
 
