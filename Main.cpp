@@ -1,6 +1,4 @@
-﻿#define WIN32_LEAN_AND_MEAN
-
-#include <winsock2.h>
+﻿#include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
 #include <tchar.h>
@@ -8,12 +6,20 @@
 #include <string>
 #include "qrcodegen.hpp"
 #include "CSimpleHttpServer.h"
+#include "CAppColorTheme.h"
+#include "CImgListPng.h"
 #include "resource.h"
+
+#pragma comment(lib, "comctl32.lib")
 
 #define APP_CLASS			_T("Flicksy")
 #define CSIMPLEHTTPSERVER	_T("CSimpleHttpServer")
+#define CAPPCOLORTHEME		_T("CAppColorTheme")
 
 int gnPort = 10000;
+
+static Gdiplus::GdiplusStartupInput ggdiplusStartupInput;
+static ULONG_PTR ggdiplusToken = 0;
 
 std::wstring Utf8ToUtf16(const std::string& src);
 std::wstring SjisToUtf16(const std::string& s);
@@ -28,6 +34,7 @@ void SendKey(WORD vk);
 
 std::string GetLocalIPv4();
 void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size);
+void DrawTextLine(HDC hdc, int x, int y, std::wstring& strTextLine);
 
 INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow);
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
@@ -331,8 +338,8 @@ void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size)
         using qrcodegen::QrCode;
         const QrCode qr = QrCode::encodeText(utf8.c_str(), QrCode::Ecc::MEDIUM);
 
-        const int borderPad = 12;
-        const int quietZone = 4;
+        const int borderPad = 1;
+        const int quietZone = 2;
 
         const int innerX = x + borderPad;
         const int innerY = y + borderPad;
@@ -348,11 +355,11 @@ void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size)
 
 		HBRUSH hWhiteBrush = (HBRUSH)GetStockObject(WHITE_BRUSH);
 		HBRUSH hBlackBrush = (HBRUSH)GetStockObject(BLACK_BRUSH);
-		HPEN hBlackPen = (HPEN)GetStockObject(BLACK_PEN);
+		HPEN hGrayPen = (HPEN)CreatePen(PS_SOLID, 0, RGB(96, 96, 96));
 
 		HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hWhiteBrush);
-		HPEN hOldPen = (HPEN)SelectObject(hdc, hBlackPen);
-		RoundRect(hdc, x, y, x + size, y + size, 26, 26);
+		HPEN hOldPen = (HPEN)SelectObject(hdc, hGrayPen);
+		RoundRect(hdc, x, y, x + size, y + size, 12, 12);
 
 		SelectObject(hdc, hBlackBrush);
         for (int my = 0; my < modules; ++my)
@@ -372,6 +379,7 @@ void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size)
 	
 		SelectObject(hdc, hOldBrush);
 		SelectObject(hdc, hOldPen);
+		DeleteObject(hGrayPen);
 	}
     catch (...)
     {
@@ -380,6 +388,13 @@ void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size)
 
 }
 
+void DrawTextLine(HDC hdc, int x, int y, std::wstring& strTextLine)
+{
+	SIZE sz;
+	GetTextExtentPoint32(hdc, strTextLine.c_str(), strTextLine.length(), &sz);
+	RECT rc = { x, y, x + sz.cx + 4, y + sz.cy + 4 };
+	DrawText(hdc, strTextLine.c_str(), -1, &rc, DT_SINGLELINE | DT_END_ELLIPSIS);
+}
 
 /*----------------------------------------------------------------------------------------
 	WinMain
@@ -427,12 +442,36 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 		return 0;
 	}
 
+	RECT rc = {
+		0,
+		0,
+		780,
+		520
+	};
+
+	DWORD style =
+		WS_OVERLAPPED |
+		WS_CAPTION |
+		WS_SYSMENU |
+		WS_MINIMIZEBOX;
+
+	AdjustWindowRectEx(
+		&rc,
+		style,
+		FALSE,
+		0);
+
+	int windowWidth =
+		rc.right - rc.left;
+	int windowHeight =
+		rc.bottom - rc.top;
+
 	hWnd = CreateWindowEx(0,
 		APP_CLASS,
 		(LPCTSTR)APP_CLASS,
-		WS_OVERLAPPEDWINDOW,
+		style,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		CW_USEDEFAULT, CW_USEDEFAULT,
+		windowWidth, windowHeight,
 		NULL,
 		NULL,
 		hCurInst,
@@ -461,8 +500,14 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 
 INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow)
 {
+	if (Gdiplus::GdiplusStartup(&ggdiplusToken, &ggdiplusStartupInput, NULL) != Gdiplus::Ok)
+	{
+		return -1;
+	}
+
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
+
 	return 0;
 }
 
@@ -497,6 +542,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)new CSimpleHttpServer();
 	SetProp(hWnd, CSIMPLEHTTPSERVER, lpCSimpleHttpServer);
+
+	CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)new CAppColorTheme();
+	SetProp(hWnd, CAPPCOLORTHEME, lpCAppColorTheme);
+
 	return (0L);
 }
 
@@ -508,43 +557,157 @@ LRESULT OnPaint(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	RECT rc;
 	GetClientRect(hWnd, &rc);
 
-	std::wstring wstrState;
+	CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
+	if (!lpCAppColorTheme) return 0L;
 
+	HDC hmdc = CreateCompatibleDC(ps.hdc);
+	HBITMAP hbmp = CreateCompatibleBitmap(ps.hdc, rc.right, rc.bottom);
+	HBITMAP holdbmp = (HBITMAP)SelectObject(hmdc, hbmp);
+
+	FillRect(hmdc, &rc, lpCAppColorTheme->WindowBrush());
+
+	CImgListPng cilp;
+	Gdiplus::Bitmap* pBitmap = cilp.LoadPngBitmap((HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), IDB_PNG1);
+	if (pBitmap)
+	{
+		Gdiplus::Graphics graphics(hmdc);
+		graphics.DrawImage(pBitmap, 16, 8, pBitmap->GetWidth(), pBitmap->GetHeight());
+		delete pBitmap;
+	}
+
+	HBRUSH holdbrush = (HBRUSH)SelectObject(hmdc, lpCAppColorTheme->PanelBrush(0));
+	HPEN holdpen = (HPEN)SelectObject(hmdc, lpCAppColorTheme->PanelPen(0));
+	// Server
+	RoundRect(hmdc,
+		16, 88,
+		255, 288,
+		18, 18);
+
+	// Options
+	SelectObject(hmdc, lpCAppColorTheme->PanelBrush(1));
+	SelectObject(hmdc, lpCAppColorTheme->PanelPen(1));
+	RoundRect(hmdc,
+		271, 88,
+		510, 288,
+		18, 18);
+
+	// QRCode
+	SelectObject(hmdc, lpCAppColorTheme->PanelBrush(2));
+	SelectObject(hmdc, lpCAppColorTheme->PanelPen(2));
+	RoundRect(hmdc,
+		526, 88,
+		764, 288,
+		18, 18);
+
+	// Logs
+	SelectObject(hmdc, lpCAppColorTheme->PanelBrush(3));
+	SelectObject(hmdc, lpCAppColorTheme->PanelPen(3));
+	RoundRect(hmdc,
+		16, 304,
+		764, 482,
+		18, 18);
+
+	SelectObject(hmdc, holdbrush);
+	SelectObject(hmdc, holdpen);
+
+	int noldbkmode = SetBkMode(hmdc, TRANSPARENT);
+	HFONT hfontbold = CreateFont(-MulDiv((INT_PTR)12, GetDeviceCaps(hmdc, LOGPIXELSY), 72),
+		0, 0, 0, FW_BOLD,
+		FALSE, FALSE, FALSE,
+		DEFAULT_CHARSET,
+		OUT_DEFAULT_PRECIS,
+		CLIP_DEFAULT_PRECIS,
+		ANTIALIASED_QUALITY,
+		DEFAULT_PITCH | FF_DONTCARE,
+		_T("Meiryo UI"));
+	HFONT hfont = CreateFont(-MulDiv((INT_PTR)11, GetDeviceCaps(hmdc, LOGPIXELSY), 72),
+		0, 0, 0, FW_BOLD,
+		FALSE, FALSE, FALSE,
+		DEFAULT_CHARSET,
+		OUT_DEFAULT_PRECIS,
+		CLIP_DEFAULT_PRECIS,
+		ANTIALIASED_QUALITY,
+		DEFAULT_PITCH | FF_DONTCARE,
+		_T("Meiryo UI"));
+	HFONT hOldFont = (HFONT)SelectObject(hmdc, hfontbold);
+	COLORREF cololdtextcolor = SetTextColor(hmdc, (lpCAppColorTheme->Colors()).text);
+	// Server
+	std::wstring wstr = _T("Server");
+	DrawTextLine(hmdc, 32, 98, wstr);
+	// Options
+	wstr = _T("Options");
+	DrawTextLine(hmdc, 287, 98, wstr);
+	// QRCode
+	wstr = _T("QR Code");
+	DrawTextLine(hmdc, 542, 98, wstr);
+	// Logs
+	wstr = _T("Logs");
+	DrawTextLine(hmdc, 32, 314, wstr);
+
+	SelectObject(hmdc, hfont);
+	std::wstring wstrState;
+	COLORREF colState;
 	CSimpleHttpServer* pServer =
 		(CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 	if (pServer) {
 		switch (pServer->GetState())
 		{
 		case ServerState::Starting:
-			wstrState = L"Server Starting";
+			wstrState = L"● Starting";
+			colState = RGB(7, 207, 1);
 			break;
 
 		case ServerState::Running:
-			wstrState = L"Server Running";
+			wstrState = L"● Running";
+			colState = RGB(7, 207, 1);
 			{
 				std::string ip = GetLocalIPv4();
 				std::string strURL = "http://" + ip + ":" + std::to_string(gnPort);
-				DrawQrCodeBox(ps.hdc, strURL, 100, 100, 200);
+				DrawQrCodeBox(hmdc, strURL, 588, 130, 110);
 			}
 			break;
 		case ServerState::Stopping:
-			wstrState = L"Server Stopping";
+			wstrState = L"■ Stopping";
+			colState = RGB(37, 87, 225);
 			break;
 
 		case ServerState::Stopped:
-			wstrState = L"Server Stopped";
+			wstrState = L"■ Stopped";
+			colState = RGB(37, 87, 225);
 			break;
 
 		case ServerState::Error:
-			wstrState = L"Server Error";
+			wstrState = L"▲ Error";
+			colState = RGB(220, 1, 1);
 			break;
 
 		}
 	}
 
-	DrawText(ps.hdc, wstrState.c_str(), -1, &rc, DT_SINGLELINE | DT_END_ELLIPSIS);
+	// Server
+	wstr = _T("STATUS");
+	DrawTextLine(hmdc, 32, 128, wstr);
+	wstr = _T("URL");
+	DrawTextLine(hmdc, 32, 156, wstr);
+	wstr = _T("PORT");
+	DrawTextLine(hmdc, 32, 184, wstr);
+	SetTextColor(hmdc, colState);
+	DrawTextLine(hmdc, 106, 128, wstrState);
+
+	BitBlt(ps.hdc, 0, 0, rc.right, rc.bottom, hmdc, 0, 0, SRCCOPY);
+
+	SetBkMode(hmdc, noldbkmode);
+
+	SelectObject(hmdc, hOldFont);
+	DeleteObject(hfontbold);
+	DeleteObject(hfont);
+
+	SelectObject(hmdc, holdbmp);
+	DeleteObject(hbmp);
+	DeleteDC(hmdc);
 
 	EndPaint(hWnd, &ps);
+
 	return 0L;
 }
 
@@ -618,7 +781,18 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		RemoveProp(hWnd, CSIMPLEHTTPSERVER);
 		delete lpCSimpleHttpServer;
 	}
+
+	CAppColorTheme* lpCAppColorTheme  = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
+	if (lpCAppColorTheme)
+	{
+		RemoveProp(hWnd, CAPPCOLORTHEME);
+		delete lpCAppColorTheme;
+	}
+
+	Gdiplus::GdiplusShutdown(ggdiplusToken);
+
 	DestroyWindow(hWnd);
+
 	return (0L);
 }
 

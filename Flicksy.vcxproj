@@ -133,11 +133,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CImgListPng.cpp" />
     <ClCompile Include="CSimpleHttpServer.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="qrcodegen.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CImgListPng.h" />
+    <ClInclude Include="CAppColorTheme.h" />
     <ClInclude Include="CSimpleHttpServer.h" />
     <ClInclude Include="qrcodegen.hpp" />
     <ClInclude Include="resource.h" />
@@ -148,6 +151,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="001.ico" />
+    <Image Include="001.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

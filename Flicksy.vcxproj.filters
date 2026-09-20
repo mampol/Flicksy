@@ -24,6 +24,9 @@
     <ClCompile Include="qrcodegen.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="CImgListPng.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -38,6 +41,12 @@
     <ClInclude Include="Win32VisualStyle.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="CImgListPng.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="CAppColorTheme.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Flicksy.rc">
@@ -46,6 +55,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="001.ico">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="001.png">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>
