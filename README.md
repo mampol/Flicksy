@@ -35,6 +35,10 @@ Windows Application
 
 現在開発中です。
 
+## Screenshot
+
+<img src="images/flicksy_main.png">
+
 ## 今後は、
 
 - メインウィンドウUI
