@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <tchar.h>
+#include <vector>
 #include <algorithm>
 #include <string>
 #include "qrcodegen.hpp"
@@ -27,6 +28,7 @@ static Gdiplus::GdiplusStartupInput ggdiplusStartupInput;
 static Gdiplus::Bitmap* gpBitmapBanner;
 static ULONG_PTR ggdiplusToken = 0;
 static HFONT ghFontBold, ghFont;
+std::wstring gwstrVer;
 
 std::wstring Utf8ToUtf16(const std::string& src);
 std::wstring SjisToUtf16(const std::string& s);
@@ -417,8 +419,7 @@ void DrawHeader(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 	HFONT hOldFont = (HFONT)SelectObject(hdc, ghFont);
 	COLORREF colOldBkColor = SetBkColor(hdc, (theme.Colors()).headerBg);
 	COLORREF colOldText = SetTextColor(hdc, (theme.Colors()).subText);
-	std::wstring wstrVer = _T("ver ") + GetVersionString(L"ProductVersion");
-	DrawTextLine(hdc, 700, 16, wstrVer);
+	DrawTextLine(hdc, 700, 16, gwstrVer);
 	SetBkColor(hdc, colOldBkColor);
 	SetTextColor(hdc, colOldText);
 	SelectObject(hdc, hOldFont);
@@ -757,6 +758,8 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 
 INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow)
 {
+	gwstrVer = _T("ver ") + GetVersionString(L"ProductVersion");
+
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
