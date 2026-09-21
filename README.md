@@ -27,10 +27,10 @@ Currently under development.
 
 ## Screenshot
 
-server
+### server
 <img src="images/flicksy_server.png">
 
-client
+### client
 <img src="images/flicksy_client.png">
 
 ## Roadmap
