@@ -143,7 +143,7 @@ void CSimpleHttpServer::Stop()
 
     m_thread.join();
 
-    m_state = ServerState::Stopped;
+//    m_state = ServerState::Stopped;
     PostMsg(UM_HTTPSTATE);
 }
 
@@ -174,7 +174,7 @@ void CSimpleHttpServer::ServerThread(int port)
     {
         m_state = ServerState::Stopped;
     }
-    PostMsg(UM_HTTPSTATE);
+//    PostMsg(UM_HTTPSTATE);
 }
 
 bool CSimpleHttpServer::PopMessage(std::string& message)

@@ -152,6 +152,10 @@
   <ItemGroup>
     <Image Include="001.ico" />
     <Image Include="001.png" />
+    <Image Include="002.png" />
+    <Image Include="003.png" />
+    <Image Include="004.png" />
+    <Image Include="005.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

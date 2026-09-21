@@ -60,5 +60,17 @@
     <Image Include="001.png">
       <Filter>リソース ファイル</Filter>
     </Image>
+    <Image Include="002.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="003.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="004.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="005.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
 </Project>

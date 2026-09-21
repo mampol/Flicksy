@@ -52,8 +52,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,0,1,0
- PRODUCTVERSION 0,0,1,0
+ FILEVERSION 0,1,0,0
+ PRODUCTVERSION 0,1,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,12 +70,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Pol"
             VALUE "FileDescription", "Smartphone-to-PC Input Tool"
-            VALUE "FileVersion", "0.0.1.0"
+            VALUE "FileVersion", "0.1.0.0"
             VALUE "InternalName", "Flicksy.exe"
             VALUE "LegalCopyright", "Copyright (C) 2026 Pol."
             VALUE "OriginalFilename", "Flicksy.exe"
             VALUE "ProductName", "Flicksy"
-            VALUE "ProductVersion", "0.0.1.0"
+            VALUE "ProductVersion", "0.1.0.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -94,12 +94,13 @@ IDR_MENU1 MENU
 BEGIN
     POPUP "&File"
     BEGIN
+        POPUP "&Http"
+        BEGIN
+            MENUITEM "Star&t",                      ID_HTTP_START
+            MENUITEM "Sto&p",                       ID_HTTP_STOP
+        END
+        MENUITEM "&About Flicksy",              ID_ABOUT
         MENUITEM "&Quit",                       ID_FILE_QUIT
-    END
-    POPUP "&Http"
-    BEGIN
-        MENUITEM "Star&t",                      ID_HTTP_START
-        MENUITEM "Sto&p",                       ID_HTTP_STOP
     END
 END
 
@@ -120,6 +121,14 @@ IDI_ICON1               ICON                    "001.ico"
 //
 
 IDB_PNG1                PNG                     "001.png"
+
+IDB_PNG2                PNG                     "002.png"
+
+IDB_PNG3                PNG                     "003.png"
+
+IDB_PNG4                PNG                     "004.png"
+
+IDB_PNG5                PNG                     "005.png"
 
 #endif    // 日本語 (日本) resources
 /////////////////////////////////////////////////////////////////////////////
