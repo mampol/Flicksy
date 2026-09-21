@@ -10,7 +10,7 @@ CImgListPng::~CImgListPng()
 
 BOOL CImgListPng::InitGdiPlus()
 {
-	if (GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, NULL) != Gdiplus::Ok)
+	if (GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, nullptr) != Gdiplus::Ok)
 	{
 		return FALSE;
 	}
@@ -68,7 +68,7 @@ HBITMAP CImgListPng::LoadPngResource(HINSTANCE hInst, UINT uiPngRes)
 	//--------------------------------------------------
 	// メモリ → IStream
 	//--------------------------------------------------
-	IStream* pStream = NULL;
+	IStream* pStream = nullptr;
 	HRESULT hr =
 		CreateStreamOnHGlobal(
 			hBuffer,
@@ -107,7 +107,7 @@ HBITMAP CImgListPng::LoadPngResource(HINSTANCE hInst, UINT uiPngRes)
 	bmi.bmiHeader.biBitCount = 32;
 	bmi.bmiHeader.biCompression = BI_RGB;
 
-	void* pDibBits = NULL;
+	void* pDibBits = nullptr;
 
 	HDC hDC = GetDC(NULL);
 	hBitmap = CreateDIBSection(hDC, &bmi, DIB_RGB_COLORS, &pDibBits, NULL, 0);

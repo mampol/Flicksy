@@ -17,6 +17,7 @@ struct AppColors
 
     COLORREF panelBg[4];
     COLORREF panelBorder[4];
+    COLORREF panelText[4];
 
     COLORREF text;
     COLORREF subText;
@@ -47,6 +48,11 @@ static const AppColors LIGHT_COLORS =
     RGB(162, 122, 235),   // panelBorder3
     RGB(188, 202, 215),   // panelBorder4
 
+    RGB(44, 123, 55),     // panelText1
+    RGB(99, 92, 77),      // panelText2
+    RGB(122, 72, 185),    // panelText3
+    RGB(138, 152, 165),   // panelText4
+
     RGB(35, 35, 35),      // text
     RGB(110, 115, 120),   // subText
 
@@ -75,6 +81,11 @@ static const AppColors DARK_COLORS =
     RGB(199, 192, 177),   // panelBorder2
     RGB(162, 122, 235),   // panelBorder3
     RGB(188, 202, 215),   // panelBorder4
+
+    RGB(44, 123, 55),     // panelText1
+    RGB(99, 92, 77),      // panelText2
+    RGB(122, 72, 185),    // panelText3
+    RGB(138, 152, 165),   // panelText4
 
     RGB(240, 240, 240),   // text
     RGB(165, 170, 180),   // subText

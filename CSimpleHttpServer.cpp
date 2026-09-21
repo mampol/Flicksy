@@ -2,6 +2,7 @@
 
 CSimpleHttpServer::CSimpleHttpServer()
 {
+    /*
     m_server.Get("/", [this](const httplib::Request& req, httplib::Response& res)
         {
             std::string log =
@@ -26,22 +27,75 @@ CSimpleHttpServer::CSimpleHttpServer()
 
             res.status = 200;
         });
-
-    m_server.Post("/input", [this](const httplib::Request& req, httplib::Response& res)
+        */
+    m_server.Get(R"(/|/.*\.(html|png|jpg|webp|css|js))",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
         {
-            std::string text;
+            std::string log =
+                "[" + req.remote_addr + "] " + req.method + " " + req.path;
+            AddServerLog(log);
 
-            if (req.has_param("text")) {
-                text = req.get_param_value("text");
+            std::string path = req.path;
+            if (path == "/") path = "/flicksy.html";
+            if (path.find("..") != std::string::npos)
+            {
+                res.set_content("Flicksy http 403 error", "text/html");
+                res.status = 403;
+                AddHttpLog(req, res.status);
+                return;
             }
-            else {
-                text = req.body;
+
+            std::filesystem::path filePath = m_webRoot / path.substr(1);
+            std::ifstream ifs(filePath, std::ios::binary);
+            if (!ifs)
+            {
+                res.status = 404;
+                res.set_content("Flicksy http 404 error", "text/html");
+                AddHttpLog(req, res.status);
+                return;
             }
-            if (req.has_param("text"))
-                text = req.get_param_value("text");
+
+            std::string data((std::istreambuf_iterator<char>(ifs)),
+                std::istreambuf_iterator<char>());
+            std::string ext = filePath.extension().string();
+            std::string contentType = "application/octet-stream";
+            if (ext == ".html")
+                contentType = "text/html; charset=UTF-8";
+            else if (ext == ".png")
+                contentType = "image/png";
+            else if (ext == ".jpg")
+                contentType = "image/jpg";
+            else if (ext == ".webp")
+                contentType = "image/webp";
+            else if (ext == ".css")
+                contentType = "text/css; charset=UTF-8";
+            else if (ext == ".js")
+                contentType = "application/javascript; charset=UTF-8";
+            res.status = 200;
+            res.set_content(std::move(data), contentType);
+
+            AddHttpLog(req, res.status);
+        });
+
+    m_server.Post(
+        "/input",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!req.has_param("text"))
+            {
+                res.status = 400;
+                res.set_content("Flicksy http 400 error", "text/html");
+                AddHttpLog(req, res.status);
+                return;
+            }
+
+            std::string text = req.get_param_value("text");
 
             std::string log =
-                "[" + req.remote_addr + "]  " + "POST /input text=" + text;
+                "[" + req.remote_addr + "] "
+                "POST /input text=" + text;
             AddServerLog(log);
 
             {
@@ -52,6 +106,7 @@ CSimpleHttpServer::CSimpleHttpServer()
             PostMsg(UM_HTTPPOPMSG);
 
             res.status = 200;
+            //AddHttpLog(req, res.status);
         });
 
     m_server.Post("/key", [this](const httplib::Request& req, httplib::Response& res)
@@ -66,12 +121,13 @@ CSimpleHttpServer::CSimpleHttpServer()
                 req.get_param_value("vk"));
 
             std::string log =
-                "[" + req.remote_addr + "]  " + "POST /key vk=" + std::to_string(vk) + GetKeyName(vk);
+                "[" + req.remote_addr + "] " + "POST /key vk=" + std::to_string(vk) + GetKeyName(vk);
             AddServerLog(log);
 
             if (vk < 0 || vk > 0xFF)
             {
                 res.status = 400;
+                AddHttpLog(req, res.status);
                 return;
             }
 
@@ -83,6 +139,7 @@ CSimpleHttpServer::CSimpleHttpServer()
             PostMsg(UM_HTTPPOPKEY);
 
             res.status = 200;
+            //AddHttpLog(req, res.status);
         });
 }
 
@@ -91,6 +148,7 @@ CSimpleHttpServer::~CSimpleHttpServer()
     Stop();
 }
 
+/*
 std::string CSimpleHttpServer::GetExeDirectory()
 {
     char path[MAX_PATH] = {};
@@ -106,6 +164,7 @@ std::string CSimpleHttpServer::GetExeDirectory()
 
     return fullPath.substr(0, pos);
 }
+*/
 
 std::string CSimpleHttpServer::LoadTextFile(const std::string& path)
 {
@@ -120,19 +179,35 @@ std::string CSimpleHttpServer::LoadTextFile(const std::string& path)
     return oss.str();
 }
 
-bool CSimpleHttpServer::Start(HWND hMainWnd, int port)
+bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot)
 {
     if (m_thread.joinable())
-        return false;
+    {
+        if (m_state == ServerState::Stopped || m_state == ServerState::Error)
+        {
+            m_thread.join();
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     m_hMainWnd = hMainWnd;
     m_port = port;
+    if (webRoot.is_relative())
+    {
+        m_webRoot = GetExeDir() / webRoot;
+    }
+    else
+    {
+        m_webRoot = webRoot;
+    }
 
     m_thread = std::thread(
         &CSimpleHttpServer::ServerThread,
         this,
-        port
-    );
+        port);
 
     return true;
 }

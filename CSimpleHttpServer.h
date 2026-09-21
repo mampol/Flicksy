@@ -7,6 +7,7 @@
 #include <atomic>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 #include "httplib.h"
 
@@ -30,10 +31,14 @@ public:
     CSimpleHttpServer();
     ~CSimpleHttpServer();
 
-    bool Start(HWND hMainWnd, int port = 10000);
+    bool Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot);
     void Stop();
 
     int GetPort() { return m_port; };
+    const std::filesystem::path& GetWebRoot() const
+    {
+        return m_webRoot;
+    }
 
     ServerState GetState() const
     {
@@ -50,8 +55,15 @@ public:
     bool PopLog(std::string& log);
 
 private:
-    int m_port = 0;
-    std::string GetExeDirectory();
+//    std::string GetExeDirectory();
+    std::filesystem::path GetExeDir()
+    {
+        wchar_t path[MAX_PATH] = {};
+        GetModuleFileName(nullptr,
+            path,
+            _countof(path));
+        return std::filesystem::path(path).parent_path();
+    }
     std::string LoadTextFile(const std::string& path);
     void ServerThread(int port);
     void PostMsg(const UINT msg)
@@ -73,16 +85,37 @@ private:
         }
         return "";
     }
-    void AddServerLog(std::string& log)
+    void AddServerLog(const std::string& log)
     {
-        m_logs.push(log);
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_logs.push(log);
+        }
         PostMsg(UM_HTTPLOG);
     }
-
+    std::string GetHttpStatusText(int status)
+    {
+        switch (status)
+        {
+        case 200: return "OK";
+        case 400: return "Bad Request";
+        case 403: return "Forbidden";
+        case 404: return "Not Found";
+        case 500: return "Internal Server Error";
+        default:  return "";
+        }
+    }
+    void AddHttpLog(const httplib::Request& req, int status)
+    {
+        std::string log = "http " + std::to_string(status) + " " + GetHttpStatusText(status);
+        AddServerLog(log);
+    }
 private:
     std::atomic<ServerState> m_state = ServerState::Stopped;
 
     HWND m_hMainWnd = NULL;
+    int m_port = 0;
+    std::filesystem::path m_webRoot;
 
     httplib::Server m_server;
     std::thread m_thread;
