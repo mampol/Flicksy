@@ -60,3 +60,7 @@ See `THIRD_PARTY_LICENSES.txt` for details.
 ## License
 
 This project is licensed under the MIT License.
+
+
+Visual Studio project files are not included.
+Please create a new C++17 Win32 project and add the source files manually.
