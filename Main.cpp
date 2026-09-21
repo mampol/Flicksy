@@ -93,6 +93,7 @@ LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnDestroy(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 
@@ -835,6 +836,8 @@ INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow)
 {
 	gwstrVer = _T("ver ") + GetVersionString(L"ProductVersion");
 
+	AddLog(hWnd, LogType::Info, L"Flicksy started.");
+
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
@@ -866,6 +869,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		return (OnHttpPopKey(hWnd, msg, wp, lp));
 	case UM_HTTPSTATE:
 		return (OnHttpState(hWnd, msg, wp, lp));
+	case UM_HTTPLOG:
+		return (OnHttpLog(hWnd, msg, wp, lp));
 	case WM_ENDSESSION:
 	case WM_CLOSE:
 		return (OnClose(hWnd, msg, wp, lp));
@@ -998,15 +1003,16 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		IDC_RADIO_CLIPBOARD,
 		IDC_RADIO_SENDINPUT);
 
-	CreateWindowEx(0,
+	HWND hTopMost = CreateWindowEx(0,
 		_T("BUTTON"),
 		_T("&Always on Top"),
-		WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_OWNERDRAW,
+		WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
 		750, 11, 16, 16,
 		hWnd,
 		(HMENU)IDC_CHECK_TOPMOST,
 		hInst,
 		nullptr);
+	SetWindowLongPtr(hTopMost, GWLP_USERDATA, FALSE);
 
 	HWND hChk1 = CreateWindowEx(0,
 		_T("BUTTON"),
@@ -1132,12 +1138,9 @@ LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 	if (!pTheme) return 0L;
 	FillRect(lpdis->hDC, &(lpdis->rcItem), pTheme->HeaderBrush());
 	if (!ghImgListBtnPin) return 0L;
-	if (lpdis->itemState & ODS_CHECKED) {
-		ImageList_Draw(ghImgListBtnPin, 0, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
-	}
-	else {
-		ImageList_Draw(ghImgListBtnPin, 1, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
-	}
+	BOOL checked = (BOOL)GetWindowLongPtr(lpdis->hwndItem, GWLP_USERDATA);
+	int imageIndex = checked ? 0 : 1;
+	ImageList_Draw(ghImgListBtnPin, imageIndex, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
 	return 0L;
 }
 
@@ -1229,6 +1232,21 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	case ID_FILE_QUIT:
 		SendMessage(hWnd, WM_CLOSE, 0L, 0L);
 		break;
+	case IDC_CHECK_TOPMOST:
+		{
+			HWND hCheck = GetDlgItem(hWnd, IDC_CHECK_TOPMOST);
+			BOOL checked = (BOOL)GetWindowLongPtr(hCheck, GWLP_USERDATA);
+			checked = !checked;
+			SetWindowLongPtr(hCheck, GWLP_USERDATA, checked);
+			SetWindowPos(hWnd,
+				checked ? HWND_TOPMOST : HWND_NOTOPMOST,
+				0, 0, 0, 0,
+				SWP_NOMOVE |
+				SWP_NOSIZE |
+				SWP_NOACTIVATE);
+			InvalidateRect(hCheck, NULL, TRUE);
+		}
+		break;
 	default:
 		return (DefWindowProc(hWnd, msg, wp, lp));
 	}
@@ -1308,6 +1326,19 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 	InvalidateRect(hWnd, &rcStatus, FALSE);
 	InvalidateRect(hWnd, &rcQr, FALSE);
+
+	return 0L;
+}
+
+LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+	if (pServer) {
+		std::string str;
+		pServer->PopLog(str);
+		std::wstring wstr = Utf8ToUtf16(str);
+		AddLog(hWnd, LogType::Info, wstr);
+	}
 
 	return 0L;
 }

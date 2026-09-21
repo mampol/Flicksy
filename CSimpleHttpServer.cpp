@@ -2,10 +2,12 @@
 
 CSimpleHttpServer::CSimpleHttpServer()
 {
-    m_server.Get("/",
-        [this](const httplib::Request& req,
-            httplib::Response& res)
+    m_server.Get("/", [this](const httplib::Request& req, httplib::Response& res)
         {
+            std::string log =
+                "[" + req.remote_addr + "]  " + req.method + " " + req.path + " (flicksy.html)";
+            AddServerLog(log);
+
             std::string htmlpath = GetExeDirectory() + "\\flicksy.html";
             std::string html = LoadTextFile(htmlpath);
 
@@ -25,16 +27,22 @@ CSimpleHttpServer::CSimpleHttpServer()
             res.status = 200;
         });
 
-    m_server.Post("/input",
-        [this](const httplib::Request& req,
-            httplib::Response& res)
+    m_server.Post("/input", [this](const httplib::Request& req, httplib::Response& res)
         {
             std::string text;
 
+            if (req.has_param("text")) {
+                text = req.get_param_value("text");
+            }
+            else {
+                text = req.body;
+            }
             if (req.has_param("text"))
                 text = req.get_param_value("text");
-            else
-                text = req.body;
+
+            std::string log =
+                "[" + req.remote_addr + "]  " + "POST /input text=" + text;
+            AddServerLog(log);
 
             {
                 std::lock_guard<std::mutex> lock(m_mutex);
@@ -46,9 +54,7 @@ CSimpleHttpServer::CSimpleHttpServer()
             res.status = 200;
         });
 
-    m_server.Post("/key",
-        [this](const httplib::Request& req,
-            httplib::Response& res)
+    m_server.Post("/key", [this](const httplib::Request& req, httplib::Response& res)
         {
             if (!req.has_param("vk"))
             {
@@ -58,6 +64,10 @@ CSimpleHttpServer::CSimpleHttpServer()
 
             int vk = std::stoi(
                 req.get_param_value("vk"));
+
+            std::string log =
+                "[" + req.remote_addr + "]  " + "POST /key vk=" + std::to_string(vk) + GetKeyName(vk);
+            AddServerLog(log);
 
             if (vk < 0 || vk > 0xFF)
             {
@@ -137,7 +147,7 @@ void CSimpleHttpServer::Stop()
     }
 
     m_state = ServerState::Stopping;
-    PostMsg(UM_HTTPSTATE);
+//    PostMsg(UM_HTTPSTATE);
 
     m_server.stop();
 
@@ -199,6 +209,19 @@ bool CSimpleHttpServer::PopKey(WORD& vk)
 
     vk = m_keys.front();
     m_keys.pop();
+
+    return true;
+}
+
+bool CSimpleHttpServer::PopLog(std::string& log)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_logs.empty())
+        return false;
+
+    log = m_logs.front();
+    m_logs.pop();
 
     return true;
 }
