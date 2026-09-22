@@ -32,7 +32,7 @@ Currently under development.
 <img src="images/flicksy_server.png" width="400">
 
 ### client
-<img src="images/flicksy_client.png" width="400">
+<img src="images/flicksy_client.png" width="300">
 
 ## Roadmap
 
