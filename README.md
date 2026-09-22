@@ -1,4 +1,4 @@
-# Flicksy
+# Flicksy v0.3.1.0
 
 Flicksy は、スマートフォンのフリック入力を 
 Windows PC の文字入力として利用するためのツールです。
@@ -35,7 +35,6 @@ Currently under development.
 
 ## Roadmap
 
-- System tray support
 - Dark mode
 - Improved logging
 - Startup behavior improvements

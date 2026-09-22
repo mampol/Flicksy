@@ -11,6 +11,7 @@
 #include "CAppColorTheme.h"
 #include "CImgListPng.h"
 #include "CFlicksyConfig.h"
+#include "CTrayIcon.h"
 #include "resource.h"
 #include "Win32VisualStyle.h"
 
@@ -21,6 +22,7 @@
 #define CSIMPLEHTTPSERVER	_T("CSimpleHttpServer")
 #define CAPPCOLORTHEME		_T("CAppColorTheme")
 #define CFLICKSYCONFIG		_T("CFlicksyConfig")
+#define CTRAYICON			_T("CTrayIcon")
 
 #define IDC_EDIT_PORT       1001
 #define IDC_SPIN_PORT		1002
@@ -108,6 +110,7 @@ LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnDestroy(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 
@@ -825,7 +828,8 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 		APP_CLASS,
 		(LPCTSTR)APP_CLASS,
 		style,
-		CW_USEDEFAULT, CW_USEDEFAULT,
+		GetSystemMetrics(SM_CXFULLSCREEN) - windowWidth,
+		GetSystemMetrics(SM_CYFULLSCREEN) - windowHeight,
 		windowWidth, windowHeight,
 		NULL,
 		NULL,
@@ -859,14 +863,25 @@ INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow)
 
 	AddLog(hWnd, LogType::Info, L"Flicksy started.");
 
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
+	CTrayIcon* lpCTrayIcon = (CTrayIcon*)GetProp(hWnd, CTRAYICON);
+	if (lpCTrayIcon)
+	{
+		HICON hIcon = (HICON)LoadImage((HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+			MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+		lpCTrayIcon->Create(hWnd, hIcon, UM_TRAYICON);
+	}
 
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 	if (lpCFlicksyConfig)
 	{
 		if (lpCFlicksyConfig->AlwaysOnTop()) SendMessage(hWnd, WM_COMMAND, IDC_CHECK_TOPMOST, 0L);
-		if (lpCFlicksyConfig->AutoStartServer()) SendMessage(hWnd, WM_COMMAND, ID_HTTP_START, 0L);
+		if (lpCFlicksyConfig->AutoStartServer()) {
+			SendMessage(hWnd, WM_COMMAND, ID_HTTP_START, 0L);
+		}
+		else {
+			ShowWindow(hWnd, nCmdShow);
+			UpdateWindow(hWnd);
+		}
 	}
 
 	return 0;
@@ -888,7 +903,14 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		return (OnDrawItem(hWnd, msg, wp, lp));
 	case WM_COMMAND:
 		return (OnCommand(hWnd, msg, wp, lp));
-//	case WM_CTLCOLORBTN:
+	case WM_SIZE:
+		if (wp == SIZE_MINIMIZED)
+		{
+			ShowWindow(hWnd, SW_HIDE);
+			break;
+		}
+		return (DefWindowProc(hWnd, msg, wp, lp));
+	//case WM_CTLCOLORBTN:
 	case WM_CTLCOLORSTATIC:
 		return (OnCtlColor(hWnd, msg, wp, lp));
 	case UM_HTTPPOPMSG:
@@ -899,6 +921,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		return (OnHttpState(hWnd, msg, wp, lp));
 	case UM_HTTPLOG:
 		return (OnHttpLog(hWnd, msg, wp, lp));
+	case UM_TRAYICON:
+		return (OnTrayIcon(hWnd, msg, wp, lp));
+	break;
 	case WM_ENDSESSION:
 	case WM_CLOSE:
 		return (OnClose(hWnd, msg, wp, lp));
@@ -927,6 +952,9 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)new CFlicksyConfig();
 	SetProp(hWnd, CFLICKSYCONFIG, lpCFlicksyConfig);
+
+	CTrayIcon* lpCTrayIcon = (CTrayIcon*)new CTrayIcon();
+	SetProp(hWnd, CTRAYICON, lpCTrayIcon);
 
 	wchar_t path[MAX_PATH] = {};
 	GetModuleFileName(nullptr, path, _countof(path));
@@ -1302,6 +1330,13 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			lpCSimpleHttpServer->Stop();
 		}
 		break;
+	case ID_ABOUT:
+		MessageBox(hWnd,
+			_T("Flicksy\ncopyright 2026 Pol."),
+			_T("About Flicksy"),
+			MB_OK | MB_ICONINFORMATION
+		);
+		break;
 	case ID_FILE_QUIT:
 		SendMessage(hWnd, WM_CLOSE, 0L, 0L);
 		break;
@@ -1420,6 +1455,33 @@ LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	return 0L;
 }
 
+LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	UINT traymsg = LOWORD(lp);
+	switch (traymsg)
+	{
+	case WM_LBUTTONDBLCLK:
+		ShowWindow(hWnd, SW_RESTORE);
+		SetForegroundWindow(hWnd);
+		break;
+	case WM_CONTEXTMENU:
+	case WM_RBUTTONUP:
+		{
+			CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+			if (lpCSimpleHttpServer)
+			{
+				POINT pt;
+				GetCursorPos(&pt);
+				UINT disabledId = lpCSimpleHttpServer->IsRunning() ? ID_HTTP_START : ID_HTTP_STOP;
+				CTrayIcon* lpCTrayIcon = (CTrayIcon*)GetProp(hWnd, CTRAYICON);
+				if (lpCTrayIcon) lpCTrayIcon->ShowContextMenu(pt, { disabledId });
+			}
+			break;
+		}
+	}
+	return 0L;
+}
+
 LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
@@ -1478,6 +1540,13 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			if (lpli) delete lpli;
 			SendMessage(hList, LB_DELETESTRING, 0, 0);
 		}
+	}
+
+	CTrayIcon* lpCTrayIcon = (CTrayIcon*)GetProp(hWnd, CTRAYICON);
+	if (lpCTrayIcon)
+	{
+		RemoveProp(hWnd, CTRAYICON);
+		delete lpCTrayIcon;
 	}
 
 	if (gpBitmapBanner) delete gpBitmapBanner;
