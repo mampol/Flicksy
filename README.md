@@ -1,4 +1,4 @@
-# Flicksy v0.4.0.0
+# Flicksy v0.4.1.0
 
 ### English
 
@@ -65,6 +65,10 @@ Windows Application
 ## Status
 
 Currently under development.
+
+### Security / セキュリティ
+- Added token-based authentication for client requests.
+- クライアントからの操作要求にトークン認証を追加しました。
 
 ## Screenshot
 
