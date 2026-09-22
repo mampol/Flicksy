@@ -1,10 +1,18 @@
-# Flicksy v0.3.1.0
+# Flicksy v0.3.0.1
 
 Flicksy lets you use your smartphone's flick input
 to enter text on a Windows PC.
 
 No dedicated mobile app is required.
 Just connect through your web browser.
+
+----
+
+Flicksy は、スマートフォンのフリック入力を
+Windows PC の文字入力として利用するためのツールです。
+
+スマホ側に専用アプリは不要で、
+ブラウザから接続します。
 
 ## Structure
 
@@ -22,6 +30,30 @@ SendInput / Clipboard
 Windows Application
 ```
 
+## How to use
+
+1. Start `Flicksy.exe` on your Windows PC.
+2. Click `START` to start the local server.
+3. Make sure your smartphone and PC are connected to the **same network**.
+4. Scan the QR code shown in Flicksy with your smartphone.
+5. Open the displayed page in your browser.
+6. Enter text on your smartphone and send it to the PC.
+7. The text is entered into the currently active window on your PC.
+
+**Note:** When `Start server automatically` is enabled, Flicksy starts in the system tray on the next launch without showing the main window.
+
+----
+
+1. Windows PCで Flicksy.exe を起動します。
+2. START を押してサーバーを開始します。
+3. PCとスマートフォンを**同じネットワークに接続**します。
+4. Flicksyに表示されたQRコードをスマートフォンで読み取ります。
+5. ブラウザでFlicksyのページを開きます。
+6. スマートフォンで文字を入力し、PCへ送信します。
+7. 入力データはアクティブなウィンドウへ入力されます。
+
+**Note:** 「Start server automatically」をチェックすると次回起動時にタスクトレイにのみ常駐し、メインウィンドウは表示されません
+
 ## Status
 
 Currently under development.
@@ -32,7 +64,7 @@ Currently under development.
 <img src="images/flicksy_server.png" width="400">
 
 ### client
-<img src="images/flicksy_client.png" width="300">
+<img src="images/flicksy_client.png" width="250">
 
 ## Roadmap
 
