@@ -136,6 +136,7 @@
     <ClCompile Include="CFlicksyConfig.cpp" />
     <ClCompile Include="CImgListPng.cpp" />
     <ClCompile Include="CSimpleHttpServer.cpp" />
+    <ClCompile Include="CToggleSwitch.cpp" />
     <ClCompile Include="CTrayIcon.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="qrcodegen.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="CImgListPng.h" />
     <ClInclude Include="CAppColorTheme.h" />
     <ClInclude Include="CSimpleHttpServer.h" />
+    <ClInclude Include="CToggleSwitch.h" />
     <ClInclude Include="CTrayIcon.h" />
     <ClInclude Include="qrcodegen.hpp" />
     <ClInclude Include="resource.h" />
@@ -161,6 +163,7 @@
     <Image Include="004.png" />
     <Image Include="005.png" />
     <Image Include="006.png" />
+    <Image Include="007.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

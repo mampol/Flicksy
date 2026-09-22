@@ -12,6 +12,7 @@
 #include "CImgListPng.h"
 #include "CFlicksyConfig.h"
 #include "CTrayIcon.h"
+#include "CToggleSwitch.h"
 #include "resource.h"
 #include "Win32VisualStyle.h"
 
@@ -33,10 +34,12 @@
 #define IDC_CHECK_AUTOSTART	1007
 #define IDC_CHECK_STARTUP	1008
 #define IDC_LIST_LOG		1009
+#define IDC_SWITCH_THEME	1010
 
 std::filesystem::path gflicksytoml;
 static Gdiplus::GdiplusStartupInput ggdiplusStartupInput;
 static Gdiplus::Bitmap* gpBitmapBanner;
+static Gdiplus::Bitmap* gpBitmapBannerDark;
 static HIMAGELIST ghImgListBtn, ghImgListBtnHover, ghImgListBtnPressed, ghImgListBtnGrayed, ghImgListBtnPin;
 static ULONG_PTR ggdiplusToken = 0;
 static HFONT ghFontBold, ghFont;
@@ -114,6 +117,7 @@ LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnDestroy(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 
+void ApplyTheme(HWND hWnd);
 
 std::wstring Utf8ToUtf16(const std::string& src)
 {
@@ -448,6 +452,12 @@ std::wstring GetVersionString(const wchar_t* key)
 void DrawBackground(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 {
 	FillRect(hdc, &rc, theme.WindowBrush());
+
+	SelectObject(hdc, ghFont);
+	SetTextColor(hdc, (theme.Colors()).subText);
+	SetBkColor(hdc, (theme.Colors()).windowBg);
+	std::wstring wstr = _T("DarkMode");
+	DrawTextLine(hdc, 640, 509, wstr);
 }
 
 void DrawHeader(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
@@ -456,10 +466,15 @@ void DrawHeader(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 	HPEN hOldPen = (HPEN)SelectObject(hdc, theme.HeaderPen());
 	RoundRect(hdc, 2, 1, rc.right - 2, 84, 4, 4);
 
-	if (gpBitmapBanner)
+	if (gpBitmapBanner && gpBitmapBannerDark)
 	{
 		Gdiplus::Graphics graphics(hdc);
-		graphics.DrawImage(gpBitmapBanner, 16, 6, gpBitmapBanner->GetWidth(), gpBitmapBanner->GetHeight());
+		if (theme.Mode() == ColorMode::Dark) {
+			graphics.DrawImage(gpBitmapBannerDark, 16, 6, gpBitmapBannerDark->GetWidth(), gpBitmapBannerDark->GetHeight());
+		}
+		else {
+			graphics.DrawImage(gpBitmapBanner, 16, 6, gpBitmapBanner->GetWidth(), gpBitmapBanner->GetHeight());
+		}
 	}
 
 	HFONT hOldFont = (HFONT)SelectObject(hdc, ghFont);
@@ -961,6 +976,14 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	gflicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
 	lpCFlicksyConfig->Load(gflicksytoml);
 
+	if (CToggleSwitch::RegisterWndClass(hInst)) {
+		HWND hSwitch = CToggleSwitch::Create(hWnd, IDC_SWITCH_THEME,
+			720, 508, 40, 24,
+			lpCAppColorTheme->Colors().windowBg,
+			lpCFlicksyConfig->GetTheme() == CFlicksyConfig::Theme::Dark ? true : false);
+		ApplyTheme(hWnd);
+	}
+
 	if (Gdiplus::GdiplusStartup(&ggdiplusToken, &ggdiplusStartupInput, nullptr) != Gdiplus::Ok)
 	{
 		return 0L;
@@ -973,6 +996,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	ghImgListBtnPressed = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG4));
 	ghImgListBtnGrayed = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG5));
 	ghImgListBtnPin = cilp.MakeImageListPng(16, cilp.LoadPngResource(hInst, IDB_PNG6));
+	gpBitmapBannerDark = cilp.LoadPngBitmap(hInst, IDB_PNG7);
 
 	HDC hdc = GetDC(hWnd);
 	ghFontBold = CreateFont(-MulDiv((INT_PTR)14, GetDeviceCaps(hdc, LOGPIXELSY), 72),
@@ -1291,7 +1315,7 @@ LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	case IDC_RADIO_CLIPBOARD:
 	case IDC_CHECK_AUTOSTART:
 	case IDC_CHECK_STARTUP:
-		SetTextColor(hdc, pTheme->Colors().text);
+		SetTextColor(hdc, pTheme->Colors().panelText[1]);
 		SetBkColor(hdc, pTheme->Colors().panelBg[1]);
 		return (LRESULT)pTheme->PanelBrush(1);
 	}
@@ -1354,6 +1378,9 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				SWP_NOACTIVATE);
 			InvalidateRect(hCheck, nullptr, TRUE);
 		}
+		break;
+	case IDC_SWITCH_THEME:
+		ApplyTheme(hWnd);
 		break;
 	default:
 		return (DefWindowProc(hWnd, msg, wp, lp));
@@ -1507,6 +1534,10 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			SetRunAtStartup(false);
 		}
 
+		HWND hSwitch = GetDlgItem(hWnd, IDC_SWITCH_THEME);
+		lpCFlicksyConfig->SetTheme(CToggleSwitch::IsChecked(hSwitch)
+			? CFlicksyConfig::Theme::Dark : CFlicksyConfig::Theme::Light);
+
 		lpCFlicksyConfig->Save(gflicksytoml);
 
 		RemoveProp(hWnd, CFLICKSYCONFIG);
@@ -1555,6 +1586,7 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	if (ghImgListBtnPressed) ImageList_Destroy(ghImgListBtnPressed);
 	if (ghImgListBtnGrayed) ImageList_Destroy(ghImgListBtnGrayed);
 	if (ghImgListBtnPin) ImageList_Destroy(ghImgListBtnPin);
+	if (gpBitmapBannerDark) delete gpBitmapBannerDark;
 	if (ghFontBold) DeleteObject(ghFontBold);
 	if (ghFont) DeleteObject(ghFont);
 
@@ -1697,4 +1729,27 @@ bool IsRunAtStartup()
 	value += _T("\"");
 
 	return _tcscmp(exePath, value.c_str()) == 0;
+}
+
+void ApplyTheme(HWND hWnd)
+{
+	CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
+	if (!lpCAppColorTheme) return;
+
+	HWND hSwitch = GetDlgItem(hWnd, IDC_SWITCH_THEME);
+	if (!hSwitch) return;
+
+	bool bDark = CToggleSwitch::IsChecked(hSwitch);
+
+	if (bDark && lpCAppColorTheme->Mode() == ColorMode::Light) {
+		lpCAppColorTheme->SetMode(ColorMode::Dark);
+	}
+	else {
+		if (!bDark && lpCAppColorTheme->Mode() == ColorMode::Dark) {
+			lpCAppColorTheme->SetMode(ColorMode::Light);
+		}
+	}
+	CToggleSwitch::SetBgColor(hSwitch, lpCAppColorTheme->Colors().windowBg);
+	InvalidateRect(hWnd, nullptr, TRUE);
+	return;
 }

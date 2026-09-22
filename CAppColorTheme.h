@@ -33,70 +33,70 @@ struct AppColors
 
 static const AppColors LIGHT_COLORS =
 {
-    RGB(245, 247, 250),   // windowBg
+    RGB(245, 247, 250),    // windowBg
 
-    RGB(233, 245, 250),   // headerBg
-    RGB(187, 206, 204),   // headerBorder
+    RGB(233, 245, 250),    // headerBg
+    RGB(187, 206, 204),    // headerBorder
 
-    RGB(243, 251, 244),   // panelBg1
-    RGB(252, 249, 242),   // panelBg2
-    RGB(248, 248, 254),   // panelBg3
-    RGB(250, 251, 253),   // panelBg4
+    RGB(243, 251, 244),    // panelBg1
+    RGB(252, 249, 242),    // panelBg2
+    RGB(248, 248, 254),    // panelBg3
+    RGB(250, 251, 253),    // panelBg4
 
-    RGB(114, 193, 125),   // panelBorder1
-    RGB(199, 192, 177),   // panelBorder2
-    RGB(162, 122, 235),   // panelBorder3
-    RGB(188, 202, 215),   // panelBorder4
+    RGB(114, 193, 125),    // panelBorder1
+    RGB(199, 192, 177),    // panelBorder2
+    RGB(162, 122, 235),    // panelBorder3
+    RGB(188, 202, 215),    // panelBorder4
 
-    RGB(44, 123, 55),     // panelText1
-    RGB(99, 92, 77),      // panelText2
-    RGB(122, 72, 185),    // panelText3
-    RGB(138, 152, 165),   // panelText4
+    RGB(44, 123, 55),      // panelText1
+    RGB(99, 92, 77),       // panelText2
+    RGB(122, 72, 185),     // panelText3
+    RGB(138, 152, 165),    // panelText4
 
-    RGB(35, 35, 35),      // text
-    RGB(110, 115, 120),   // subText
+    RGB(35, 35, 35),       // text
+    RGB(110, 115, 120),    // subText
 
-    RGB(215, 220, 225),   // border
+    RGB(215, 220, 225),    // border
 
-    RGB(240, 242, 245),   // buttonBg
-    RGB(35, 35, 35),      // buttonText
-    RGB(225, 228, 232),   // buttonHover
+    RGB(240, 242, 245),    // buttonBg
+    RGB(35, 35, 35),       // buttonText
+    RGB(225, 228, 232),    // buttonHover
 
-    RGB(40, 120, 220)     // accent
+    RGB(40, 120, 220)      // accent
 };
 
 static const AppColors DARK_COLORS =
 {
-    RGB(30, 31, 34),      // windowBg
+    RGB(103, 106, 112),     // windowBg
 
-    RGB(233, 245, 250),   // headerBg
-    RGB(187, 206, 204),   // headerBorder
+    RGB(112, 114, 122),     // headerBg
+    RGB(145, 132, 165),     // headerBorder
 
-    RGB(243, 251, 244),   // panelBg1
-    RGB(252, 249, 242),   // panelBg2
-    RGB(248, 248, 254),   // panelBg3
-    RGB(250, 251, 253),   // panelBg4
+    RGB(108, 86, 92),       // panelBg1 Server
+    RGB(84, 94, 112),       // panelBg2 Options
+    RGB(101, 95, 115),      // panelBg3 QR
+    RGB(88, 90, 100),       // panelBg4 Logs
 
-    RGB(114, 193, 125),   // panelBorder1
-    RGB(199, 192, 177),   // panelBorder2
-    RGB(162, 122, 235),   // panelBorder3
-    RGB(188, 202, 215),   // panelBorder4
+    RGB(205, 118, 132),     // panelBorder1 Server
+    RGB(112, 150, 210),     // panelBorder2 Options
+    RGB(178, 150, 220),     // panelBorder3 QR
+    RGB(132, 128, 150),     // panelBorder4 Logs
 
-    RGB(44, 123, 55),     // panelText1
-    RGB(99, 92, 77),      // panelText2
-    RGB(122, 72, 185),    // panelText3
-    RGB(138, 152, 165),   // panelText4
+    RGB(248, 190, 198),     // panelText1 Server
+    RGB(190, 214, 248),     // panelText2 Options
+    RGB(236, 220, 252),     // panelText3 QR
+    RGB(216, 210, 228),     // panelText4 Logs
 
-    RGB(240, 240, 240),   // text
-    RGB(165, 170, 180),   // subText
+    RGB(244, 242, 248),     // text
+    RGB(205, 198, 218),     // subText
 
-    RGB(65, 68, 74),      // border
+    RGB(132, 128, 142),     // border
 
-    RGB(52, 55, 60),      // buttonBg
-    RGB(245, 245, 245),   // buttonText
-    RGB(65, 69, 75),      // buttonHover
+    RGB(112, 108, 120),     // buttonBg
+    RGB(248, 246, 250),     // buttonText
+    RGB(128, 122, 138),     // buttonHover
 
-    RGB(70, 145, 255)     // accent
+    RGB(155, 112, 220)      // accent
 };
 
 class CAppColorTheme
