@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include <tchar.h>
+#include <string>
 #include <initializer_list>
 
 #include "resource.h"
@@ -21,6 +22,8 @@ public:
 
     void ShowContextMenu(POINT pt, 
         std::initializer_list<UINT> disabledItems = {});
+
+    bool SetToolTip(const std::wstring& tip);
 
 private:
     HWND m_hWnd = nullptr;

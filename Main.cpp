@@ -44,6 +44,8 @@ static HIMAGELIST ghImgListBtn, ghImgListBtnHover, ghImgListBtnPressed, ghImgLis
 static ULONG_PTR ggdiplusToken = 0;
 static HFONT ghFontBold, ghFont;
 std::wstring gwstrVer;
+std::string gstrLinkURL;
+std::wstring gwstrShowURL;
 
 std::wstring Utf8ToUtf16(const std::string& src);
 std::wstring SjisToUtf16(const std::string& s);
@@ -613,14 +615,16 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	{
 		if (lpCSimpleHttpServer->IsRunning())
 		{
+			/*
 			std::string ip = GetLocalIPv4();
 			std::string port = std::to_string(lpCSimpleHttpServer->GetPort());
-			std::string strURL = "http://" + ip + ":" + port + "/?token=" + lpCSimpleHttpServer->GetToken();
-			DrawQrCodeBox(hdc, strURL, 588, 134, 110);
+			gstrLinkURL = "http://" + ip + ":" + port + "/?token=" + lpCSimpleHttpServer->GetToken();
+			gwstrShowURL = Utf8ToUtf16(ip) + L":" + Utf8ToUtf16(port);
+			*/
+			DrawQrCodeBox(hdc, gstrLinkURL, 588, 134, 110);
 			SelectObject(hdc, ghFont);
-			std::wstring wstrURL = Utf8ToUtf16(ip) + L":" + Utf8ToUtf16(port);
 			RECT rc = { 527, 250, 762, 290 };
-			DrawTextLine(hdc, rc, wstrURL, DT_SINGLELINE | DT_CENTER);
+			DrawTextLine(hdc, rc, gwstrShowURL, DT_SINGLELINE | DT_CENTER);
 		}
 		else {
 			SelectObject(hdc, ghFont);
@@ -1328,6 +1332,10 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	CSimpleHttpServer* lpCSimpleHttpServer;
 	switch (LOWORD(wp))
 	{
+	case ID_OPENFLICKSY:
+		ShowWindow(hWnd, SW_RESTORE);
+		SetForegroundWindow(hWnd);
+		break;
 	case ID_HTTP_START:
 		{
 			int port = GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE);
@@ -1427,6 +1435,7 @@ LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
+	CTrayIcon* lpCTrayIcon = (CTrayIcon*)GetProp(hWnd, CTRAYICON);
 	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 	if (pServer) {
 		std::wstring wstr;
@@ -1434,26 +1443,60 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		{
 		case ServerState::Starting:
 			wstr = L"Starting HTTP Server ... (PORT " + std::to_wstring(pServer->GetPort()) + L")";
+
+			if (lpCTrayIcon) {
+				std::wstring wstrTip = L"Flicksy\nStarting ...";
+				lpCTrayIcon->SetToolTip(wstrTip);
+			}
 			break;
 
 		case ServerState::Running:
-			EnableWindow(GetDlgItem(hWnd, ID_HTTP_START), FALSE);
-			EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), TRUE);
-			wstr = L"HTTP Server Running";
+			{
+				EnableWindow(GetDlgItem(hWnd, ID_HTTP_START), FALSE);
+				EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), TRUE);
+				wstr = L"HTTP Server Running";
+
+				std::string ip = GetLocalIPv4();
+				std::string port = std::to_string(pServer->GetPort());
+				gstrLinkURL = "http://" + ip + ":" + port + "/?token=" + pServer->GetToken();
+				gwstrShowURL = Utf8ToUtf16(ip) + L":" + Utf8ToUtf16(port);
+
+				if (lpCTrayIcon) {
+					std::wstring wstrTip = L"Flicksy\nRunning\n" + gwstrShowURL;
+					lpCTrayIcon->SetToolTip(wstrTip);
+				}
+			}
 			break;
 
 		case ServerState::Stopping:
 			wstr = L"HTTP Server Stopping ...";
+
+			if (lpCTrayIcon) {
+				std::wstring wstrTip = L"Flicksy\nStopping ...";
+				lpCTrayIcon->SetToolTip(wstrTip);
+			}
 			break;
 
 		case ServerState::Stopped:
 			EnableWindow(GetDlgItem(hWnd, ID_HTTP_START), TRUE);
 			EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), FALSE);
 			wstr = L"HTTP Server Stopped";
+
+			gwstrShowURL.clear();
+
+			if (lpCTrayIcon) {
+				std::wstring wstrTip = L"Flicksy\nStopped";
+				lpCTrayIcon->SetToolTip(wstrTip);
+			}
 			break;
 
 		case ServerState::Error:
 			wstr = L"HTTP Server Error";
+
+			if (lpCTrayIcon) {
+				std::wstring wstrTip = L"Flicksy\nHTTP Server Error";
+				lpCTrayIcon->SetToolTip(wstrTip);
+			}
 			break;
 
 		}

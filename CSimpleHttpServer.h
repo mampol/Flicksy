@@ -58,7 +58,7 @@ public:
         return GetState() == ServerState::Running;
     }
 
-    const std::string& GetToken() const { return m_token; };
+    const std::string& GetToken() const { return m_token; }
 
     bool PopMessage(std::string& message);
     bool PopKey(WORD& vk);
