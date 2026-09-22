@@ -32,6 +32,8 @@ CSimpleHttpServer::CSimpleHttpServer()
         [this](const httplib::Request& req,
             httplib::Response& res)
         {
+            if (!CheckToken(req, res)) return;
+
             std::string log =
                 "[" + req.remote_addr + "] " + req.method + " " + req.path;
             AddServerLog(log);
@@ -83,6 +85,8 @@ CSimpleHttpServer::CSimpleHttpServer()
         [this](const httplib::Request& req,
             httplib::Response& res)
         {
+            if (!CheckToken(req, res)) return;
+
             if (!req.has_param("text"))
             {
                 res.status = 400;
@@ -111,14 +115,15 @@ CSimpleHttpServer::CSimpleHttpServer()
 
     m_server.Post("/key", [this](const httplib::Request& req, httplib::Response& res)
         {
+            if (!CheckToken(req, res)) return;
+
             if (!req.has_param("vk"))
             {
                 res.status = 400;
                 return;
             }
 
-            int vk = std::stoi(
-                req.get_param_value("vk"));
+            int vk = std::stoi(req.get_param_value("vk"));
 
             std::string log =
                 "[" + req.remote_addr + "] " + "POST /key vk=" + std::to_string(vk) + GetKeyName(vk);
@@ -179,6 +184,42 @@ std::string CSimpleHttpServer::LoadTextFile(const std::string& path)
     return oss.str();
 }
 
+std::string CSimpleHttpServer::GenerateToken()
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(0, 15);
+
+    const char* hex = "0123456789abcdef";
+
+    std::string token;
+    token.reserve(32);
+
+    for (int i = 0; i < 32; ++i)
+        token += hex[dist(gen)];
+
+    return token;
+}
+
+bool CSimpleHttpServer::CheckToken(const httplib::Request& req, httplib::Response& res)
+{
+    if (!req.has_param("token"))
+    {
+        res.status = 403;
+        res.set_content("Forbidden", "text/plain");
+        return false;
+    }
+
+    if (req.get_param_value("token") != m_token)
+    {
+        res.status = 403;
+        res.set_content("Forbidden", "text/plain");
+        return false;
+    }
+
+    return true;
+}
+
 bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot)
 {
     if (m_thread.joinable())
@@ -203,6 +244,8 @@ bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::pa
     {
         m_webRoot = webRoot;
     }
+
+    m_token = GenerateToken();
 
     m_thread = std::thread(
         &CSimpleHttpServer::ServerThread,

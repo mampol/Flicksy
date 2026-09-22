@@ -50,6 +50,8 @@ public:
         return GetState() == ServerState::Running;
     }
 
+    const std::string& GetToken() const { return m_token; };
+
     bool PopMessage(std::string& message);
     bool PopKey(WORD& vk);
     bool PopLog(std::string& log);
@@ -65,6 +67,8 @@ private:
         return std::filesystem::path(path).parent_path();
     }
     std::string LoadTextFile(const std::string& path);
+    std::string GenerateToken();
+    bool CheckToken(const httplib::Request& req, httplib::Response& res);
     void ServerThread(int port);
     void PostMsg(const UINT msg)
     {
@@ -111,6 +115,8 @@ private:
         AddServerLog(log);
     }
 private:
+    std::string m_token;
+
     std::atomic<ServerState> m_state = ServerState::Stopped;
 
     HWND m_hMainWnd = NULL;

@@ -615,7 +615,7 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 		{
 			std::string ip = GetLocalIPv4();
 			std::string port = std::to_string(lpCSimpleHttpServer->GetPort());
-			std::string strURL = "http://" + ip + ":" + port;
+			std::string strURL = "http://" + ip + ":" + port + "/?token=" + lpCSimpleHttpServer->GetToken();
 			DrawQrCodeBox(hdc, strURL, 588, 134, 110);
 			SelectObject(hdc, ghFont);
 			std::wstring wstrURL = Utf8ToUtf16(ip) + L":" + Utf8ToUtf16(port);
