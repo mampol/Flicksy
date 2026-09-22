@@ -976,17 +976,17 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	gflicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
 	lpCFlicksyConfig->Load(gflicksytoml);
 
+	if (Gdiplus::GdiplusStartup(&ggdiplusToken, &ggdiplusStartupInput, nullptr) != Gdiplus::Ok)
+	{
+		return 0L;
+	}
+
 	if (CToggleSwitch::RegisterWndClass(hInst)) {
 		HWND hSwitch = CToggleSwitch::Create(hWnd, IDC_SWITCH_THEME,
 			720, 508, 40, 24,
 			lpCAppColorTheme->Colors().windowBg,
 			lpCFlicksyConfig->GetTheme() == CFlicksyConfig::Theme::Dark ? true : false);
 		ApplyTheme(hWnd);
-	}
-
-	if (Gdiplus::GdiplusStartup(&ggdiplusToken, &ggdiplusStartupInput, nullptr) != Gdiplus::Ok)
-	{
-		return 0L;
 	}
 
 	CImgListPng cilp;

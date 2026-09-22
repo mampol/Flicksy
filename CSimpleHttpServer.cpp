@@ -1,5 +1,9 @@
 #include "CSimpleHttpServer.h"
 
+#include <bcrypt.h>
+
+#pragma comment(lib, "bcrypt.lib")
+
 CSimpleHttpServer::CSimpleHttpServer()
 {
     /*
@@ -67,7 +71,7 @@ CSimpleHttpServer::CSimpleHttpServer()
             else if (ext == ".png")
                 contentType = "image/png";
             else if (ext == ".jpg")
-                contentType = "image/jpg";
+                contentType = "image/jpeg";
             else if (ext == ".webp")
                 contentType = "image/webp";
             else if (ext == ".css")
@@ -123,28 +127,36 @@ CSimpleHttpServer::CSimpleHttpServer()
                 return;
             }
 
-            int vk = std::stoi(req.get_param_value("vk"));
+            try
+            {
+                int vk = std::stoi(req.get_param_value("vk"));
 
-            std::string log =
-                "[" + req.remote_addr + "] " + "POST /key vk=" + std::to_string(vk) + GetKeyName(vk);
-            AddServerLog(log);
+                if (vk < 0 || vk > 0xFF)
+                {
+                    res.status = 400;
+                    AddHttpLog(req, res.status);
+                    return;
+                }
 
-            if (vk < 0 || vk > 0xFF)
+                std::string log =
+                    "[" + req.remote_addr + "] " + "POST /key vk=" + std::to_string(vk) + GetKeyName(vk);
+                AddServerLog(log);
+
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    m_keys.push(static_cast<WORD>(vk));
+                }
+
+                PostMsg(UM_HTTPPOPKEY);
+
+                res.status = 200;
+            }
+            catch (...)
             {
                 res.status = 400;
-                AddHttpLog(req, res.status);
                 return;
             }
 
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                m_keys.push(static_cast<WORD>(vk));
-            }
-
-            PostMsg(UM_HTTPPOPKEY);
-
-            res.status = 200;
-            //AddHttpLog(req, res.status);
         });
 }
 
@@ -186,17 +198,26 @@ std::string CSimpleHttpServer::LoadTextFile(const std::string& path)
 
 std::string CSimpleHttpServer::GenerateToken()
 {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(0, 15);
+    BYTE bytes[16]{};
 
-    const char* hex = "0123456789abcdef";
+    NTSTATUS status = BCryptGenRandom(
+        nullptr,
+        bytes,
+        sizeof(bytes),
+        BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    if (!BCRYPT_SUCCESS(status))
+        return {};
+
+    static const char hex[] = "0123456789abcdef";
 
     std::string token;
-    token.reserve(32);
+    token.reserve(sizeof(bytes) * 2);
 
-    for (int i = 0; i < 32; ++i)
-        token += hex[dist(gen)];
+    for (BYTE b : bytes)
+    {
+        token += hex[(b >> 4) & 0x0F];
+        token += hex[b & 0x0F];
+    }
 
     return token;
 }
@@ -246,6 +267,12 @@ bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::pa
     }
 
     m_token = GenerateToken();
+    if (m_token.empty())
+    {
+        m_state = ServerState::Error;
+        PostMsg(UM_HTTPSTATE);
+        return false;
+    }
 
     m_thread = std::thread(
         &CSimpleHttpServer::ServerThread,
@@ -297,6 +324,8 @@ void CSimpleHttpServer::ServerThread(int port)
     if (!result)
     {
         m_state = ServerState::Error;
+        PostMsg(UM_HTTPSTATE);
+        return;
     }
     else
     {

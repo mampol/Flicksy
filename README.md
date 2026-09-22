@@ -1,4 +1,4 @@
-# Flicksy v0.4.1.0
+# Flicksy v0.4.2.0
 
 ### English
 
@@ -100,10 +100,8 @@ Currently under development.
 All third-party libraries listed above are licensed under the MIT License.
 See `THIRD_PARTY_LICENSES.txt` for details.
 
+Visual Studio 2022 project files are included.
+
 ## License
 
 This project is licensed under the MIT License.
-
-
-Visual Studio project files are not included.
-Please create a new C++17 Win32 project and add the source files manually.
