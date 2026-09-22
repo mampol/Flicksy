@@ -1,9 +1,10 @@
 # Flicksy v0.3.1.0
 
-Flicksy は、スマートフォンのフリック入力を 
-Windows PC の文字入力として利用するためのツールです。
+Flicksy lets you use your smartphone's flick input
+to enter text on a Windows PC.
 
-スマホ側に専用アプリは不要で、ブラウザから接続します。
+No dedicated mobile app is required.
+Just connect through your web browser.
 
 ## Structure
 
