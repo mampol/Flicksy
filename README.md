@@ -1,4 +1,4 @@
-# Flicksy v0.3.0.1
+# Flicksy v0.3.1.1
 
 Flicksy lets you use your smartphone's flick input
 to enter text on a Windows PC.
