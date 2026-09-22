@@ -1,12 +1,16 @@
 # Flicksy v0.4.0.0
 
+### English
+
 Flicksy lets you use your smartphone's flick input
 to enter text on a Windows PC.
 
 No dedicated mobile app is required.
 Just connect through your web browser.
 
----
+<p align="center">• • •</p>
+
+### 日本語
 
 Flicksy は、スマートフォンのフリック入力を
 Windows PC の文字入力として利用するためのツールです。
@@ -32,6 +36,8 @@ Windows Application
 
 ## How to use
 
+### English
+
 1. Start `Flicksy.exe` on your Windows PC.
 2. Click `START` to start the local server.
 3. Make sure your smartphone and PC are connected to the **same network**.
@@ -42,7 +48,9 @@ Windows Application
 
 **Note:** When `Start server automatically` is enabled, Flicksy starts in the system tray on the next launch without showing the main window.
 
----
+<p align="center">• • •</p>
+
+### 日本語
 
 1. Windows PCで Flicksy.exe を起動します。
 2. START を押してサーバーを開始します。
