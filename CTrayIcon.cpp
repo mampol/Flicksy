@@ -2,12 +2,12 @@
 
 CTrayIcon::~CTrayIcon()
 {
-    if (m_hicon) DestroyIcon(m_hicon);
+    if (m_hIcon) DestroyIcon(m_hIcon);
 }
 
 bool CTrayIcon::Create(HWND hWnd, HICON hIcon, UINT callbackMsg)
 {
-    m_hicon = hIcon;
+    m_hIcon = hIcon;
     m_hWnd = hWnd;
 
     ZeroMemory(&m_nid, sizeof(m_nid));
@@ -16,7 +16,7 @@ bool CTrayIcon::Create(HWND hWnd, HICON hIcon, UINT callbackMsg)
     m_nid.uID = 1;
     m_nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_SHOWTIP;
     m_nid.uCallbackMessage = callbackMsg;
-    m_nid.hIcon = m_hicon;
+    m_nid.hIcon = m_hIcon;
     _tcsncpy_s(m_nid.szTip, _countof(m_nid.szTip), _T("Flicksy"), _TRUNCATE);
     if (!Shell_NotifyIcon(NIM_ADD, &m_nid)) return false;
 
@@ -39,10 +39,11 @@ void CTrayIcon::Remove()
     Shell_NotifyIcon(NIM_DELETE, &m_nid);
     m_visible = false;
 
-    if (m_hicon) {
-        DestroyIcon(m_hicon);
-        m_hicon = nullptr;
+    if (m_hIcon) {
+        DestroyIcon(m_hIcon);
+        m_hIcon = nullptr;
     }
+
 }
 
 void CTrayIcon::ShowContextMenu(POINT pt,
@@ -78,4 +79,45 @@ bool CTrayIcon::SetToolTip(const std::wstring& tip)
     m_nid.uFlags = NIF_TIP | NIF_SHOWTIP;
     _tcsncpy_s(m_nid.szTip, _countof(m_nid.szTip), tip.c_str(), _TRUNCATE);
     return Shell_NotifyIcon(NIM_MODIFY, &m_nid) != FALSE;
+}
+
+bool CTrayIcon::SetTrayIcon(const HICON hIcon)
+{
+    if (m_hIcon) {
+        DestroyIcon(m_hIcon);
+        m_hIcon = nullptr;
+    }
+    m_hIcon = hIcon;
+
+    m_nid.uFlags = NIF_ICON;
+    m_nid.hIcon = m_hIcon;
+    return Shell_NotifyIcon(NIM_MODIFY, &m_nid) != FALSE;
+}
+
+bool CTrayIcon::ShowBalloon(const std::wstring& title,
+    const std::wstring& message,
+    DWORD iconType)
+{
+    if (!m_visible)
+        return false;
+
+    NOTIFYICONDATA nid{};
+    nid.cbSize = sizeof(NOTIFYICONDATA);
+    nid.hWnd = m_nid.hWnd;
+    nid.uID = m_nid.uID;
+    nid.uFlags = NIF_INFO;
+
+    wcsncpy_s(nid.szInfoTitle,
+        _countof(nid.szInfoTitle),
+        title.c_str(),
+        _TRUNCATE);
+
+    wcsncpy_s(nid.szInfo,
+        _countof(nid.szInfo),
+        message.c_str(),
+        _TRUNCATE);
+
+    nid.dwInfoFlags = iconType;
+
+    return Shell_NotifyIcon(NIM_MODIFY, &nid) != FALSE;
 }

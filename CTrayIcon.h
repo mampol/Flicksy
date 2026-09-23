@@ -25,9 +25,13 @@ public:
 
     bool SetToolTip(const std::wstring& tip);
 
+    bool SetTrayIcon(const HICON hIcon);
+
+    bool ShowBalloon(const std::wstring& title, const std::wstring& message, DWORD iconType);
+
 private:
     HWND m_hWnd = nullptr;
-    HICON m_hicon = nullptr;
+    HICON m_hIcon = nullptr;
     NOTIFYICONDATA m_nid = {};
     bool m_visible = false;
 };

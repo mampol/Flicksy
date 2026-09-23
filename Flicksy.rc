@@ -69,7 +69,7 @@ BEGIN
         BLOCK "041104b0"
         BEGIN
             VALUE "CompanyName", "Pol"
-            VALUE "FileDescription", "Smartphone-to-PC Input Tool"
+            VALUE "FileDescription", "Flicksy for Windows"
             VALUE "FileVersion", "0.4.3.0"
             VALUE "InternalName", "Flicksy.exe"
             VALUE "LegalCopyright", "Copyright (C) 2026 Pol."

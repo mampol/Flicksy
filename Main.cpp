@@ -1464,6 +1464,7 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				if (lpCTrayIcon) {
 					std::wstring wstrTip = L"Flicksy\nRunning\n" + gwstrShowURL;
 					lpCTrayIcon->SetToolTip(wstrTip);
+					lpCTrayIcon->ShowBalloon(L"Server Started.", gwstrShowURL, NIIF_NONE);
 				}
 			}
 			break;
@@ -1482,12 +1483,14 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), FALSE);
 			wstr = L"HTTP Server Stopped";
 
-			gwstrShowURL.clear();
-
 			if (lpCTrayIcon) {
 				std::wstring wstrTip = L"Flicksy\nStopped";
 				lpCTrayIcon->SetToolTip(wstrTip);
+				lpCTrayIcon->ShowBalloon(L"Server Stopped.", L"The HTTP server has stopped.", NIIF_NONE);
 			}
+
+			gwstrShowURL.clear();
+
 			break;
 
 		case ServerState::Error:
@@ -1496,6 +1499,7 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			if (lpCTrayIcon) {
 				std::wstring wstrTip = L"Flicksy\nHTTP Server Error";
 				lpCTrayIcon->SetToolTip(wstrTip);
+				lpCTrayIcon->ShowBalloon(L"Server Error.", Utf8ToUtf16(pServer->GetLastError()), NIIF_ERROR);
 			}
 			break;
 

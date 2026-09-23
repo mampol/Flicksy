@@ -64,6 +64,8 @@ public:
     bool PopKey(WORD& vk);
     bool PopLog(std::string& log);
 
+    const std::string& GetLastError() const { return m_lastError; }
+
 private:
 //    std::string GetExeDirectory();
     std::filesystem::path GetExeDir()
@@ -122,6 +124,29 @@ private:
         std::string log = "http " + std::to_string(status) + " " + GetHttpStatusText(status);
         AddServerLog(log);
     }
+    void FormatError()
+    {
+        int err = WSAGetLastError();
+        switch (err)
+        {
+        case WSAEADDRINUSE:
+            m_lastError = "The port is already in use.";
+            break;
+
+        case WSAEACCES:
+            m_lastError = "Access to the port was denied.";
+            break;
+
+        case WSAEADDRNOTAVAIL:
+            m_lastError = "The specified address is not available.";
+            break;
+
+        default:
+            m_lastError =
+                "Failed to start the HTTP server. Error code: " + std::to_string(err);
+            break;
+        }
+    }
 private:
     std::string m_token;
 
@@ -138,4 +163,6 @@ private:
     std::queue<WORD> m_keys;
     std::queue<std::string> m_logs;
     std::mutex m_mutex;
+
+    std::string m_lastError;
 };

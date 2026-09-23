@@ -32,6 +32,28 @@ CSimpleHttpServer::CSimpleHttpServer()
             res.status = 200;
         });
         */
+    m_server.set_exception_handler(
+        [this](const auto& req,
+            auto& res,
+            std::exception_ptr ep)
+        {
+            try
+            {
+                if (ep) std::rethrow_exception(ep);
+            }
+            catch (const std::exception& e)
+            {
+                AddServerLog(std::string("HTTP handler exception: ") + e.what());
+            }
+            catch (...)
+            {
+                AddServerLog("Unknown HTTP handler exception.");
+            }
+
+            res.status = 500;
+            res.set_content("HTTP 500 error", "text/plain");
+        });
+
     m_server.Get(R"(/|/.*\.(html|png|jpg|webp|css|js))",
         [this](const httplib::Request& req,
             httplib::Response& res)
@@ -243,6 +265,8 @@ bool CSimpleHttpServer::CheckToken(const httplib::Request& req, httplib::Respons
 
 bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot)
 {
+    m_lastError.clear();
+
     if (m_thread.joinable())
     {
         if (m_state == ServerState::Stopped || m_state == ServerState::Error)
@@ -269,6 +293,7 @@ bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::pa
     m_token = GenerateToken();
     if (m_token.empty())
     {
+        m_lastError = "Failed to generate an access token.";
         m_state = ServerState::Error;
         PostMsg(UM_HTTPSTATE);
         return false;
@@ -304,34 +329,54 @@ void CSimpleHttpServer::Stop()
 
 void CSimpleHttpServer::ServerThread(int port)
 {
-    m_state = ServerState::Starting;
-    PostMsg(UM_HTTPSTATE);
-
-    int ret = m_server.bind_to_port("0.0.0.0", port);
-
-    if (ret < 0)
+    try
     {
+        m_state = ServerState::Starting;
+        PostMsg(UM_HTTPSTATE);
+
+        int ret = m_server.bind_to_port("0.0.0.0", port);
+
+        if (ret < 0)
+        {
+            FormatError();
+            m_state = ServerState::Error;
+            PostMsg(UM_HTTPSTATE);
+            return;
+        }
+
+        m_state = ServerState::Running;
+        PostMsg(UM_HTTPSTATE);
+
+        bool result = m_server.listen_after_bind();
+
+        if (!result)
+        {
+            FormatError();
+            m_state = ServerState::Error;
+            PostMsg(UM_HTTPSTATE);
+            return;
+        }
+
+        if (m_state != ServerState::Stopped) {
+            m_state = ServerState::Stopped;
+//            PostMsg(UM_HTTPSTATE);
+        }
+    }
+    catch (const std::exception& e)
+    {
+        m_lastError =
+            std::string("HTTP server exception: ") + e.what();
+
         m_state = ServerState::Error;
         PostMsg(UM_HTTPSTATE);
-        return;
     }
-
-    m_state = ServerState::Running;
-    PostMsg(UM_HTTPSTATE);
-
-    bool result = m_server.listen_after_bind();
-
-    if (!result)
+    catch (...)
     {
+        m_lastError = "Unknown HTTP server exception.";
+
         m_state = ServerState::Error;
         PostMsg(UM_HTTPSTATE);
-        return;
     }
-    else
-    {
-        m_state = ServerState::Stopped;
-    }
-//    PostMsg(UM_HTTPSTATE);
 }
 
 bool CSimpleHttpServer::PopMessage(std::string& message)
