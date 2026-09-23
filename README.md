@@ -1,4 +1,4 @@
-# Flicksy v0.4.2.0
+# Flicksy v0.4.3.0
 
 ### English
 
@@ -67,8 +67,32 @@ Windows Application
 Currently under development.
 
 ### Security / セキュリティ
-- Added token-based authentication for client requests.
-- クライアントからの操作要求にトークン認証を追加しました。
+
+- Uses a temporary access token for client requests.
+- The token is generated each time the server starts.
+- Input and key requests require a valid token.
+
+<p align="center">• • •</p>
+
+- クライアント操作には一時アクセストークンを使用しています。
+- トークンはサーバー起動ごとに生成されます。
+- 文字入力やキー操作には有効なトークンが必要です。
+
+## System Tray / タスクトレイ
+
+Flicksy can remain active in the Windows system tray.
+
+- Double-click the tray icon to restore the main window.
+- Server status is shown in the tray tooltip.
+- Notifications are displayed when the server starts, stops, or encounters an error.
+
+<p align="center">• • •</p>
+
+Flicksy はタスクトレイに常駐できます。
+
+- トレイアイコンをダブルクリックするとメイン画面を表示します。
+- ツールチップにサーバー状態を表示します。
+- サーバーの開始、停止、エラー時に通知を表示します。
 
 ## Screenshot
 
@@ -80,8 +104,9 @@ Currently under development.
 
 ## Roadmap
 
+- Active-window screenshot preview
+- Additional remote key controls
 - Improved logging
-- Startup behavior improvements
 - Better mobile UI
 
 ## Development
