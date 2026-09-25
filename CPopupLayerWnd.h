@@ -40,16 +40,26 @@ namespace CPopupLayerWnd
         POINT anchor{};
 
         DRAW_CONTENTS_PROC drawContents = nullptr;
+
+        Gdiplus::Color bgColor;
     };
 
     bool RegisterWndClass(HINSTANCE hInstance);
 
     HWND Create(HINSTANCE hInstance);
 
-    void StartPopupAnimation(HWND hWnd, int x, int y, int width, int height, PopAnim popanim, UINT outinterval = 0);
+    void StartPopupAnimation(HWND hPopup,
+        int x, int y, int width, int height,
+        PopAnim popanim,
+        UINT outinterval = 0);
+    void SetPopupBackgroundColor(HWND hPopup,
+        const COLORREF bgColor,
+        const BYTE bgAlpha);
     void UpdatePopupAnimation(HWND hWnd);
-    void DrawLayeredWindow(HWND hPopup, int x, int y, int width, int height);
-    void DrawPopupBackground(Gdiplus::Graphics& g, int width, int height, const int tailHeight);
+    void DrawLayeredWindow(HWND hPopup, int x, int y, int width, int height,
+        const Gdiplus::Color& bgColor);
+    void DrawPopupBackground(Gdiplus::Graphics& g, int width, int height,
+        const int tailHeight, const Gdiplus::Color& bgColor);
     void SetDrawContentsProc(HWND hPopup, DRAW_CONTENTS_PROC proc);
     double EaseOutBack(double t);
     double EaseInBack(double t);

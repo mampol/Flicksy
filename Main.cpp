@@ -1441,12 +1441,19 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		ApplyTheme(hWnd);
 		break;
 	case ID_LINK_QRCODE:
-		CPopupLayerWnd::StartPopupAnimation(ghPopupQrWnd,
-			GetSystemMetrics(SM_CXFULLSCREEN) - 270,
-			GetSystemMetrics(SM_CYFULLSCREEN) - 290,
-			250, 300,
-			CPopupLayerWnd::PopAnim::Show,
-			1000 * 30);
+		{
+			CPopupLayerWnd::StartPopupAnimation(ghPopupQrWnd,
+				GetSystemMetrics(SM_CXFULLSCREEN) - 270,
+				GetSystemMetrics(SM_CYFULLSCREEN) - 290,
+				250, 300,
+				CPopupLayerWnd::PopAnim::Show,
+				1000 * 30);
+
+			CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
+			if (lpCAppColorTheme) {
+				CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().windowBg, 255);
+			}
+		}
 		break;
 	default:
 		return (DefWindowProc(hWnd, msg, wp, lp));
@@ -1541,23 +1548,30 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			break;
 
 		case ServerState::Stopped:
-			EnableWindow(GetDlgItem(hWnd, ID_HTTP_START), TRUE);
-			EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), FALSE);
+			{
+				EnableWindow(GetDlgItem(hWnd, ID_HTTP_START), TRUE);
+				EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), FALSE);
 
-			wstr = L"HTTP Server Stopped";
+				wstr = L"HTTP Server Stopped";
 
-			CPopupLayerWnd::StartPopupAnimation(ghPopupQrWnd, 0, 0, 0, 0, CPopupLayerWnd::PopAnim::Hide);
+				CPopupLayerWnd::StartPopupAnimation(ghPopupQrWnd, 0, 0, 0, 0,
+					CPopupLayerWnd::PopAnim::Hide);
 
-			if (lpCTrayIcon) {
-				std::wstring wstrTip = L"Flicksy\nStopped";
-				lpCTrayIcon->SetToolTip(wstrTip);
-				if (!IsWindowVisible(hWnd)) {
-					lpCTrayIcon->ShowBalloon(L"Server Stopped.", L"The HTTP server has stopped.", NIIF_NONE);
+				CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
+				if (lpCAppColorTheme) {
+					CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().windowBg, 255);
 				}
+
+				if (lpCTrayIcon) {
+					std::wstring wstrTip = L"Flicksy\nStopped";
+					lpCTrayIcon->SetToolTip(wstrTip);
+					if (!IsWindowVisible(hWnd)) {
+						lpCTrayIcon->ShowBalloon(L"Server Stopped.", L"The HTTP server has stopped.", NIIF_NONE);
+					}
+				}
+
+				gwstrShowURL.clear();
 			}
-
-			gwstrShowURL.clear();
-
 			break;
 
 		case ServerState::Error:
@@ -1641,6 +1655,11 @@ LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 						250, 300,
 						CPopupLayerWnd::PopAnim::Show, 
 						1000 * 30);
+
+					CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
+					if (lpCAppColorTheme) {
+						CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().windowBg, 255);
+					}
 				}
 			}
 		}
@@ -1982,7 +2001,6 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height)
 	constexpr int urlHeight = 28;
 	constexpr int tailHeight = 20;
 
-
 	int y = marginy;
 
 	if (gpBitmapBanner)
@@ -2000,7 +2018,7 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height)
 		y += bannerH + gap;
 	}
 
-	int bodyBottom = height - tailHeight;
+	int bodyBottom = height;
 	int availableH = bodyBottom - y - gap - urlHeight - marginy;
 	int qrSize = (std::min)(width - marginx * 2, availableH);
 	int qrX = (width - qrSize) / 2;
@@ -2011,21 +2029,14 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height)
 		g.SetInterpolationMode(Gdiplus::InterpolationModeNearestNeighbor);
 
 		g.DrawImage(&bmp,
-			qrX,
-			y,
-			qrSize,
-			qrSize);
+			qrX, y,
+			qrSize, qrSize);
 
-		Gdiplus::Pen borderPen(
-			Gdiplus::Color(255, 200, 200, 200),
-			1.0f);
+		Gdiplus::Pen borderPen(Gdiplus::Color(255, 200, 200, 200), 1.0f);
 
-		g.DrawRectangle(
-			&borderPen,
-			qrX,
-			y,
-			qrSize - 1,
-			qrSize - 1);
+		g.DrawRectangle(&borderPen,
+			qrX, y,
+			qrSize - 1, qrSize - 1);
 	}
 
 	y += qrSize + gap;

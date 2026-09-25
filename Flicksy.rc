@@ -95,6 +95,7 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open Flicksy",               ID_OPENFLICKSY
+        MENUITEM SEPARATOR
         MENUITEM "Star&t Server",               ID_HTTP_START
         MENUITEM "Sto&p Server",                ID_HTTP_STOP
         MENUITEM "QR &Code",                    ID_LINK_QRCODE

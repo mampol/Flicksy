@@ -41,7 +41,8 @@ namespace CPopupLayerWnd
         if (wParam == TIMER_OUT)
         {
             KillTimer(hPopup, TIMER_OUT);
-            CPopupLayerWnd::StartPopupAnimation(hPopup, 0, 0, 0, 0, CPopupLayerWnd::PopAnim::Hide);
+            CPopupLayerWnd::StartPopupAnimation(hPopup, 0, 0, 0, 0,
+                CPopupLayerWnd::PopAnim::Hide);
             return 0;
         }
 
@@ -50,7 +51,8 @@ namespace CPopupLayerWnd
 
     LRESULT OnLButtonDown(HWND hPopup, UINT msg, WPARAM wParam, LPARAM lParam)
     {
-        CPopupLayerWnd::StartPopupAnimation(hPopup, 0, 0, 0, 0, CPopupLayerWnd::PopAnim::Hide);
+        CPopupLayerWnd::StartPopupAnimation(hPopup, 0, 0, 0, 0,
+            CPopupLayerWnd::PopAnim::Hide);
 
         return 0;
     }
@@ -139,6 +141,8 @@ void CPopupLayerWnd::StartPopupAnimation(HWND hPopup,
     pAnim->anchor.x = pAnim->finalX + pAnim->finalW - 40;
     pAnim->anchor.y = pAnim->finalY + pAnim->finalH;
 
+    pAnim->bgColor = Gdiplus::Color(255, 255, 255, 255);
+
     if (popanim == PopAnim::Show)
     {
         int w = static_cast<int>(
@@ -154,10 +158,9 @@ void CPopupLayerWnd::StartPopupAnimation(HWND hPopup,
             pAnim->anchor.y - h;
 
         DrawLayeredWindow(hPopup,
-            startX,
-            startY,
-            w,
-            h);
+            startX, startY,
+            w, h,
+            pAnim->bgColor);
 
         ShowWindow(hPopup,
             SW_SHOWNOACTIVATE);
@@ -167,6 +170,15 @@ void CPopupLayerWnd::StartPopupAnimation(HWND hPopup,
         TIMER_POP,
         POP_INTERVAL,
         nullptr);
+}
+
+void CPopupLayerWnd::SetPopupBackgroundColor(HWND hPopup,
+    const COLORREF bgColor,
+    const BYTE bgAlpha)
+{
+    auto* pAnim = reinterpret_cast<POP_ANIM_DATA*>(GetWindowLongPtr(hPopup, GWLP_USERDATA));
+    if (!pAnim) return;
+    pAnim->bgColor = Gdiplus::Color(GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor), bgAlpha);
 }
 
 void CPopupLayerWnd::UpdatePopupAnimation(HWND hPopup)
@@ -199,7 +211,7 @@ void CPopupLayerWnd::UpdatePopupAnimation(HWND hPopup)
     int x = pAnim->anchor.x - (w - TAIL_OFFSET_X);
     int y = pAnim->anchor.y - h;
 
-    DrawLayeredWindow(hPopup, x, y, w, h);
+    DrawLayeredWindow(hPopup, x, y, w, h, pAnim->bgColor);
 
     if (t >= 1.0)
     {
@@ -210,7 +222,8 @@ void CPopupLayerWnd::UpdatePopupAnimation(HWND hPopup)
         {
             DrawLayeredWindow(hPopup,
                 pAnim->finalX, pAnim->finalY,
-                pAnim->finalW, pAnim->finalH);
+                pAnim->finalW, pAnim->finalH,
+                pAnim->bgColor);
 
             if (pAnim->outinterval > 1000) {
                 SetTimer(hPopup,
@@ -227,13 +240,11 @@ void CPopupLayerWnd::UpdatePopupAnimation(HWND hPopup)
 }
 
 void CPopupLayerWnd::DrawLayeredWindow(HWND hPopup,
-    int x,
-    int y,
-    int width,
-    int height)
+    int x, int y,
+    int width, int height,
+    const Gdiplus::Color& bgColor)
 {
-    if (width <= 0 || height <= 0)
-        return;
+    if (width <= 0 || height <= 0) return;
 
     HDC hScreenDC = GetDC(nullptr);
     HDC hMemDC = CreateCompatibleDC(hScreenDC);
@@ -271,7 +282,7 @@ void CPopupLayerWnd::DrawLayeredWindow(HWND hPopup,
 
     const int tailHeight = 20;
 
-    DrawPopupBackground(g, width, height, tailHeight);
+    DrawPopupBackground(g, width, height, tailHeight, bgColor);
 
     auto* pAnim = reinterpret_cast<POP_ANIM_DATA*>(GetWindowLongPtr(hPopup, GWLP_USERDATA));
     if (pAnim && pAnim->drawContents)
@@ -310,11 +321,13 @@ void CPopupLayerWnd::DrawLayeredWindow(HWND hPopup,
     ReleaseDC(nullptr, hScreenDC);
 }
 
-void CPopupLayerWnd::DrawPopupBackground(Gdiplus::Graphics& g, int width, int height, const int tailHeight)
+void CPopupLayerWnd::DrawPopupBackground(Gdiplus::Graphics& g,
+    int width, int height, const int tailHeight,
+    const Gdiplus::Color& bgColor)
 {
-    Gdiplus::SolidBrush white(Gdiplus::Color(255, 255, 255, 255));
+    Gdiplus::SolidBrush bgBrush(bgColor);
 
-    g.FillRectangle(&white,
+    g.FillRectangle(&bgBrush,
         0,
         0,
         width,
@@ -329,7 +342,7 @@ void CPopupLayerWnd::DrawPopupBackground(Gdiplus::Graphics& g, int width, int he
         Gdiplus::Point(width - 40, height)
     };
 
-    g.FillPolygon(&white, pts, _countof(pts));
+    g.FillPolygon(&bgBrush, pts, _countof(pts));
 }
 
 void CPopupLayerWnd::SetDrawContentsProc(HWND hPopup, DRAW_CONTENTS_PROC proc)
