@@ -217,7 +217,8 @@ bool CToggleSwitch::RegisterWndClass(HINSTANCE hInstance)
     return RegisterClassEx(&wc) != 0;
 }
 
-HWND CToggleSwitch::Create(HWND hParent, int id,
+HWND CToggleSwitch::Create(HWND hParent,
+    int id,
     int x, int y,
     int width, int height,
     COLORREF colBg,

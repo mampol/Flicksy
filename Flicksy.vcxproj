@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClCompile Include="CFlicksyConfig.cpp" />
     <ClCompile Include="CImgListPng.cpp" />
+    <ClCompile Include="CPopupRgnLayer.cpp" />
     <ClCompile Include="CSimpleHttpServer.cpp" />
     <ClCompile Include="CToggleSwitch.cpp" />
     <ClCompile Include="CTrayIcon.cpp" />
@@ -147,6 +148,7 @@
     <ClInclude Include="CFlicksyConfig.h" />
     <ClInclude Include="CImgListPng.h" />
     <ClInclude Include="CAppColorTheme.h" />
+    <ClInclude Include="CPopupLayerWnd.h" />
     <ClInclude Include="CSimpleHttpServer.h" />
     <ClInclude Include="CToggleSwitch.h" />
     <ClInclude Include="CTrayIcon.h" />

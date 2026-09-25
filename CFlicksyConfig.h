@@ -38,6 +38,9 @@ public:
     InputMode GetInputMode() const { return m_inputMode; }
     void SetInputMode(InputMode mode) { m_inputMode = mode; }
 
+    int GetInputInterval() { return m_inputinterval; }
+    void SetInputInterval(const int ninputinterval) { m_inputinterval = ninputinterval; }
+
     bool AlwaysOnTop() const { return m_alwaysOnTop; }
     void SetAlwaysOnTop(bool value) { m_alwaysOnTop = value; }
 
@@ -63,6 +66,7 @@ private:
     bool         m_autoStartServer;
 
     InputMode    m_inputMode;
+    int          m_inputinterval;
 
     bool         m_alwaysOnTop;
     bool         m_startMinimized;

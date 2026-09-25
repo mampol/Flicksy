@@ -1,4 +1,4 @@
-# Flicksy v0.4.3.0
+# Flicksy v0.4.4.0
 
 ### English
 
@@ -85,6 +85,7 @@ Flicksy can remain active in the Windows system tray.
 - Double-click the tray icon to restore the main window.
 - Server status is shown in the tray tooltip.
 - Notifications are displayed when the server starts, stops, or encounters an error.
+- QR popup. Click the tray notification to quickly display the connection QR code.
 
 <p align="center">• • •</p>
 
@@ -93,6 +94,7 @@ Flicksy はタスクトレイに常駐できます。
 - トレイアイコンをダブルクリックするとメイン画面を表示します。
 - ツールチップにサーバー状態を表示します。
 - サーバーの開始、停止、エラー時に通知を表示します。
+- メインウィンドウ非表示時、QRコードをポップアップさせるトレイメニューコマンドがあります。
 
 ## Screenshot
 

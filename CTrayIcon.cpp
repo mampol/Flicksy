@@ -2,6 +2,7 @@
 
 CTrayIcon::~CTrayIcon()
 {
+    Remove();
     if (m_hIcon) DestroyIcon(m_hIcon);
 }
 

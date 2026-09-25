@@ -52,8 +52,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,4,3,0
- PRODUCTVERSION 0,4,3,0
+ FILEVERSION 0,4,4,0
+ PRODUCTVERSION 0,4,4,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,12 +70,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Pol"
             VALUE "FileDescription", "Flicksy for Windows"
-            VALUE "FileVersion", "0.4.3.0"
+            VALUE "FileVersion", "0.4.4.0"
             VALUE "InternalName", "Flicksy.exe"
             VALUE "LegalCopyright", "Copyright (C) 2026 Pol."
             VALUE "OriginalFilename", "Flicksy.exe"
             VALUE "ProductName", "Flicksy"
-            VALUE "ProductVersion", "0.4.3.0"
+            VALUE "ProductVersion", "0.4.4.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -97,6 +97,7 @@ BEGIN
         MENUITEM "&Open Flicksy",               ID_OPENFLICKSY
         MENUITEM "Star&t Server",               ID_HTTP_START
         MENUITEM "Sto&p Server",                ID_HTTP_STOP
+        MENUITEM "QR &Code",                    ID_LINK_QRCODE
         MENUITEM SEPARATOR
         MENUITEM "&About Flicksy",              ID_ABOUT
         MENUITEM "&Quit",                       ID_FILE_QUIT

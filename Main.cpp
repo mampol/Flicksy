@@ -13,6 +13,7 @@
 #include "CFlicksyConfig.h"
 #include "CTrayIcon.h"
 #include "CToggleSwitch.h"
+#include "CPopupLayerWnd.h"
 #include "resource.h"
 #include "Win32VisualStyle.h"
 
@@ -43,9 +44,33 @@ static Gdiplus::Bitmap* gpBitmapBannerDark;
 static HIMAGELIST ghImgListBtn, ghImgListBtnHover, ghImgListBtnPressed, ghImgListBtnGrayed, ghImgListBtnPin;
 static ULONG_PTR ggdiplusToken = 0;
 static HFONT ghFontBold, ghFont;
+static HWND ghPopupQrWnd = nullptr;
+static int gnInputInterval = 5;
+
 std::wstring gwstrVer;
 std::string gstrLinkURL;
 std::wstring gwstrShowURL;
+
+struct QrBitmapCache
+{
+	HBITMAP hBitmap = nullptr;
+	int width = 0;
+	int height = 0;
+
+	void Clear()
+	{
+		if (hBitmap)
+		{
+			DeleteObject(hBitmap);
+			hBitmap = nullptr;
+		}
+
+		width = 0;
+		height = 0;
+	}
+};
+static QrBitmapCache gQRcache;
+bool MakeQrBitmap(const std::string& text, int size, QrBitmapCache& cache);
 
 std::wstring Utf8ToUtf16(const std::string& src);
 std::wstring SjisToUtf16(const std::string& s);
@@ -82,6 +107,8 @@ LRESULT CALLBACK StartStopBtnProc(HWND hBtn, UINT uMsg, WPARAM wParam, LPARAM lP
 #define REG_VALUE				_T("Flicksy")
 bool SetRunAtStartup(bool enabled);
 bool IsRunAtStartup();
+
+void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height);
 
 constexpr int MAX_LOG_COUNT = 1000;
 enum class LogType
@@ -214,7 +241,7 @@ void SendUnicodeText(const std::wstring& text)
 	for (wchar_t ch : text)
 	{
 		SendUnicodeChar(ch);
-		Sleep(5);
+		if(gnInputInterval > 0) Sleep(gnInputInterval);
 	}
 }
 
@@ -621,7 +648,23 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 			gstrLinkURL = "http://" + ip + ":" + port + "/?token=" + lpCSimpleHttpServer->GetToken();
 			gwstrShowURL = Utf8ToUtf16(ip) + L":" + Utf8ToUtf16(port);
 			*/
+			/*
 			DrawQrCodeBox(hdc, gstrLinkURL, 588, 134, 110);
+			*/
+			if (gQRcache.hBitmap)
+			{
+				HDC memDC = CreateCompatibleDC(hdc);
+				HBITMAP old = static_cast<HBITMAP>(SelectObject(memDC, gQRcache.hBitmap));
+				BitBlt(hdc,
+					588, 134,
+					gQRcache.width, gQRcache.height,
+					memDC,
+					0, 0,
+					SRCCOPY);
+				SelectObject(memDC, old);
+				DeleteDC(memDC);
+			}
+
 			SelectObject(hdc, ghFont);
 			RECT rc = { 527, 250, 762, 290 };
 			DrawTextLine(hdc, rc, gwstrShowURL, DT_SINGLELINE | DT_CENTER);
@@ -717,7 +760,7 @@ void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size)
 void DrawTextLine(HDC hdc, int x, int y, const std::wstring& strTextLine, UINT format)
 {
 	SIZE sz;
-	GetTextExtentPoint32(hdc, strTextLine.c_str(), strTextLine.length(), &sz);
+	GetTextExtentPoint32(hdc, strTextLine.c_str(), static_cast<int>(strTextLine.length()), &sz);
 	RECT rc = { x, y, x + sz.cx + 4, y + sz.cy + 4 };
 	DrawTextLine(hdc, rc, strTextLine.c_str(), format);
 }
@@ -956,6 +999,11 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
+	if (Gdiplus::GdiplusStartup(&ggdiplusToken, &ggdiplusStartupInput, nullptr) != Gdiplus::Ok)
+	{
+		return 0L;
+	}
+
 	INITCOMMONCONTROLSEX icc;
 	icc.dwSize = sizeof(INITCOMMONCONTROLSEX);
 	icc.dwICC = ICC_WIN95_CLASSES;
@@ -980,10 +1028,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	gflicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
 	lpCFlicksyConfig->Load(gflicksytoml);
 
-	if (Gdiplus::GdiplusStartup(&ggdiplusToken, &ggdiplusStartupInput, nullptr) != Gdiplus::Ok)
-	{
-		return 0L;
-	}
+	gnInputInterval = lpCFlicksyConfig->GetInputInterval();
 
 	if (CToggleSwitch::RegisterWndClass(hInst)) {
 		HWND hSwitch = CToggleSwitch::Create(hWnd, IDC_SWITCH_THEME,
@@ -991,6 +1036,11 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			lpCAppColorTheme->Colors().windowBg,
 			lpCFlicksyConfig->GetTheme() == CFlicksyConfig::Theme::Dark ? true : false);
 		ApplyTheme(hWnd);
+	}
+
+	if (CPopupLayerWnd::RegisterWndClass(hInst)) {
+		ghPopupQrWnd = CPopupLayerWnd::Create(hInst);
+		CPopupLayerWnd::SetDrawContentsProc(ghPopupQrWnd, DrawQrPopupContents);
 	}
 
 	CImgListPng cilp;
@@ -1390,6 +1440,14 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	case IDC_SWITCH_THEME:
 		ApplyTheme(hWnd);
 		break;
+	case ID_LINK_QRCODE:
+		CPopupLayerWnd::StartPopupAnimation(ghPopupQrWnd,
+			GetSystemMetrics(SM_CXFULLSCREEN) - 270,
+			GetSystemMetrics(SM_CYFULLSCREEN) - 290,
+			250, 300,
+			CPopupLayerWnd::PopAnim::Show,
+			1000 * 30);
+		break;
 	default:
 		return (DefWindowProc(hWnd, msg, wp, lp));
 	}
@@ -1464,8 +1522,12 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				if (lpCTrayIcon) {
 					std::wstring wstrTip = L"Flicksy\nRunning\n" + gwstrShowURL;
 					lpCTrayIcon->SetToolTip(wstrTip);
-					lpCTrayIcon->ShowBalloon(L"Server Started.", gwstrShowURL, NIIF_NONE);
+					if (!IsWindowVisible(hWnd)) {
+						lpCTrayIcon->ShowBalloon(L"Server Started.", gwstrShowURL + L"\nTap/Click to show QR code", NIIF_NONE);
+					}
 				}
+
+				MakeQrBitmap(gstrLinkURL, 110, gQRcache);
 			}
 			break;
 
@@ -1481,12 +1543,17 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		case ServerState::Stopped:
 			EnableWindow(GetDlgItem(hWnd, ID_HTTP_START), TRUE);
 			EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), FALSE);
+
 			wstr = L"HTTP Server Stopped";
+
+			CPopupLayerWnd::StartPopupAnimation(ghPopupQrWnd, 0, 0, 0, 0, CPopupLayerWnd::PopAnim::Hide);
 
 			if (lpCTrayIcon) {
 				std::wstring wstrTip = L"Flicksy\nStopped";
 				lpCTrayIcon->SetToolTip(wstrTip);
-				lpCTrayIcon->ShowBalloon(L"Server Stopped.", L"The HTTP server has stopped.", NIIF_NONE);
+				if (!IsWindowVisible(hWnd)) {
+					lpCTrayIcon->ShowBalloon(L"Server Stopped.", L"The HTTP server has stopped.", NIIF_NONE);
+				}
 			}
 
 			gwstrShowURL.clear();
@@ -1499,7 +1566,9 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			if (lpCTrayIcon) {
 				std::wstring wstrTip = L"Flicksy\nHTTP Server Error";
 				lpCTrayIcon->SetToolTip(wstrTip);
-				lpCTrayIcon->ShowBalloon(L"Server Error.", Utf8ToUtf16(pServer->GetLastError()), NIIF_ERROR);
+				if (!IsWindowVisible(hWnd)) {
+					lpCTrayIcon->ShowBalloon(L"Server Error.", Utf8ToUtf16(pServer->GetLastError()), NIIF_ERROR);
+				}
 			}
 			break;
 
@@ -1546,12 +1615,36 @@ LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			{
 				POINT pt;
 				GetCursorPos(&pt);
-				UINT disabledId = lpCSimpleHttpServer->IsRunning() ? ID_HTTP_START : ID_HTTP_STOP;
 				CTrayIcon* lpCTrayIcon = (CTrayIcon*)GetProp(hWnd, CTRAYICON);
-				if (lpCTrayIcon) lpCTrayIcon->ShowContextMenu(pt, { disabledId });
+				if (lpCTrayIcon) {
+					lpCTrayIcon->ShowContextMenu(pt,
+						{
+							static_cast<DWORD>(lpCSimpleHttpServer->IsRunning() ? ID_HTTP_START : ID_HTTP_STOP),
+							static_cast<DWORD>(IsWindowVisible(hWnd) ? ID_LINK_QRCODE : 0),
+							static_cast<DWORD>(!lpCSimpleHttpServer->IsRunning() ? ID_LINK_QRCODE : 0)
+						}
+					);
+				}
 			}
-			break;
 		}
+		break;
+	case NIN_BALLOONUSERCLICK:
+		{
+			CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+			if (lpCSimpleHttpServer)
+			{
+				if (lpCSimpleHttpServer->IsRunning()) {
+					Sleep(1000);
+					CPopupLayerWnd::StartPopupAnimation(ghPopupQrWnd,
+						GetSystemMetrics(SM_CXFULLSCREEN) - 270,
+						GetSystemMetrics(SM_CYFULLSCREEN) - 290,
+						250, 300,
+						CPopupLayerWnd::PopAnim::Show, 
+						1000 * 30);
+				}
+			}
+		}
+		break;
 	}
 	return 0L;
 }
@@ -1636,6 +1729,14 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	if (gpBitmapBannerDark) delete gpBitmapBannerDark;
 	if (ghFontBold) DeleteObject(ghFontBold);
 	if (ghFont) DeleteObject(ghFont);
+
+	if (ghPopupQrWnd)
+	{
+		DestroyWindow(ghPopupQrWnd);
+		ghPopupQrWnd = nullptr;
+	}
+
+	gQRcache.Clear();
 
 	Gdiplus::GdiplusShutdown(ggdiplusToken);
 
@@ -1740,6 +1841,78 @@ bool SetRunAtStartup(bool enabled)
 	return result == ERROR_SUCCESS;
 }
 
+bool MakeQrBitmap(const std::string& text, int size, QrBitmapCache& cache)
+{
+	cache.Clear();
+
+	using qrcodegen::QrCode;
+
+	QrCode qr = QrCode::encodeText(text.c_str(), QrCode::Ecc::MEDIUM);
+
+	BITMAPINFO bmi{};
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = size;
+	bmi.bmiHeader.biHeight = -size;
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 32;
+	bmi.bmiHeader.biCompression = BI_RGB;
+
+	void* bits = nullptr;
+
+	HDC hdc = GetDC(nullptr);
+
+	HBITMAP hBitmap = CreateDIBSection(hdc,
+			&bmi,
+			DIB_RGB_COLORS,
+			&bits,
+			nullptr,
+			0);
+
+	ReleaseDC(nullptr, hdc);
+
+	if (!hBitmap) return false;
+
+	auto* px = static_cast<DWORD*>(bits);
+
+	for (int i = 0; i < size * size; ++i) px[i] = 0xFFFFFFFF;
+
+	constexpr int quietZone = 2;
+
+	const int modules = qr.getSize();
+	const int totalModules = modules + quietZone * 2;
+	const int cell = (std::max)(1, size / totalModules);
+	const int drawSize = cell * totalModules;
+	const int offsetX = (size - drawSize) / 2;
+	const int offsetY = (size - drawSize) / 2;
+
+	for (int my = 0; my < modules; ++my)
+	{
+		for (int mx = 0; mx < modules; ++mx)
+		{
+			if (!qr.getModule(mx, my)) continue;
+
+			const int x0 = offsetX + (mx + quietZone) * cell;
+			const int y0 = offsetY + (my + quietZone) * cell; 
+
+			for (int yy = 0; yy < cell; ++yy)
+			{
+				DWORD* row = px + (y0 + yy) * size + x0;
+
+				for (int xx = 0; xx < cell; ++xx)
+				{
+					row[xx] = 0xFF000000;
+				}
+			}
+		}
+	}
+
+	cache.hBitmap = hBitmap;
+	cache.width = size;
+	cache.height = size;
+
+	return true;
+}
+
 bool IsRunAtStartup()
 {
 	HKEY hKey = nullptr;
@@ -1799,4 +1972,87 @@ void ApplyTheme(HWND hWnd)
 	CToggleSwitch::SetBgColor(hSwitch, lpCAppColorTheme->Colors().windowBg);
 	InvalidateRect(hWnd, nullptr, TRUE);
 	return;
+}
+
+void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height)
+{
+	constexpr int marginx = 40;
+	constexpr int marginy = 8;
+	constexpr int gap = 10;
+	constexpr int urlHeight = 28;
+	constexpr int tailHeight = 20;
+
+
+	int y = marginy;
+
+	if (gpBitmapBanner)
+	{
+		int bannerW = width - marginx * 2;
+		int bannerH = static_cast<int>(static_cast<double>(bannerW)
+			/ gpBitmapBanner->GetWidth() * gpBitmapBanner->GetHeight());
+
+		g.DrawImage(gpBitmapBanner,
+			marginx,
+			y,
+			bannerW,
+			bannerH);
+
+		y += bannerH + gap;
+	}
+
+	int bodyBottom = height - tailHeight;
+	int availableH = bodyBottom - y - gap - urlHeight - marginy;
+	int qrSize = (std::min)(width - marginx * 2, availableH);
+	int qrX = (width - qrSize) / 2;
+	if (gQRcache.hBitmap)
+	{
+		Gdiplus::Bitmap bmp(gQRcache.hBitmap, nullptr);
+
+		g.SetInterpolationMode(Gdiplus::InterpolationModeNearestNeighbor);
+
+		g.DrawImage(&bmp,
+			qrX,
+			y,
+			qrSize,
+			qrSize);
+
+		Gdiplus::Pen borderPen(
+			Gdiplus::Color(255, 200, 200, 200),
+			1.0f);
+
+		g.DrawRectangle(
+			&borderPen,
+			qrX,
+			y,
+			qrSize - 1,
+			qrSize - 1);
+	}
+
+	y += qrSize + gap;
+
+	Gdiplus::Font font(L"Segoe UI",
+		11.0f,
+		Gdiplus::FontStyleRegular,
+		Gdiplus::UnitPoint);
+
+	Gdiplus::SolidBrush textBrush(Gdiplus::Color(255, 60, 60, 60));
+
+	Gdiplus::RectF rcText(
+		static_cast<Gdiplus::REAL>(marginx),
+		static_cast<Gdiplus::REAL>(y),
+		static_cast<Gdiplus::REAL>(width - marginx * 2),
+		static_cast<Gdiplus::REAL>(urlHeight));
+
+	Gdiplus::StringFormat format;
+
+	format.SetAlignment(Gdiplus::StringAlignmentCenter);
+
+	format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
+
+	g.DrawString(gwstrShowURL.c_str(),
+		-1,
+		&font,
+		rcText,
+		&format,
+		&textBrush);
 }
