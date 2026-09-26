@@ -1,4 +1,4 @@
-# Flicksy v0.4.4.0
+# Flicksy v0.4.5.1
 
 ### English
 
@@ -95,6 +95,13 @@ Flicksy はタスクトレイに常駐できます。
 - ツールチップにサーバー状態を表示します。
 - サーバーの開始、停止、エラー時に通知を表示します。
 - メインウィンドウ非表示時、QRコードをポップアップさせるトレイメニューコマンドがあります。
+
+## Change log
+
+- Added file logging.
+- Improved QR code popup behavior and dark mode support.
+- Added messages for stopped server and QR generation failure.
+- Refactored logging, text encoding, and input sending into separate modules.
 
 ## Screenshot
 
