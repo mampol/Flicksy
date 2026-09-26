@@ -141,8 +141,6 @@ void CPopupLayerWnd::StartPopupAnimation(HWND hPopup,
     pAnim->anchor.x = pAnim->finalX + pAnim->finalW - 40;
     pAnim->anchor.y = pAnim->finalY + pAnim->finalH;
 
-    pAnim->bgColor = Gdiplus::Color(255, 255, 255, 255);
-
     if (popanim == PopAnim::Show)
     {
         int w = static_cast<int>(
@@ -178,7 +176,28 @@ void CPopupLayerWnd::SetPopupBackgroundColor(HWND hPopup,
 {
     auto* pAnim = reinterpret_cast<POP_ANIM_DATA*>(GetWindowLongPtr(hPopup, GWLP_USERDATA));
     if (!pAnim) return;
-    pAnim->bgColor = Gdiplus::Color(GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor), bgAlpha);
+    pAnim->bgColor = Gdiplus::Color(bgAlpha, GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor));
+}
+
+void CPopupLayerWnd::SetPopupBorderColor(HWND hPopup, const COLORREF bgColor, const BYTE bgAlpha)
+{
+    auto* pAnim = reinterpret_cast<POP_ANIM_DATA*>(GetWindowLongPtr(hPopup, GWLP_USERDATA));
+    if (!pAnim) return;
+    pAnim->borderColor = Gdiplus::Color(bgAlpha, GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor));
+}
+
+void CPopupLayerWnd::SetPopupTextColor(HWND hPopup, const COLORREF bgColor, const BYTE bgAlpha)
+{
+    auto* pAnim = reinterpret_cast<POP_ANIM_DATA*>(GetWindowLongPtr(hPopup, GWLP_USERDATA));
+    if (!pAnim) return;
+    pAnim->textColor = Gdiplus::Color(bgAlpha, GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor));
+}
+
+void CPopupLayerWnd::SetPopupUserData(HWND hPopup, LPVOID userData)
+{
+    auto* pAnim = reinterpret_cast<POP_ANIM_DATA*>(GetWindowLongPtr(hPopup, GWLP_USERDATA));
+    if (!pAnim) return;
+    pAnim->userData = userData;
 }
 
 void CPopupLayerWnd::UpdatePopupAnimation(HWND hPopup)
@@ -287,7 +306,7 @@ void CPopupLayerWnd::DrawLayeredWindow(HWND hPopup,
     auto* pAnim = reinterpret_cast<POP_ANIM_DATA*>(GetWindowLongPtr(hPopup, GWLP_USERDATA));
     if (pAnim && pAnim->drawContents)
     {
-        pAnim->drawContents(g, width, height - tailHeight);
+        pAnim->drawContents(g, width, height - tailHeight, reinterpret_cast<LPVOID>(pAnim));
     }
 
     POINT ptDst{ x, y };

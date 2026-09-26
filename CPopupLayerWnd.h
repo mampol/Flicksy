@@ -10,7 +10,7 @@ constexpr UINT_PTR TIMER_POP = 1001;
 constexpr UINT_PTR TIMER_OUT = 1002;
 constexpr int POP_INTERVAL = 18;
 
-using DRAW_CONTENTS_PROC = void (*)(Gdiplus::Graphics& g, int width, int height);
+using DRAW_CONTENTS_PROC = void (*)(Gdiplus::Graphics& g, int width, int height, LPVOID pAnim);
 
 namespace CPopupLayerWnd
 {
@@ -41,7 +41,11 @@ namespace CPopupLayerWnd
 
         DRAW_CONTENTS_PROC drawContents = nullptr;
 
-        Gdiplus::Color bgColor;
+        Gdiplus::Color bgColor{ 255, 255, 255, 255 };
+        Gdiplus::Color borderColor{ 240, 45, 45, 45 };
+        Gdiplus::Color textColor{ 240, 65, 65, 65 };
+
+        LPVOID userData = nullptr;
     };
 
     bool RegisterWndClass(HINSTANCE hInstance);
@@ -55,6 +59,14 @@ namespace CPopupLayerWnd
     void SetPopupBackgroundColor(HWND hPopup,
         const COLORREF bgColor,
         const BYTE bgAlpha);
+    void SetPopupBorderColor(HWND hPopup,
+        const COLORREF bgColor,
+        const BYTE bgAlpha);
+    void SetPopupTextColor(HWND hPopup,
+        const COLORREF bgColor,
+        const BYTE bgAlpha);
+    void SetPopupUserData(HWND hPopup,
+        LPVOID userData);
     void UpdatePopupAnimation(HWND hWnd);
     void DrawLayeredWindow(HWND hPopup, int x, int y, int width, int height,
         const Gdiplus::Color& bgColor);

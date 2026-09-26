@@ -108,7 +108,7 @@ LRESULT CALLBACK StartStopBtnProc(HWND hBtn, UINT uMsg, WPARAM wParam, LPARAM lP
 bool SetRunAtStartup(bool enabled);
 bool IsRunAtStartup();
 
-void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height);
+void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height, LPVOID lpAnim);
 
 constexpr int MAX_LOG_COUNT = 1000;
 enum class LogType
@@ -1451,7 +1451,10 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 			CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
 			if (lpCAppColorTheme) {
-				CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().windowBg, 255);
+				CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().headerBg, 255);
+				CPopupLayerWnd::SetPopupBorderColor(ghPopupQrWnd, lpCAppColorTheme->Colors().headerBorder, 255);
+				CPopupLayerWnd::SetPopupTextColor(ghPopupQrWnd, lpCAppColorTheme->Colors().text, 255);
+				CPopupLayerWnd::SetPopupUserData(ghPopupQrWnd, lpCAppColorTheme);
 			}
 		}
 		break;
@@ -1559,7 +1562,10 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 				CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
 				if (lpCAppColorTheme) {
-					CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().windowBg, 255);
+					CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().headerBg, 255);
+					CPopupLayerWnd::SetPopupBorderColor(ghPopupQrWnd, lpCAppColorTheme->Colors().headerBorder, 255);
+					CPopupLayerWnd::SetPopupTextColor(ghPopupQrWnd, lpCAppColorTheme->Colors().text, 255);
+					CPopupLayerWnd::SetPopupUserData(ghPopupQrWnd, lpCAppColorTheme);
 				}
 
 				if (lpCTrayIcon) {
@@ -1658,7 +1664,10 @@ LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 					CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
 					if (lpCAppColorTheme) {
-						CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().windowBg, 255);
+						CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().headerBg, 255);
+						CPopupLayerWnd::SetPopupBorderColor(ghPopupQrWnd, lpCAppColorTheme->Colors().headerBorder, 255);
+						CPopupLayerWnd::SetPopupTextColor(ghPopupQrWnd, lpCAppColorTheme->Colors().text, 255);
+						CPopupLayerWnd::SetPopupUserData(ghPopupQrWnd, lpCAppColorTheme);
 					}
 				}
 			}
@@ -1989,12 +1998,21 @@ void ApplyTheme(HWND hWnd)
 		}
 	}
 	CToggleSwitch::SetBgColor(hSwitch, lpCAppColorTheme->Colors().windowBg);
+
+	CPopupLayerWnd::SetPopupBackgroundColor(ghPopupQrWnd, lpCAppColorTheme->Colors().headerBg, 255);
+	CPopupLayerWnd::SetPopupBorderColor(ghPopupQrWnd, lpCAppColorTheme->Colors().headerBorder, 255);
+	CPopupLayerWnd::SetPopupTextColor(ghPopupQrWnd, lpCAppColorTheme->Colors().text, 255);
+	CPopupLayerWnd::SetPopupUserData(ghPopupQrWnd, lpCAppColorTheme);
+
 	InvalidateRect(hWnd, nullptr, TRUE);
 	return;
 }
 
-void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height)
+void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height, LPVOID lpVoid)
 {
+	CPopupLayerWnd::POP_ANIM_DATA* pAnim = reinterpret_cast<CPopupLayerWnd::POP_ANIM_DATA*>(lpVoid);
+	if (!pAnim) return;
+
 	constexpr int marginx = 40;
 	constexpr int marginy = 8;
 	constexpr int gap = 10;
@@ -2003,19 +2021,33 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height)
 
 	int y = marginy;
 
-	if (gpBitmapBanner)
+	CAppColorTheme* lpCAppColorTheme = reinterpret_cast<CAppColorTheme*>(pAnim->userData);
+	if (lpCAppColorTheme)
 	{
-		int bannerW = width - marginx * 2;
-		int bannerH = static_cast<int>(static_cast<double>(bannerW)
-			/ gpBitmapBanner->GetWidth() * gpBitmapBanner->GetHeight());
+		Gdiplus::Bitmap* pBanner =
+			(lpCAppColorTheme->Mode() == ColorMode::Dark)
+			? gpBitmapBannerDark
+			: gpBitmapBanner;
 
-		g.DrawImage(gpBitmapBanner,
-			marginx,
-			y,
-			bannerW,
-			bannerH);
+		if (pBanner)
+		{
+			int bannerW = width - marginx * 2;
 
-		y += bannerH + gap;
+			int bannerH =
+				static_cast<int>(
+					static_cast<double>(bannerW)
+					/ pBanner->GetWidth()
+					* pBanner->GetHeight());
+
+			g.DrawImage(
+				pBanner,
+				marginx,
+				y,
+				bannerW,
+				bannerH);
+
+			y += bannerH + gap;
+		}
 	}
 
 	int bodyBottom = height;
@@ -2032,7 +2064,7 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height)
 			qrX, y,
 			qrSize, qrSize);
 
-		Gdiplus::Pen borderPen(Gdiplus::Color(255, 200, 200, 200), 1.0f);
+		Gdiplus::Pen borderPen(pAnim->borderColor, 1.0f);
 
 		g.DrawRectangle(&borderPen,
 			qrX, y,
@@ -2046,7 +2078,7 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height)
 		Gdiplus::FontStyleRegular,
 		Gdiplus::UnitPoint);
 
-	Gdiplus::SolidBrush textBrush(Gdiplus::Color(255, 60, 60, 60));
+	Gdiplus::SolidBrush textBrush(pAnim->textColor);
 
 	Gdiplus::RectF rcText(
 		static_cast<Gdiplus::REAL>(marginx),
