@@ -19,10 +19,11 @@
 
 #include "httplib.h"
 
-#define UM_HTTPPOPMSG   (WM_APP+1)
-#define UM_HTTPPOPKEY   (WM_APP+2)
-#define UM_HTTPSTATE    (WM_APP+3)
-#define UM_HTTPLOG      (WM_APP+4)
+#define UM_HTTPPOPMSG    (WM_APP+1)
+#define UM_HTTPPOPKEY    (WM_APP+2)
+#define UM_HTTPPOPHOTKEY (WM_APP+3)
+#define UM_HTTPSTATE     (WM_APP+4)
+#define UM_HTTPLOG       (WM_APP+5)
 
 enum class ServerState
 {
@@ -62,6 +63,7 @@ public:
 
     bool PopMessage(std::string& message);
     bool PopKey(WORD& vk);
+    bool PopHotkey(std::string& hotkey);
     bool PopLog(std::string& log);
 
     const std::string& GetLastError() const { return m_lastError; }
@@ -161,6 +163,7 @@ private:
 
     std::queue<std::string> m_messages;
     std::queue<WORD> m_keys;
+    std::queue<std::string> m_hotkey;
     std::queue<std::string> m_logs;
     std::mutex m_mutex;
 

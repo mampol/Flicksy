@@ -55,6 +55,13 @@ button {
     font-weight: bold;
     touch-action: manipulation;
 }
+
+button[data-hotkey="alt-tab"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+}
 </style>
 </head>
 
@@ -75,7 +82,7 @@ button {
     autocomplete="off">
 
 <div class="row">
-    <button id="send" tabindex="-1">Send</button>
+    <button data-hotkey="alt-tab" tabindex="-1">ALT+TAB</button>
     <button data-vk="13" tabindex="-1">ENTER</button>
 </div>
 
@@ -143,7 +150,12 @@ function sendKey(vk)
         "vk=" + encodeURIComponent(vk));
 }
 
-document.getElementById("send").onclick = sendText;
+function sendHotKey(combo)
+{
+    post(
+        "/hotkey",
+        "combo=" + encodeURIComponent(combo));
+}
 
 input.addEventListener("keydown", e =>
 {
@@ -164,6 +176,37 @@ document.querySelectorAll("[data-vk]").forEach(button =>
     button.onclick = () =>
         sendKey(Number(button.dataset.vk));
 });
+
+const altTabButton =
+    document.querySelector('[data-hotkey="alt-tab"]');
+
+if (altTabButton)
+{
+    altTabButton.onpointerdown = e =>
+    {
+        e.preventDefault();
+
+        if (altTabButton.setPointerCapture)
+            altTabButton.setPointerCapture(e.pointerId);
+
+        sendHotKey("alt-tab");
+    };
+
+    const endAltTab = e =>
+    {
+        if (altTabButton.hasPointerCapture &&
+            altTabButton.hasPointerCapture(e.pointerId))
+        {
+            altTabButton.releasePointerCapture(e.pointerId);
+        }
+
+        sendHotKey("alt-up");
+    };
+
+    altTabButton.onpointerup = endAltTab;
+    altTabButton.onpointercancel = endAltTab;
+    altTabButton.oncontextmenu = e => e.preventDefault();
+}
 
 </script>
 

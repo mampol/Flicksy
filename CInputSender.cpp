@@ -93,6 +93,26 @@ void CInputSender::SendKey(WORD vk)
 	SendInput(_countof(input), input, sizeof(INPUT));
 }
 
+void CInputSender::SendHotkey(std::initializer_list<DWORD> hotkey)
+{
+	if (hotkey.size() == 0) return;
+
+	std::vector<INPUT> inputs(hotkey.size());
+
+	size_t i = 0;
+	for (DWORD vk : hotkey)
+	{
+		inputs[i].type = INPUT_KEYBOARD;
+		inputs[i].ki.wVk = LOWORD(vk);
+		inputs[i].ki.dwFlags = HIWORD(vk);
+		++i;
+	}
+
+	SendInput(static_cast<UINT>(inputs.size()),
+		inputs.data(),
+		sizeof(INPUT));
+}
+
 void CInputSender::SendUnicodeChar(wchar_t ch)
 {
 	INPUT input[2] = {};

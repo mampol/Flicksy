@@ -87,7 +87,11 @@ void SendClipboardText(const std::wstring& text);
 bool IsExtendedKey(WORD vk);
 void SendKey(WORD vk);
 */
+#define TIMER_ALTACT			1001
+#define HOTKEY_FIRST_DELAY		700
+#define HOTKEY_REPEAT			300
 CInputSender inputsender;
+void ReleaseHotkey(HWND hWnd);
 
 std::string GetLocalIPv4();
 std::wstring GetVersionString(const wchar_t* key);
@@ -147,8 +151,10 @@ LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
 LRESULT OnDrawListLogs(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
 LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
@@ -388,6 +394,18 @@ void SendKey(WORD vk)
 	SendInput(_countof(input), input, sizeof(INPUT));
 }
 */
+void ReleaseHotkey(HWND hWnd)
+{
+	KillTimer(hWnd, TIMER_ALTACT);
+
+	if (inputsender.IsAltActive()) {
+		inputsender.SendHotkey({
+			MAKESENDKEY(VK_MENU, KEYEVENTF_KEYUP)
+			});
+		inputsender.SetAltActive(false);
+	}
+}
+
 std::string GetLocalIPv4()
 {
 	char hostname[256] = {};
@@ -1003,10 +1021,14 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	//case WM_CTLCOLORBTN:
 	case WM_CTLCOLORSTATIC:
 		return (OnCtlColor(hWnd, msg, wp, lp));
+	case WM_TIMER:
+		return (OnTimer(hWnd, msg, wp, lp));
 	case UM_HTTPPOPMSG:
 		return (OnHttpPopMessage(hWnd, msg, wp, lp));
 	case UM_HTTPPOPKEY:
 		return (OnHttpPopKey(hWnd, msg, wp, lp));
+	case UM_HTTPPOPHOTKEY:
+		return (OnHttpPopHotkey(hWnd, msg, wp, lp));
 	case UM_HTTPSTATE:
 		return (OnHttpState(hWnd, msg, wp, lp));
 	case UM_HTTPLOG:
@@ -1406,6 +1428,21 @@ LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	return (DefWindowProc(hWnd, msg, wp, lp));
 }
 
+LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	if (wp == TIMER_ALTACT) {
+		KillTimer(hWnd, TIMER_ALTACT);
+		if (inputsender.IsAltActive()) {
+			inputsender.SendHotkey({
+				MAKESENDKEY(VK_TAB, 0),
+				MAKESENDKEY(VK_TAB, KEYEVENTF_KEYUP)
+				});
+			SetTimer(hWnd, TIMER_ALTACT, HOTKEY_REPEAT, nullptr);
+		}
+	}
+	return (0L);
+}
+
 LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	CSimpleHttpServer* lpCSimpleHttpServer;
@@ -1521,11 +1558,47 @@ LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 	if (!pServer)return 0L;
 
-	std::wstring wstr;
 	WORD vk;
 	if (pServer->PopKey(vk))
 	{
 		inputsender.SendKey(vk);
+	}
+	return (0L);
+}
+
+LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+	if (!pServer)return 0L;
+
+	std::string str;
+	if (pServer->PopHotkey(str))
+	{
+		if (str == "alt-tab") {
+			if (!inputsender.IsAltActive()) {
+				inputsender.SendHotkey({
+					MAKESENDKEY(VK_MENU, 0),
+					MAKESENDKEY(VK_TAB, 0),
+					MAKESENDKEY(VK_TAB, KEYEVENTF_KEYUP)
+					});
+				inputsender.SetAltActive(true);
+				KillTimer(hWnd, TIMER_ALTACT);
+				SetTimer(hWnd, TIMER_ALTACT, HOTKEY_FIRST_DELAY, nullptr);
+			}
+			else {
+				inputsender.SendHotkey({
+					MAKESENDKEY(VK_TAB, 0),
+					MAKESENDKEY(VK_TAB, KEYEVENTF_KEYUP)
+					});
+			}
+		}
+		else if (str == "alt-up") {
+			KillTimer(hWnd, TIMER_ALTACT);
+			inputsender.SendHotkey({
+				MAKESENDKEY(VK_MENU, KEYEVENTF_KEYUP)
+				});
+			inputsender.SetAltActive(false);
+		}
 	}
 	return (0L);
 }
@@ -1581,6 +1654,8 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 		case ServerState::Stopped:
 			{
+				ReleaseHotkey(hWnd);
+
 				EnableWindow(GetDlgItem(hWnd, ID_HTTP_START), TRUE);
 				EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), FALSE);
 
@@ -1709,6 +1784,8 @@ LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
+	ReleaseHotkey(hWnd);
+
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 	if (lpCFlicksyConfig)
 	{
@@ -1748,6 +1825,8 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 	if (lpCSimpleHttpServer)
 	{
+		lpCSimpleHttpServer->Stop();
+
 		RemoveProp(hWnd, CSIMPLEHTTPSERVER);
 		delete lpCSimpleHttpServer;
 	}

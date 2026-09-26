@@ -42,7 +42,7 @@ private:
     bool m_enabled = true;
 
 #ifdef _DEBUG
-    std::uintmax_t m_maxFileSize = 255;
+    std::uintmax_t m_maxFileSize = 1024 * 1024;
 #else
     std::uintmax_t m_maxFileSize = 10 * 1024 * 1024;
 #endif

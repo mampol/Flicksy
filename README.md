@@ -1,4 +1,4 @@
-# Flicksy v0.4.5.1
+# Flicksy v0.4.6.0
 
 ### English
 
@@ -105,10 +105,7 @@ Flicksy はタスクトレイに常駐できます。
 
 ## Change log
 
-- Added file logging.
-- Improved QR code popup behavior and dark mode support.
-- Added messages for stopped server and QR generation failure.
-- Refactored logging, text encoding, and input sending into separate modules.
+- Added Alt+Tab remote control with press-and-hold repeat behavior and safe Alt key release on timeout, server stop, and application exit.
 
 ## Roadmap
 

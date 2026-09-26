@@ -180,6 +180,47 @@ CSimpleHttpServer::CSimpleHttpServer()
             }
 
         });
+
+    m_server.Post("/hotkey", [this](const httplib::Request& req, httplib::Response& res)
+        {
+            if (!CheckToken(req, res)) return;
+
+            if (!req.has_param("combo"))
+            {
+                res.status = 400;
+                return;
+            }
+
+            try
+            {
+                std::string combo = req.get_param_value("combo");
+                if (combo != "alt-tab" &&
+                    combo != "alt-up") {
+                    res.status = 400;
+                    AddHttpLog(req, res.status);
+                    return;
+                }
+
+                std::string log =
+                    "[" + req.remote_addr + "] " + "POST /hotkey combo=" + combo;
+                AddServerLog(log);
+
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    m_hotkey.push(combo);
+                }
+
+                PostMsg(UM_HTTPPOPHOTKEY);
+
+                res.status = 200;
+            }
+            catch (...)
+            {
+                res.status = 400;
+                return;
+            }
+
+        });
 }
 
 CSimpleHttpServer::~CSimpleHttpServer()
@@ -401,6 +442,19 @@ bool CSimpleHttpServer::PopKey(WORD& vk)
 
     vk = m_keys.front();
     m_keys.pop();
+
+    return true;
+}
+
+bool CSimpleHttpServer::PopHotkey(std::string& hotkey)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_hotkey.empty())
+        return false;
+
+    hotkey = m_hotkey.front();
+    m_hotkey.pop();
 
     return true;
 }
