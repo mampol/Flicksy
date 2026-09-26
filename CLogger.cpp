@@ -58,7 +58,7 @@ void CLogger::Write(LogType type, const SYSTEMTIME& st, const std::string& text)
     wchar_t timestamp[64] = {};
     swprintf_s(
         timestamp,
-        L"%04d-%02d-%02d %02d:%02d:%02d",
+        "%04d-%02d-%02d %02d:%02d:%02d",
         st.wYear,
         st.wMonth,
         st.wDay,
@@ -74,7 +74,7 @@ void CLogger::Write(LogType type, const SYSTEMTIME& st, const std::string& text)
         typetext +
         "] " +
         text +
-        L"\r\n";
+        "\r\n";
 
     std::string utf8 = TextEncoding::SjisToUtf8(line);
 
@@ -169,18 +169,34 @@ void CLogger::Rotate()
         }
         else
         {
+#ifdef _UNICODE
             src = m_LogPath.parent_path() /
                 (m_LogPath.stem().wstring() +
-                    L"." +
+                    _T(".") +
                     std::to_wstring(i - 1) +
                     m_LogPath.extension().wstring());
+#else
+            src = m_LogPath.parent_path() /
+                (m_LogPath.stem().string() +
+                    _T(".") +
+                    std::to_wstring(i - 1) +
+                    m_LogPath.extension().string());
+#endif
         }
 
+#ifdef _UNICODE
         auto dst = m_LogPath.parent_path() /
             (m_LogPath.stem().wstring() +
                 _T(".") +
                 std::to_wstring(i) +
                 m_LogPath.extension().wstring());
+#else
+        auto dst = m_LogPath.parent_path() /
+            (m_LogPath.stem().string() +
+                _T(".") +
+                std::to_string(i) +
+                m_LogPath.extension().wstring());
+#endif
 
         if (!std::filesystem::exists(src, ec)) continue;
 

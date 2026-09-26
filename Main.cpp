@@ -801,7 +801,7 @@ void AddLog(HWND hWnd, const LogType type, const std::wstring& text)
 			return;
 		}
 		SendMessage(hList, LB_SETTOPINDEX, index, 0);
-		logger.Write(LogType::Info, lpli->st, text);
+		logger.Write(type, lpli->st, text);
 	}
 }
 
@@ -1486,7 +1486,7 @@ LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			wstr = L"Send : " + strPopW + L" (SendInput)";
 		}
 		else {
-			inputsender.SendClipboardText(strPopW);
+			inputsender.SendClipboardText(hWnd, strPopW);
 			wstr = L"Send : " + strPopW + L" (Clipboard)";;
 		}
 		AddLog(hWnd, LogType::Input, wstr);

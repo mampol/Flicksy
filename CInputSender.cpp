@@ -9,11 +9,11 @@ void CInputSender::SendUnicodeText(const std::wstring& text)
 	}
 }
 
-void CInputSender::SendClipboardText(const std::wstring& text)
+void CInputSender::SendClipboardText(HWND hWndOwner, const std::wstring& text)
 {
 	if (text.empty()) return;
 
-	if (!OpenClipboard(nullptr)) return;
+	if (!OpenClipboard(hWndOwner)) return;
 
 	EmptyClipboard();
 

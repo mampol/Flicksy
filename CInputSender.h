@@ -12,7 +12,7 @@ public:
     }
 
     void SendUnicodeText(const std::wstring& text);
-    void SendClipboardText(const std::wstring& text);
+    void SendClipboardText(HWND hWndOwner, const std::wstring& text);
     void SendKey(WORD vk);
 
 private:
