@@ -18,6 +18,13 @@ Windows PC の文字入力として利用するためのツールです。
 スマホ側に専用アプリは不要で、
 ブラウザから接続します。
 
+### Server (Windows PC)
+<img src="images/flicksy_server.png" width="400">
+
+### Client (Smart Phone)
+<img src="images/flicksy_client.png" width="250">
+
+
 ## Structure
 
 ```text
@@ -102,14 +109,6 @@ Flicksy はタスクトレイに常駐できます。
 - Improved QR code popup behavior and dark mode support.
 - Added messages for stopped server and QR generation failure.
 - Refactored logging, text encoding, and input sending into separate modules.
-
-## Screenshot
-
-### server
-<img src="images/flicksy_server.png" width="400">
-
-### client
-<img src="images/flicksy_client.png" width="250">
 
 ## Roadmap
 
