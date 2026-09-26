@@ -91,7 +91,7 @@ void SendKey(WORD vk);
 #define TIMER_ALT_FAILSAFE		1009
 #define HOTKEY_FIRST_DELAY		700
 #define HOTKEY_REPEAT			300
-#define HOTKEY_FAILSAFE_TIMEOUT 5000
+#define HOTKEY_FAILSAFE_TIMEOUT 8000
 CInputSender inputsender;
 void ReleaseHotkey(HWND hWnd);
 
@@ -1434,14 +1434,12 @@ LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	if (wp == TIMER_ALTACT) {
-		KillTimer(hWnd, TIMER_ALT_FAILSAFE);
 		KillTimer(hWnd, TIMER_ALTACT);
 		if (inputsender.IsAltActive()) {
 			inputsender.SendHotkey({
 				MAKESENDKEY(VK_TAB, 0),
 				MAKESENDKEY(VK_TAB, KEYEVENTF_KEYUP)
 				});
-			SetTimer(hWnd, TIMER_ALT_FAILSAFE, HOTKEY_FAILSAFE_TIMEOUT, nullptr);
 			SetTimer(hWnd, TIMER_ALTACT, HOTKEY_REPEAT, nullptr);
 		}
 	}
