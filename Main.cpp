@@ -15,6 +15,7 @@
 #include "CTrayIcon.h"
 #include "CToggleSwitch.h"
 #include "CPopupLayerWnd.h"
+#include "CInputSender.h"
 #include "CLogger.h"
 #include "resource.h"
 #include "Win32VisualStyle.h"
@@ -47,7 +48,7 @@ static HIMAGELIST ghImgListBtn, ghImgListBtnHover, ghImgListBtnPressed, ghImgLis
 static ULONG_PTR ggdiplusToken = 0;
 static HFONT ghFontBold, ghFont;
 static HWND ghPopupQrWnd = nullptr;
-static int gnInputInterval = 5;
+//static int gnInputInterval = 5;
 
 std::wstring gwstrVer;
 std::string gstrLinkURL;
@@ -79,11 +80,14 @@ std::wstring SjisToUtf16(const std::string& s);
 std::string Utf16ToUtf8(const std::wstring& s);
 std::string SjisToUtf8(const std::string& s);
 */
+/*
 void SendUnicodeChar(wchar_t ch);
 void SendUnicodeText(const std::wstring& text);
 void SendClipboardText(const std::wstring& text);
 bool IsExtendedKey(WORD vk);
 void SendKey(WORD vk);
+*/
+CInputSender inputsender;
 
 std::string GetLocalIPv4();
 std::wstring GetVersionString(const wchar_t* key);
@@ -241,6 +245,7 @@ std::string SjisToUtf8(const std::string& s)
 	return utf8;
 }
 */
+/*
 void SendUnicodeText(const std::wstring& text)
 {
 	for (wchar_t ch : text)
@@ -302,10 +307,6 @@ void SendClipboardText(const std::wstring& text)
 		CloseClipboard();
 		return;
 	}
-	/*
-		SetClipboardData成功後は
-		hMemの所有権がWindows側へ移る
-	*/
 	CloseClipboard();
 
 	// Ctrl + V
@@ -386,7 +387,7 @@ void SendKey(WORD vk)
 
 	SendInput(_countof(input), input, sizeof(INPUT));
 }
-
+*/
 std::string GetLocalIPv4()
 {
 	char hostname[256] = {};
@@ -1034,7 +1035,8 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	gflicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
 	lpCFlicksyConfig->Load(gflicksytoml);
 
-	gnInputInterval = lpCFlicksyConfig->GetInputInterval();
+	//gnInputInterval = lpCFlicksyConfig->GetInputInterval();
+	inputsender.SetInputInterval(lpCFlicksyConfig->GetInputInterval());
 
 	if (CToggleSwitch::RegisterWndClass(hInst)) {
 		HWND hSwitch = CToggleSwitch::Create(hWnd, IDC_SWITCH_THEME,
@@ -1480,11 +1482,11 @@ LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	if (lpCSimpleHttpServer->PopMessage(strPop)) {
 		std::wstring strPopW = TextEncoding::Utf8ToUtf16(strPop);
 		if (SendMessage(GetDlgItem(hWnd, IDC_RADIO_SENDINPUT), BM_GETCHECK, 0, 0) == BST_CHECKED) {
-			SendUnicodeText(strPopW);
+			inputsender.SendUnicodeText(strPopW);
 			wstr = L"Send : " + strPopW + L" (SendInput)";
 		}
 		else {
-			SendClipboardText(strPopW);
+			inputsender.SendClipboardText(strPopW);
 			wstr = L"Send : " + strPopW + L" (Clipboard)";;
 		}
 		AddLog(hWnd, LogType::Input, wstr);
@@ -1502,7 +1504,7 @@ LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	WORD vk;
 	if (pServer->PopKey(vk))
 	{
-		SendKey(vk);
+		inputsender.SendKey(vk);
 	}
 	return (0L);
 }
