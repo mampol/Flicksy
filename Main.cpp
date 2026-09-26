@@ -88,8 +88,10 @@ bool IsExtendedKey(WORD vk);
 void SendKey(WORD vk);
 */
 #define TIMER_ALTACT			1001
+#define TIMER_ALT_FAILSAFE		1009
 #define HOTKEY_FIRST_DELAY		700
 #define HOTKEY_REPEAT			300
+#define HOTKEY_FAILSAFE_TIMEOUT 5000
 CInputSender inputsender;
 void ReleaseHotkey(HWND hWnd);
 
@@ -396,6 +398,7 @@ void SendKey(WORD vk)
 */
 void ReleaseHotkey(HWND hWnd)
 {
+	KillTimer(hWnd, TIMER_ALT_FAILSAFE);
 	KillTimer(hWnd, TIMER_ALTACT);
 
 	if (inputsender.IsAltActive()) {
@@ -1431,14 +1434,19 @@ LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	if (wp == TIMER_ALTACT) {
+		KillTimer(hWnd, TIMER_ALT_FAILSAFE);
 		KillTimer(hWnd, TIMER_ALTACT);
 		if (inputsender.IsAltActive()) {
 			inputsender.SendHotkey({
 				MAKESENDKEY(VK_TAB, 0),
 				MAKESENDKEY(VK_TAB, KEYEVENTF_KEYUP)
 				});
+			SetTimer(hWnd, HOTKEY_FAILSAFE_TIMEOUT, TIMER_ALT_FAILSAFE, nullptr);
 			SetTimer(hWnd, TIMER_ALTACT, HOTKEY_REPEAT, nullptr);
 		}
+	}
+	if (wp == TIMER_ALT_FAILSAFE) {
+		ReleaseHotkey(hWnd);
 	}
 	return (0L);
 }
@@ -1582,7 +1590,9 @@ LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 					MAKESENDKEY(VK_TAB, KEYEVENTF_KEYUP)
 					});
 				inputsender.SetAltActive(true);
+				KillTimer(hWnd, TIMER_ALT_FAILSAFE);
 				KillTimer(hWnd, TIMER_ALTACT);
+				SetTimer(hWnd, TIMER_ALT_FAILSAFE, HOTKEY_FAILSAFE_TIMEOUT, nullptr);
 				SetTimer(hWnd, TIMER_ALTACT, HOTKEY_FIRST_DELAY, nullptr);
 			}
 			else {
@@ -1593,11 +1603,7 @@ LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			}
 		}
 		else if (str == "alt-up") {
-			KillTimer(hWnd, TIMER_ALTACT);
-			inputsender.SendHotkey({
-				MAKESENDKEY(VK_MENU, KEYEVENTF_KEYUP)
-				});
-			inputsender.SetAltActive(false);
+			ReleaseHotkey(hWnd);
 		}
 	}
 	return (0L);
@@ -1687,6 +1693,11 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			break;
 
 		case ServerState::Error:
+			ReleaseHotkey(hWnd);
+
+			EnableWindow(GetDlgItem(hWnd, ID_HTTP_START), TRUE);
+			EnableWindow(GetDlgItem(hWnd, ID_HTTP_STOP), FALSE);
+
 			wstr = L"HTTP Server Error";
 
 			if (lpCTrayIcon) {

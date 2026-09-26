@@ -150,11 +150,18 @@ function sendKey(vk)
         "vk=" + encodeURIComponent(vk));
 }
 
+let hotKeyRequest = Promise.resolve();
+
 function sendHotKey(combo)
 {
-    post(
-        "/hotkey",
-        "combo=" + encodeURIComponent(combo));
+    hotKeyRequest = hotKeyRequest
+        .catch(() => {})
+        .then(() =>
+            post(
+                "/hotkey",
+                "combo=" + encodeURIComponent(combo)));
+
+    return hotKeyRequest;
 }
 
 input.addEventListener("keydown", e =>
