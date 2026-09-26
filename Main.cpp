@@ -677,7 +677,7 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 		}
 		else {
 			SelectObject(hdc, ghFont);
-			wstr = _T("Displays a QR code when the server is running.");
+			wstr = _T("Server is stopped.\nStart the server to display the QR code.");
 			RECT rc = { 542, 137, 724, 294 };
 			DrawTextLine(hdc, rc, wstr, DT_WORDBREAK | DT_END_ELLIPSIS);
 		}
@@ -756,11 +756,21 @@ void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size)
 		SelectObject(hdc, hOldPen);
 		DeleteObject(hGrayPen);
 	}
-    catch (...)
-    {
-        // payloadが長すぎるなどでQR生成に失敗した場合は何も描かない
-    }
+	catch (...)
+	{
+		SetTextColor(hdc, RGB(220, 50, 50));
+		SetBkMode(hdc, TRANSPARENT);
 
+		RECT rc = { x, y, x + size, y + size };
+
+		DrawText(
+			hdc,
+			_T("Failed to generate QR code.\nThe data may be too long."),
+			-1,
+			&rc,
+			DT_CENTER | DT_VCENTER | DT_SINGLELINE
+		);
+	}
 }
 
 void DrawTextLine(HDC hdc, int x, int y, const std::wstring& strTextLine, UINT format)
@@ -1595,7 +1605,9 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 					}
 				}
 
+				gstrLinkURL.clear();
 				gwstrShowURL.clear();
+				gQRcache.Clear();
 			}
 			break;
 
@@ -1659,8 +1671,7 @@ LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 					lpCTrayIcon->ShowContextMenu(pt,
 						{
 							static_cast<DWORD>(lpCSimpleHttpServer->IsRunning() ? ID_HTTP_START : ID_HTTP_STOP),
-							static_cast<DWORD>(IsWindowVisible(hWnd) ? ID_LINK_QRCODE : 0),
-							static_cast<DWORD>(!lpCSimpleHttpServer->IsRunning() ? ID_LINK_QRCODE : 0)
+							static_cast<DWORD>(IsWindowVisible(hWnd) ? ID_LINK_QRCODE : 0)
 						}
 					);
 				}
@@ -2088,33 +2099,60 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height, LPVOID lpV
 		g.DrawRectangle(&borderPen,
 			qrX, y,
 			qrSize - 1, qrSize - 1);
+
+		y += qrSize + gap;
+
+		Gdiplus::Font font(_T("Segoe UI"),
+			11.0f,
+			Gdiplus::FontStyleRegular,
+			Gdiplus::UnitPoint);
+
+		Gdiplus::SolidBrush textBrush(pAnim->textColor);
+
+		Gdiplus::RectF rcText(
+			static_cast<Gdiplus::REAL>(marginx),
+			static_cast<Gdiplus::REAL>(y),
+			static_cast<Gdiplus::REAL>(width - marginx * 2),
+			static_cast<Gdiplus::REAL>(urlHeight));
+
+		Gdiplus::StringFormat format;
+
+		format.SetAlignment(Gdiplus::StringAlignmentCenter);
+		format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
+
+		g.DrawString(gwstrShowURL.c_str(),
+			-1,
+			&font,
+			rcText,
+			&format,
+			&textBrush);
 	}
+	else {
 
-	y += qrSize + gap;
+		Gdiplus::Font font(_T("Segoe UI"),
+			11.0f,
+			Gdiplus::FontStyleRegular,
+			Gdiplus::UnitPoint);
 
-	Gdiplus::Font font(L"Segoe UI",
-		11.0f,
-		Gdiplus::FontStyleRegular,
-		Gdiplus::UnitPoint);
+		Gdiplus::SolidBrush textBrush(pAnim->textColor);
 
-	Gdiplus::SolidBrush textBrush(pAnim->textColor);
+		Gdiplus::RectF rcText(
+			static_cast<Gdiplus::REAL>(marginx),
+			static_cast<Gdiplus::REAL>(y),
+			static_cast<Gdiplus::REAL>(width - marginx * 2),
+			static_cast<Gdiplus::REAL>(availableH));
 
-	Gdiplus::RectF rcText(
-		static_cast<Gdiplus::REAL>(marginx),
-		static_cast<Gdiplus::REAL>(y),
-		static_cast<Gdiplus::REAL>(width - marginx * 2),
-		static_cast<Gdiplus::REAL>(urlHeight));
+		Gdiplus::StringFormat format;
 
-	Gdiplus::StringFormat format;
+		format.SetAlignment(Gdiplus::StringAlignmentCenter);
+		format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
 
-	format.SetAlignment(Gdiplus::StringAlignmentCenter);
+		g.DrawString(_T("Server is stopped.\nStart the server to display the QR code."),
+			-1,
+			&font,
+			rcText,
+			&format,
+			&textBrush);
 
-	format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
-
-	g.DrawString(gwstrShowURL.c_str(),
-		-1,
-		&font,
-		rcText,
-		&format,
-		&textBrush);
+	}
 }
