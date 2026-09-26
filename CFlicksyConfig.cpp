@@ -68,6 +68,9 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
             m_inputMode = StringToInputMode(mode);
 
             SetInputInterval((int)(*input)["interval"].value_or<int64_t>(5));
+
+            m_log_input =
+                (*input)["log_input"].value_or(false);
         }
 
         if (auto window = tbl["window"].as_table())
@@ -114,7 +117,8 @@ bool CFlicksyConfig::Save(const std::filesystem::path& file) const
 
         tbl.insert("input", toml::table{
             { "mode", InputModeToString(m_inputMode) },
-            { "interval", m_inputinterval }
+            { "interval", m_inputinterval },
+            { "log_input", m_log_input }
         });
 
         tbl.insert("window", toml::table{

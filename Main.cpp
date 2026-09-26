@@ -801,7 +801,18 @@ void AddLog(HWND hWnd, const LogType type, const std::wstring& text)
 			return;
 		}
 		SendMessage(hList, LB_SETTOPINDEX, index, 0);
-		logger.Write(type, lpli->st, text);
+
+		CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+		if (lpCFlicksyConfig) {
+			if (lpCFlicksyConfig->GetLogInput()) {
+				logger.Write(type, lpli->st, text);
+			}
+			else {
+				if(type != LogType::Input){
+					logger.Write(type, lpli->st, text);
+				}
+			}
+		}
 	}
 }
 

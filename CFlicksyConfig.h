@@ -41,6 +41,9 @@ public:
     int GetInputInterval() { return m_inputinterval; }
     void SetInputInterval(const int ninputinterval) { m_inputinterval = ninputinterval; }
 
+    bool GetLogInput() { return m_log_input; }
+    void SetLogInput(const bool log_input) { m_log_input = log_input; }
+
     bool AlwaysOnTop() const { return m_alwaysOnTop; }
     void SetAlwaysOnTop(bool value) { m_alwaysOnTop = value; }
 
@@ -67,6 +70,7 @@ private:
 
     InputMode    m_inputMode;
     int          m_inputinterval;
+    bool         m_log_input;
 
     bool         m_alwaysOnTop;
     bool         m_startMinimized;
