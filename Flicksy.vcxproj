@@ -137,12 +137,14 @@
   <ItemGroup>
     <ClCompile Include="CFlicksyConfig.cpp" />
     <ClCompile Include="CImgListPng.cpp" />
-    <ClCompile Include="CPopupRgnLayer.cpp" />
+    <ClCompile Include="CPopupLayerWnd.cpp" />
     <ClCompile Include="CSimpleHttpServer.cpp" />
     <ClCompile Include="CToggleSwitch.cpp" />
     <ClCompile Include="CTrayIcon.cpp" />
+    <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="qrcodegen.cpp" />
+    <ClCompile Include="TextEncoding.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CFlicksyConfig.h" />
@@ -152,8 +154,10 @@
     <ClInclude Include="CSimpleHttpServer.h" />
     <ClInclude Include="CToggleSwitch.h" />
     <ClInclude Include="CTrayIcon.h" />
+    <ClInclude Include="CLogger.h" />
     <ClInclude Include="qrcodegen.hpp" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="TextEncoding.h" />
     <ClInclude Include="Win32VisualStyle.h" />
   </ItemGroup>
   <ItemGroup>
