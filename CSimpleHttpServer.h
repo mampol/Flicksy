@@ -18,6 +18,7 @@
 #include <filesystem>
 
 #include "httplib.h"
+#include "CScreenshot.h"
 
 #define UM_HTTPPOPMSG    (WM_APP+1)
 #define UM_HTTPPOPKEY    (WM_APP+2)

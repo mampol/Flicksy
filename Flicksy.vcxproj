@@ -139,6 +139,7 @@
     <ClCompile Include="CImgListPng.cpp" />
     <ClCompile Include="CInputSender.cpp" />
     <ClCompile Include="CPopupLayerWnd.cpp" />
+    <ClCompile Include="CScreenshot.cpp" />
     <ClCompile Include="CSimpleHttpServer.cpp" />
     <ClCompile Include="CToggleSwitch.cpp" />
     <ClCompile Include="CTrayIcon.cpp" />
@@ -153,6 +154,7 @@
     <ClInclude Include="CAppColorTheme.h" />
     <ClInclude Include="CInputSender.h" />
     <ClInclude Include="CPopupLayerWnd.h" />
+    <ClInclude Include="CScreenshot.h" />
     <ClInclude Include="CSimpleHttpServer.h" />
     <ClInclude Include="CToggleSwitch.h" />
     <ClInclude Include="CTrayIcon.h" />

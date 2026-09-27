@@ -104,6 +104,7 @@ CSimpleHttpServer::CSimpleHttpServer()
             res.set_content(std::move(data), contentType);
 
             AddHttpLog(req, res.status);
+
         });
 
     m_server.Post(
@@ -220,6 +221,30 @@ CSimpleHttpServer::CSimpleHttpServer()
                 return;
             }
 
+        });
+
+    m_server.Get(R"(/screenshot)",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!CheckToken(req, res)) return;
+
+            std::string log =
+                "[" + req.remote_addr + "] " + req.method;
+            AddServerLog(log);
+
+            CScreenshot screenshot;
+            std::vector<BYTE> png;
+            if (screenshot.CaptureForegroundWindow() && screenshot.GetPngData(png))
+            {
+                res.set_content(reinterpret_cast<const char*>(png.data()), png.size(), "image/png");
+            }
+            else
+            {
+                res.status = 500;
+            }
+
+            AddHttpLog(req, res.status);
         });
 }
 
