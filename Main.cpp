@@ -1445,6 +1445,8 @@ LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	}
 	if (wp == TIMER_ALT_FAILSAFE) {
 		ReleaseHotkey(hWnd);
+		AddLog(hWnd, LogType::Info,
+			L"[System] Alt+Tab safety timeout. Alt key released.");
 	}
 	return (0L);
 }
