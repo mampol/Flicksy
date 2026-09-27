@@ -1,4 +1,4 @@
-# Flicksy v0.4.6.1
+# Flicksy v0.5.0.0
 
 ### English
 
@@ -52,6 +52,7 @@ Windows Application
 5. Open the displayed page in your browser.
 6. Enter text on your smartphone and send it to the PC.
 7. The text is entered into the currently active window on your PC.
+8. Use the SCREENSHOT button to preview the active PC window and control basic keys remotely.
 
 **Note:** When `Start server automatically` is enabled, Flicksy starts in the system tray on the next launch without showing the main window.
 
@@ -66,6 +67,7 @@ Windows Application
 5. ブラウザでFlicksyのページを開きます。
 6. スマートフォンで文字を入力し、PCへ送信します。
 7. 入力データはアクティブなウィンドウへ入力されます。
+8. SCREENSHOTボタンからPCのアクティブウィンドウを確認し、基本的なキー操作をリモートで行えます。
 
 **Note:** 「Start server automatically」をチェックすると次回起動時にタスクトレイにのみ常駐し、メインウィンドウは表示されません
 
@@ -105,11 +107,13 @@ Flicksy はタスクトレイに常駐できます。
 
 ## Change log
 
+- Added active-window screenshot preview.
+- Added an in-page screenshot overlay with refresh and remote key controls.
 - Added Alt+Tab remote control with press-and-hold repeat behavior and safe Alt key release on timeout, server stop, and application exit.
 
 ## Roadmap
 
-- Active-window screenshot preview
+- Configuration / Settings screen
 - Additional remote key controls
 - Improved logging
 - Better mobile UI
