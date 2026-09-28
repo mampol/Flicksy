@@ -19,10 +19,12 @@ Windows PC の文字入力として利用するためのツールです。
 ブラウザから接続します。
 
 ### Server (Windows PC)
-<img src="images/flicksy_server.png" width="400">
+<img src="images/flicksy_server.png" width="350">
 
 ### Client (Smart Phone)
-<img src="images/flicksy_client.png" width="250">
+<img src="images/flicksy_client.png" width="200">
+
+<img src="images/flicksy_QR_baloon.png" width="150">
 
 
 ## Structure
