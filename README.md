@@ -1,4 +1,4 @@
-# Flicksy v0.5.0.0
+# Flicksy v0.5.1.0
 
 ### English
 
@@ -124,6 +124,11 @@ Flicksy はタスクトレイに常駐できます。
 - Win32 API
 - Visual Studio 2022
 - HTML / JavaScript
+
+## Limitations
+
+> [!WARNING]
+> Administrator-elevated applications cannot receive remote text or key input from Flicksy when Flicksy is running without elevation.
 
 ## Dependencies
 

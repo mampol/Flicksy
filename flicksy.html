@@ -63,6 +63,55 @@ button[data-hotkey="alt-tab"] {
     touch-action: manipulation;
 }
 
+.connection {
+    text-align: center;
+    margin-top: 4px;
+}
+
+.screenshot-preview-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: stretch;
+}
+
+.screenshot-preview {
+    flex: 1;
+    min-width: 0;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #111827;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+#screenshotPreviewImage {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0;
+    object-fit: contain;
+}
+
+#screenshotPreviewStatus {
+    padding: 8px;
+    text-align: center;
+    font-size: 12px;
+    color: #d1d5db;
+}
+
+#screenshotButton {
+    flex: 0 0 120px;
+    height: 110px;
+}
+
 .screenshot-overlay {
     position: fixed;
     inset: 0;
@@ -144,7 +193,6 @@ button[data-hotkey="alt-tab"] {
     -webkit-touch-callout: none;
     touch-action: manipulation;
 }
-
 </style>
 </head>
 
@@ -154,12 +202,19 @@ button[data-hotkey="alt-tab"] {
 
 <img id="banner" alt="Flicksy">
 
-<div class="row">
-    <button id="screenshotButton" tabindex="-1">SCREENSHOT</button>
+<div class="connection">
+    Connected / <span id="host"></span>
 </div>
 
-<div style="text-align:center">
-    Connected / <span id="host"></span>
+<div class="screenshot-preview-row">
+
+    <div id="screenshotPreview" class="screenshot-preview">
+        <div id="screenshotPreviewStatus">Loading screenshot...</div>
+        <img id="screenshotPreviewImage" alt="Screenshot preview" hidden>
+    </div>
+
+    <button id="screenshotButton" tabindex="-1">SCREENSHOT</button>
+
 </div>
 
 <input
@@ -185,7 +240,6 @@ button[data-hotkey="alt-tab"] {
     <button data-vk="37" tabindex="-1">←</button>
     <button data-vk="39" tabindex="-1">→</button>
 </div>
-
 
 <div id="screenshotOverlay" class="screenshot-overlay">
 
@@ -330,9 +384,17 @@ if (altTabButton)
     altTabButton.oncontextmenu = e => e.preventDefault();
 }
 
-
 const screenshotButton =
     document.getElementById("screenshotButton");
+
+const screenshotPreview =
+    document.getElementById("screenshotPreview");
+
+const screenshotPreviewImage =
+    document.getElementById("screenshotPreviewImage");
+
+const screenshotPreviewStatus =
+    document.getElementById("screenshotPreviewStatus");
 
 const screenshotOverlay =
     document.getElementById("screenshotOverlay");
@@ -352,6 +414,39 @@ const screenshotRefreshButton =
 const screenshotAltTabButton =
     document.getElementById("screenshotAltTabButton");
 
+function makeScreenshotUrl()
+{
+    return "/screenshot?token=" +
+        encodeURIComponent(token) +
+        "&t=" +
+        Date.now();
+}
+
+function refreshScreenshotPreview()
+{
+    screenshotPreviewImage.hidden = true;
+    screenshotPreviewStatus.hidden = false;
+    screenshotPreviewStatus.textContent = "Loading screenshot...";
+
+    const image = new Image();
+
+    image.onload = () =>
+    {
+        screenshotPreviewImage.src = image.src;
+        screenshotPreviewImage.hidden = false;
+        screenshotPreviewStatus.hidden = true;
+    };
+
+    image.onerror = () =>
+    {
+        screenshotPreviewImage.hidden = true;
+        screenshotPreviewStatus.hidden = false;
+        screenshotPreviewStatus.textContent = "Failed to load screenshot.";
+    };
+
+    image.src = makeScreenshotUrl();
+}
+
 function refreshScreenshot()
 {
     screenshotImage.hidden = true;
@@ -365,6 +460,10 @@ function refreshScreenshot()
         screenshotImage.src = image.src;
         screenshotImage.hidden = false;
         screenshotStatus.hidden = true;
+
+        screenshotPreviewImage.src = image.src;
+        screenshotPreviewImage.hidden = false;
+        screenshotPreviewStatus.hidden = true;
     };
 
     image.onerror = () =>
@@ -374,11 +473,7 @@ function refreshScreenshot()
         screenshotStatus.textContent = "Failed to load screenshot.";
     };
 
-    image.src =
-        "/screenshot?token=" +
-        encodeURIComponent(token) +
-        "&t=" +
-        Date.now();
+    image.src = makeScreenshotUrl();
 }
 
 function showScreenshotOverlay()
@@ -393,6 +488,11 @@ function hideScreenshotOverlay()
 }
 
 screenshotButton.onclick = () =>
+{
+    refreshScreenshotPreview();
+};
+
+screenshotPreview.onclick = () =>
 {
     showScreenshotOverlay();
 };
@@ -445,6 +545,8 @@ function bindAltTabButton(button)
 }
 
 bindAltTabButton(screenshotAltTabButton);
+
+refreshScreenshotPreview();
 
 </script>
 
