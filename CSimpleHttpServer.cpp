@@ -230,7 +230,7 @@ CSimpleHttpServer::CSimpleHttpServer()
             if (!CheckToken(req, res)) return;
 
             std::string log =
-                "[" + req.remote_addr + "] " + req.method;
+                "[" + req.remote_addr + "] " + req.method + " " + req.path;
             AddServerLog(log);
 
             CScreenshot screenshot;
@@ -238,11 +238,15 @@ CSimpleHttpServer::CSimpleHttpServer()
             if (screenshot.CaptureForegroundWindow() && screenshot.GetPngData(png))
             {
                 res.set_content(reinterpret_cast<const char*>(png.data()), png.size(), "image/png");
+
+                res.status = 200;
             }
             else
             {
                 res.status = 500;
             }
+
+            PostMsg(UM_HTTPPOPMSG);
 
             AddHttpLog(req, res.status);
         });
