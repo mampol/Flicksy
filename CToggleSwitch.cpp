@@ -104,65 +104,67 @@ namespace CToggleSwitch
             FillRect(memDC, &rc, hBk);
             DeleteObject(hBk);
 
-            Gdiplus::Graphics g(memDC);
-
-            g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
-            g.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);
-
-            bool checked = CToggleSwitch::IsChecked(hSwitch);
-
-            Gdiplus::Color plateColor = checked ?
-                Gdiplus::Color(GetRValue(state->colPlate), GetGValue(state->colPlate), GetBValue(state->colPlate))
-                : Gdiplus::Color(180, 180, 180);
-
-            Gdiplus::SolidBrush plateBrush(plateColor);
-
-            Gdiplus::GraphicsPath path;
-
-            float x = 0.5f;
-            float y = 0.5f;
-            float w = static_cast<float>(width - 1);
-            float h = static_cast<float>(height - 1);
-            float r = h / 2.0f;
-
-            path.AddArc(x, y, h, h, 90.0f, 180.0f);
-            path.AddArc(x + w - h, y, h, h, 270.0f, 180.0f);
-            path.CloseFigure();
-
-            g.FillPath(&plateBrush, &path);
-
-            float leftPos = static_cast<float>(margin + 1);
-            float rightPos = static_cast<float>(width - diameter - margin - 1);
-
-            float knobLeft = leftPos + (rightPos - leftPos) * state->pos;
-
-            Gdiplus::SolidBrush shadowBrush(Gdiplus::Color(45, 0, 0, 0));
-
-            Gdiplus::SolidBrush knobBrush(Gdiplus::Color(GetRValue(state->colKnob), GetGValue(state->colKnob), GetBValue(state->colKnob)));
-
-            g.FillEllipse(&shadowBrush,
-                static_cast<Gdiplus::REAL>(knobLeft) + 1.0f,
-                static_cast<Gdiplus::REAL>(margin) + 1.0f,
-                static_cast<Gdiplus::REAL>(diameter),
-                static_cast<Gdiplus::REAL>(diameter));
-
-            g.FillEllipse(&knobBrush,
-                static_cast<Gdiplus::REAL>(knobLeft) + 0.5f,
-                static_cast<Gdiplus::REAL>(margin) + 0.5f,
-                static_cast<Gdiplus::REAL>(diameter - 1),
-                static_cast<Gdiplus::REAL>(diameter - 1));
-
-            if (checked)
             {
-                Gdiplus::Pen linePen(Gdiplus::Color(220, 255, 255, 255), 1.5f);
+                Gdiplus::Graphics g(memDC);
 
-                float x = 11.0f;
-                float y1 = 9.0f;
-                float y2 = height - 9.0f;
+                g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+                g.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);
 
-                g.DrawLine(&linePen,
-                    x, y1,
-                    x, y2);
+                bool checked = CToggleSwitch::IsChecked(hSwitch);
+
+                Gdiplus::Color plateColor = checked ?
+                    Gdiplus::Color(GetRValue(state->colPlate), GetGValue(state->colPlate), GetBValue(state->colPlate))
+                    : Gdiplus::Color(180, 180, 180);
+
+                Gdiplus::SolidBrush plateBrush(plateColor);
+
+                Gdiplus::GraphicsPath path;
+
+                float x = 0.5f;
+                float y = 0.5f;
+                float w = static_cast<float>(width - 1);
+                float h = static_cast<float>(height - 1);
+                float r = h / 2.0f;
+
+                path.AddArc(x, y, h, h, 90.0f, 180.0f);
+                path.AddArc(x + w - h, y, h, h, 270.0f, 180.0f);
+                path.CloseFigure();
+
+                g.FillPath(&plateBrush, &path);
+
+                float leftPos = static_cast<float>(margin + 1);
+                float rightPos = static_cast<float>(width - diameter - margin - 1);
+
+                float knobLeft = leftPos + (rightPos - leftPos) * state->pos;
+
+                Gdiplus::SolidBrush shadowBrush(Gdiplus::Color(45, 0, 0, 0));
+
+                Gdiplus::SolidBrush knobBrush(Gdiplus::Color(GetRValue(state->colKnob), GetGValue(state->colKnob), GetBValue(state->colKnob)));
+
+                g.FillEllipse(&shadowBrush,
+                    static_cast<Gdiplus::REAL>(knobLeft) + 1.0f,
+                    static_cast<Gdiplus::REAL>(margin) + 1.0f,
+                    static_cast<Gdiplus::REAL>(diameter),
+                    static_cast<Gdiplus::REAL>(diameter));
+
+                g.FillEllipse(&knobBrush,
+                    static_cast<Gdiplus::REAL>(knobLeft) + 0.5f,
+                    static_cast<Gdiplus::REAL>(margin) + 0.5f,
+                    static_cast<Gdiplus::REAL>(diameter - 1),
+                    static_cast<Gdiplus::REAL>(diameter - 1));
+
+                if (checked)
+                {
+                    Gdiplus::Pen linePen(Gdiplus::Color(220, 255, 255, 255), 1.5f);
+
+                    float x = w * 0.25f;
+                    float y1 = h * 0.3f;
+                    float y2 = height - y1;
+
+                    g.DrawLine(&linePen,
+                        x, y1,
+                        x, y2);
+                }
             }
 
             BitBlt(hdc,

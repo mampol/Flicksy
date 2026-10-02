@@ -1,4 +1,4 @@
-# Flicksy v0.5.2.0
+# Flicksy v0.5.2.1
 
 ### English
 
