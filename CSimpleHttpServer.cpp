@@ -89,17 +89,35 @@ CSimpleHttpServer::CSimpleHttpServer()
             std::string ext = filePath.extension().string();
             std::string contentType = "application/octet-stream";
             if (ext == ".html")
+            {
                 contentType = "text/html; charset=UTF-8";
+                res.set_header("Cache-Control",
+                    "no-store, no-cache, must-revalidate");
+            }
             else if (ext == ".png")
+            {
                 contentType = "image/png";
+            }
             else if (ext == ".jpg")
+            {
                 contentType = "image/jpeg";
+            }
             else if (ext == ".webp")
+            {
                 contentType = "image/webp";
+            }
             else if (ext == ".css")
+            {
                 contentType = "text/css; charset=UTF-8";
+                res.set_header("Cache-Control",
+                    "no-store, no-cache, must-revalidate");
+            }
             else if (ext == ".js")
+            {
                 contentType = "application/javascript; charset=UTF-8";
+                res.set_header("Cache-Control",
+                    "no-store, no-cache, must-revalidate");
+            }
             res.status = 200;
             res.set_content(std::move(data), contentType);
 

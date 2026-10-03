@@ -376,7 +376,14 @@ if (altTabButton)
             altTabButton.releasePointerCapture(e.pointerId);
         }
 
-        sendHotKey("alt-up");
+        sendHotKey("alt-up")
+            .then(() =>
+        {
+            setTimeout(() =>
+            {
+                refreshScreenshotPreview();
+            }, 400);
+        });
     };
 
     altTabButton.onpointerup = endAltTab;
@@ -536,7 +543,14 @@ function bindAltTabButton(button)
             button.releasePointerCapture(e.pointerId);
         }
 
-        sendHotKey("alt-up");
+        sendHotKey("alt-up")
+            .then(() =>
+        {
+            setTimeout(() =>
+            {
+                refreshScreenshot();
+            }, 400);
+        });
     };
 
     button.onpointerup = endAltTab;

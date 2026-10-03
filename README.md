@@ -1,4 +1,4 @@
-# Flicksy v0.5.2.1
+# Flicksy v0.5.2.2
 
 ### English
 
@@ -21,10 +21,10 @@ Windows PC の文字入力として利用するためのツールです。
 ### Server (Windows PC)
 <img src="images/flicksy_server.png" width="350">
 
+<img src="images/flicksy_QR_baloon.png" width="150">
+
 ### Client (Smart Phone)
 <img src="images/flicksy_client.png" width="200">
-
-<img src="images/flicksy_QR_baloon.png" width="150">
 
 
 ## Structure
