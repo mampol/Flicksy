@@ -142,6 +142,7 @@
     <ClCompile Include="CFlicksyConfig.cpp" />
     <ClCompile Include="CImgListPng.cpp" />
     <ClCompile Include="CInputSender.cpp" />
+    <ClCompile Include="ConfigDlg.cpp" />
     <ClCompile Include="CPopupLayerWnd.cpp" />
     <ClCompile Include="CScreenshot.cpp" />
     <ClCompile Include="CSimpleHttpServer.cpp" />
@@ -157,6 +158,7 @@
     <ClInclude Include="CImgListPng.h" />
     <ClInclude Include="CAppColorTheme.h" />
     <ClInclude Include="CInputSender.h" />
+    <ClInclude Include="ConfigDlg.h" />
     <ClInclude Include="CPopupLayerWnd.h" />
     <ClInclude Include="CScreenshot.h" />
     <ClInclude Include="CSimpleHttpServer.h" />

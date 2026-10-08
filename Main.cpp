@@ -16,6 +16,7 @@
 #include "CToggleSwitch.h"
 #include "CPopupLayerWnd.h"
 #include "CInputSender.h"
+#include "ConfigDlg.h"
 #include "CLogger.h"
 #include "resource.h"
 #include "Win32VisualStyle.h"
@@ -1530,6 +1531,12 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				CPopupLayerWnd::SetPopupTextColor(ghPopupQrWnd, lpCAppColorTheme->Colors().text, 255);
 				CPopupLayerWnd::SetPopupUserData(ghPopupQrWnd, lpCAppColorTheme);
 			}
+		}
+		break;
+	case ID_CONFIG:
+		{
+			CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+			if (lpCFlicksyConfig) ShowConfigDlg(hWnd, lpCFlicksyConfig);
 		}
 		break;
 	default:

@@ -36,7 +36,6 @@
 #define IDC_EDIT_VALUE                  1012
 #define IDC_BTN_VALUE                   1013
 #define IDC_BTN_DELETE                  1015
-#define IDC_EDIT_SAVEFOLDER             1015
 #define IDC_EDIT_DATAFOLDER             1015
 #define IDC_BTN_ADD                     1016
 #define IDC_BTN_SAVEFOLDER              1016
@@ -57,13 +56,15 @@
 #define ID_OPENFLICKSY                  40010
 #define ID_FILE_QRCODE                  40011
 #define ID_LINK_QRCODE                  40012
+#define ID_FILE_CONFIG                  40013
+#define ID_CONFIG                       40014
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        113
-#define _APS_NEXT_COMMAND_VALUE         40013
+#define _APS_NEXT_COMMAND_VALUE         40015
 #define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

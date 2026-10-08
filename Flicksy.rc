@@ -100,6 +100,8 @@ BEGIN
         MENUITEM "Sto&p Server",                ID_HTTP_STOP
         MENUITEM "QR &Code",                    ID_LINK_QRCODE
         MENUITEM SEPARATOR
+        MENUITEM "Confi&g",                     ID_CONFIG
+        MENUITEM SEPARATOR
         MENUITEM "&About Flicksy",              ID_ABOUT
         MENUITEM "&Quit",                       ID_FILE_QUIT
     END
