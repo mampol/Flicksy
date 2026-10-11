@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include "DpiAware.h"
 #include "qrcodegen.hpp"
 #include "TextEncoding.h"
 #include "CSimpleHttpServer.h"
@@ -874,10 +875,17 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 {
 	if (hPrevInst != NULL) return 0;
 
+	DpiAware();
+
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	if (FAILED(hr))
+		return 0;
+	
 	HANDLE hMutex = CreateMutex(NULL, TRUE, APP_CLASS);
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		SetForegroundWindow(FindWindow(APP_CLASS, NULL));
 		if (hMutex) CloseHandle(hMutex);
+		CoUninitialize();
 		return 0;
 	}
 
@@ -910,6 +918,7 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 		MessageBox(HWND_DESKTOP,
 			(LPCTSTR)_T("Error RegisterClassEx"), (LPCTSTR)APP_CLASS,
 			MB_OK | MB_ICONSTOP | MB_SYSTEMMODAL);
+		CoUninitialize();
 		return 0;
 	}
 
@@ -951,6 +960,7 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 		MessageBox(HWND_DESKTOP,
 			(LPCTSTR)_T("Error CreateWindowEx"), (LPCTSTR)APP_CLASS,
 			MB_OK | MB_ICONSTOP | MB_SYSTEMMODAL);
+		CoUninitialize();
 		return 0;
 	}
 
@@ -965,6 +975,8 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 	}
 
 	if (hMutex) CloseHandle(hMutex);
+
+	CoUninitialize();
 
 	return (int)(msg.wParam);
 }
@@ -986,6 +998,9 @@ INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow)
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 	if (lpCFlicksyConfig)
 	{
+		logger.SetEnabled(lpCFlicksyConfig->GetLogEnable());
+		logger.SetLogFilePath(lpCFlicksyConfig->GetLogFile());
+
 		if (lpCFlicksyConfig->AlwaysOnTop()) SendMessage(hWnd, WM_COMMAND, IDC_CHECK_TOPMOST, 0L);
 		if (lpCFlicksyConfig->AutoStartServer()) {
 			SendMessage(hWnd, WM_COMMAND, ID_HTTP_START, 0L);
@@ -1087,7 +1102,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 	if (CToggleSwitch::RegisterWndClass(hInst)) {
 		HWND hSwitch = CToggleSwitch::Create(hWnd, IDC_SWITCH_THEME,
-			720, 508, 40, 24,
+			DpiScale(hWnd, 720),
+			DpiScale(hWnd, 508),
+			DpiScale(hWnd, 40),
+			DpiScale(hWnd, 23),
 			lpCAppColorTheme->Colors().windowBg,
 			lpCFlicksyConfig->GetTheme() == CFlicksyConfig::Theme::Dark ? true : false);
 		ApplyTheme(hWnd);

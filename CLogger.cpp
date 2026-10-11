@@ -2,7 +2,7 @@
 
 CLogger::CLogger()
 {
-    m_LogPath = GetLogFilePath();
+    m_LogPath = GetDefaultLogFilePath();
 }
 
 CLogger::~CLogger()
@@ -89,7 +89,7 @@ void CLogger::Write(LogType type, const SYSTEMTIME& st, const std::string& text)
 }
 #endif
 
-std::filesystem::path CLogger::GetLogFilePath() const
+std::filesystem::path CLogger::GetDefaultLogFilePath() const
 {
     TCHAR path[MAX_PATH] = {};
     DWORD len = GetEnvironmentVariable(_T("LOCALAPPDATA"),

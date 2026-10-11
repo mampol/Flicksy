@@ -41,6 +41,12 @@ public:
     int GetInputInterval() { return m_inputinterval; }
     void SetInputInterval(const int ninputinterval) { m_inputinterval = ninputinterval; }
 
+    bool GetLogEnable() { return m_log_enable; }
+    void SetLogEnable(const bool log_enable) { m_log_enable = log_enable; }
+
+    const std::wstring& GetLogFile() { return m_logfile; }
+    void SetLogInput(const std::wstring& log_file) { m_logfile = log_file; }
+
     bool GetLogInput() { return m_log_input; }
     void SetLogInput(const bool log_input) { m_log_input = log_input; }
 
@@ -70,6 +76,8 @@ private:
 
     InputMode    m_inputMode;
     int          m_inputinterval;
+    bool         m_log_enable;
+    std::wstring m_logfile;
     bool         m_log_input;
 
     bool         m_alwaysOnTop;

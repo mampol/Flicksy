@@ -6,6 +6,8 @@
 
 #pragma comment(lib, "gdiplus.lib")
 
+#define TOGGLESWITCH_CLASS_NAME         _T("ToggleSwitch")
+
 namespace CToggleSwitch
 {
     bool RegisterWndClass(HINSTANCE hInstance);

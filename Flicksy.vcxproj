@@ -165,6 +165,7 @@
     <ClInclude Include="CToggleSwitch.h" />
     <ClInclude Include="CTrayIcon.h" />
     <ClInclude Include="CLogger.h" />
+    <ClInclude Include="DpiAware.h" />
     <ClInclude Include="qrcodegen.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="TextEncoding.h" />

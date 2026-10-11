@@ -27,8 +27,7 @@
 #define IDD_BTN_INFO                    1005
 #define IDC_EDIT_LOGFILE                1005
 #define IDC_BTN_LOGFILE                 1006
-#define IDD_BTN_MEMO_TODO2              1006
-#define IDC_CHK_LOGFILE                 1007
+#define IDD_BTN_TODO                    1006
 #define IDC_LIST_ACTION                 1008
 #define IDC_CHK_ENABLE                  1009
 #define IDC_EDIT_NAME                   1010
@@ -39,6 +38,7 @@
 #define IDC_EDIT_DATAFOLDER             1015
 #define IDC_BTN_ADD                     1016
 #define IDC_BTN_SAVEFOLDER              1016
+#define IDC_BTN_DATAFOLDER              1016
 #define IDC_EDIT_MAXIMAGESIZE           1017
 #define IDC_LIST_TODO                   1017
 #define IDC_EDIT_JPEGQUALITY            1018

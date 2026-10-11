@@ -68,6 +68,16 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
             m_inputMode = StringToInputMode(mode);
 
             SetInputInterval((int)(*input)["interval"].value_or<int64_t>(5));
+        }
+
+        if (auto input = tbl["log"].as_table())
+        {
+            m_log_enable =
+                (*input)["log_enable"].value_or(true);
+
+            const std::string logfile =
+                (*input)["logfile"].value_or<std::string>("");
+            m_logfile = Utf8ToWide(logfile);
 
             m_log_input =
                 (*input)["log_input"].value_or(false);

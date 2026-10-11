@@ -144,14 +144,14 @@ namespace CToggleSwitch
                 g.FillEllipse(&shadowBrush,
                     static_cast<Gdiplus::REAL>(knobLeft) + 1.0f,
                     static_cast<Gdiplus::REAL>(margin) + 1.0f,
-                    static_cast<Gdiplus::REAL>(diameter),
-                    static_cast<Gdiplus::REAL>(diameter));
+                    static_cast<Gdiplus::REAL>(diameter - 0.5f),
+                    static_cast<Gdiplus::REAL>(diameter) - 0.5f);
 
                 g.FillEllipse(&knobBrush,
                     static_cast<Gdiplus::REAL>(knobLeft) + 0.5f,
                     static_cast<Gdiplus::REAL>(margin) + 0.5f,
-                    static_cast<Gdiplus::REAL>(diameter - 1),
-                    static_cast<Gdiplus::REAL>(diameter - 1));
+                    static_cast<Gdiplus::REAL>(diameter - 1.5f),
+                    static_cast<Gdiplus::REAL>(diameter - 1.5f));
 
                 if (checked)
                 {
@@ -211,11 +211,13 @@ bool CToggleSwitch::RegisterWndClass(HINSTANCE hInstance)
 {
     WNDCLASSEX wc{};
     wc.cbSize = sizeof(wc);
+    if (GetClassInfoExW(hInstance, TOGGLESWITCH_CLASS_NAME, &wc)) return true;
+
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
     wc.hCursor = LoadCursor(nullptr, IDC_HAND);
     wc.hbrBackground = nullptr;
-    wc.lpszClassName = _T("ToggleSwitch");
+    wc.lpszClassName = TOGGLESWITCH_CLASS_NAME;
     return RegisterClassEx(&wc) != 0;
 }
 
