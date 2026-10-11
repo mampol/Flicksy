@@ -42,7 +42,7 @@
 #define IDC_LIST_LOG		1009
 #define IDC_SWITCH_THEME	1010
 
-std::filesystem::path gflicksytoml;
+//std::filesystem::path gflicksytoml;
 static Gdiplus::GdiplusStartupInput ggdiplusStartupInput;
 static Gdiplus::Bitmap* gpBitmapBanner;
 static Gdiplus::Bitmap* gpBitmapBannerDark;
@@ -1094,8 +1094,8 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 	wchar_t path[MAX_PATH] = {};
 	GetModuleFileName(nullptr, path, _countof(path));
-	gflicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
-	lpCFlicksyConfig->Load(gflicksytoml);
+	std::filesystem::path flicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
+	lpCFlicksyConfig->Load(flicksytoml);
 
 	//gnInputInterval = lpCFlicksyConfig->GetInputInterval();
 	inputsender.SetInputInterval(lpCFlicksyConfig->GetInputInterval());
@@ -1827,9 +1827,9 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	{
 		lpCFlicksyConfig->SetServerPort(GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE));
 
-		TCHAR szRoot[MAX_PATH];
-		GetDlgItemText(hWnd, IDC_EDIT_ROOT, szRoot, _countof(szRoot));
-		lpCFlicksyConfig->SetWebRoot(szRoot);
+		//TCHAR szRoot[MAX_PATH];
+		//GetDlgItemText(hWnd, IDC_EDIT_ROOT, szRoot, _countof(szRoot));
+		//lpCFlicksyConfig->SetWebRoot(szRoot);
 
 		lpCFlicksyConfig->SetInputMode(IsDlgButtonChecked(hWnd, IDC_RADIO_CLIPBOARD) == BST_CHECKED
 			? CFlicksyConfig::InputMode::Clipboard : CFlicksyConfig::InputMode::SendInput);
@@ -1849,7 +1849,7 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		lpCFlicksyConfig->SetTheme(CToggleSwitch::IsChecked(hSwitch)
 			? CFlicksyConfig::Theme::Dark : CFlicksyConfig::Theme::Light);
 
-		lpCFlicksyConfig->Save(gflicksytoml);
+		lpCFlicksyConfig->Save();
 
 		RemoveProp(hWnd, CFLICKSYCONFIG);
 		delete lpCFlicksyConfig;

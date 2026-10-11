@@ -25,6 +25,7 @@ public:
 
     bool Load(const std::filesystem::path& file);
     bool Save(const std::filesystem::path& file) const;
+    bool Save() const;
 
     int ServerPort() const { return m_port; }
     void SetServerPort(int port);
@@ -35,19 +36,22 @@ public:
     bool AutoStartServer() const { return m_autoStartServer; }
     void SetAutoStartServer(bool value) { m_autoStartServer = value; }
 
+    const std::wstring& GetDataFolder() const { return m_dataFolder; }
+    void SetDataFolder(const std::wstring& dataFolder) { m_dataFolder = dataFolder; }
+
     InputMode GetInputMode() const { return m_inputMode; }
     void SetInputMode(InputMode mode) { m_inputMode = mode; }
 
-    int GetInputInterval() { return m_inputinterval; }
+    int GetInputInterval() const { return m_inputinterval; }
     void SetInputInterval(const int ninputinterval) { m_inputinterval = ninputinterval; }
 
-    bool GetLogEnable() { return m_log_enable; }
+    bool GetLogEnable() const { return m_log_enable; }
     void SetLogEnable(const bool log_enable) { m_log_enable = log_enable; }
 
-    const std::wstring& GetLogFile() { return m_logfile; }
-    void SetLogInput(const std::wstring& log_file) { m_logfile = log_file; }
+    const std::wstring& GetLogFile() const { return m_log_file; }
+    void SetLogFile(const std::wstring& log_file) { m_log_file = log_file; }
 
-    bool GetLogInput() { return m_log_input; }
+    bool GetLogInput() const { return m_log_input; }
     void SetLogInput(const bool log_input) { m_log_input = log_input; }
 
     bool AlwaysOnTop() const { return m_alwaysOnTop; }
@@ -70,14 +74,18 @@ private:
     static Theme StringToTheme(const std::string& value);
 
 private:
+    std::wstring m_FlicksyConfig;
+
     int          m_port;
     std::wstring m_webRoot;
     bool         m_autoStartServer;
 
+    std::wstring m_dataFolder;
+
     InputMode    m_inputMode;
     int          m_inputinterval;
     bool         m_log_enable;
-    std::wstring m_logfile;
+    std::wstring m_log_file;
     bool         m_log_input;
 
     bool         m_alwaysOnTop;

@@ -147,21 +147,21 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             ShowWindow(cds.hInfo, SW_HIDE);
             cds.hCurrent = cds.hTodo;
             break;
-        case IDD_BTN_SYSTEM:
-            ShowWindow(cds.hAction, SW_HIDE);
-            ShowWindow(cds.hMemo, SW_HIDE);
-            ShowWindow(cds.hTodo, SW_HIDE);
-            ShowWindow(cds.hSecurity, SW_HIDE);
-            ShowWindow(cds.hSystem, SW_SHOW);
-            ShowWindow(cds.hInfo, SW_HIDE);
-            cds.hCurrent = cds.hSecurity;
-            break;
         case IDD_BTN_SECURITY:
             ShowWindow(cds.hAction, SW_HIDE);
             ShowWindow(cds.hMemo, SW_HIDE);
             ShowWindow(cds.hTodo, SW_HIDE);
             ShowWindow(cds.hSecurity, SW_SHOW);
             ShowWindow(cds.hSystem, SW_HIDE);
+            ShowWindow(cds.hInfo, SW_HIDE);
+            cds.hCurrent = cds.hSecurity;
+            break;
+        case IDD_BTN_SYSTEM:
+            ShowWindow(cds.hAction, SW_HIDE);
+            ShowWindow(cds.hMemo, SW_HIDE);
+            ShowWindow(cds.hTodo, SW_HIDE);
+            ShowWindow(cds.hSecurity, SW_HIDE);
+            ShowWindow(cds.hSystem, SW_SHOW);
             ShowWindow(cds.hInfo, SW_HIDE);
             cds.hCurrent = cds.hSystem;
             break;
@@ -275,6 +275,7 @@ INT_PTR SystemDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             }
         }
         SetDlgItemText(hDlg, IDC_EDIT_LOGFILE, (lpCFlicksyConfig->GetLogFile()).c_str());
+        SetDlgItemText(hDlg, IDC_EDIT_DATAFOLDER, (lpCFlicksyConfig->GetDataFolder()).c_str());
         return TRUE;
     case WM_COMMAND:
         switch (LOWORD(wp)) {
@@ -283,8 +284,20 @@ INT_PTR SystemDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                 wchar_t szFolder[MAX_PATH] = {};
                 GetDlgItemText(hDlg, IDC_EDIT_WEBROOT, szFolder, _countof(szFolder));
                 std::wstring folder = szFolder;
-                if(SelectFolder(hDlg, folder))
+                if (SelectFolder(hDlg, folder)) {
                     SetDlgItemText(hDlg, IDC_EDIT_WEBROOT, folder.c_str());
+                    lpCFlicksyConfig->SetWebRoot(folder);
+                    lpCFlicksyConfig->Save();
+                }
+                return TRUE;
+            }
+            break;
+        case IDC_CHK_LOGENABLED:
+            if (HIWORD(wp) == BN_CLICKED)
+            {
+                HWND hSwitch = reinterpret_cast<HWND>(lp);
+                lpCFlicksyConfig->SetLogEnable(CToggleSwitch::IsChecked(hSwitch));
+                lpCFlicksyConfig->Save();
                 return TRUE;
             }
             break;
@@ -293,8 +306,11 @@ INT_PTR SystemDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                 wchar_t szFile[MAX_PATH] = {};
                 GetDlgItemText(hDlg, IDC_EDIT_LOGFILE, szFile, _countof(szFile));
                 std::wstring file = szFile;
-                if (SelectFile(hDlg, file))
+                if (SelectFile(hDlg, file)) {
                     SetDlgItemText(hDlg, IDC_EDIT_LOGFILE, file.c_str());
+                    lpCFlicksyConfig->SetLogFile(file);
+                    lpCFlicksyConfig->Save();
+                }
                 return TRUE;
             }
             break;
@@ -303,8 +319,11 @@ INT_PTR SystemDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                 wchar_t szFolder[MAX_PATH] = {};
                 GetDlgItemText(hDlg, IDC_EDIT_DATAFOLDER, szFolder, _countof(szFolder));
                 std::wstring folder = szFolder;
-                if (SelectFolder(hDlg, folder))
+                if (SelectFolder(hDlg, folder)) {
                     SetDlgItemText(hDlg, IDC_EDIT_DATAFOLDER, folder.c_str());
+                    lpCFlicksyConfig->SetDataFolder(folder);
+                    lpCFlicksyConfig->Save();
+                }
                 return TRUE;
             }
             break;
@@ -354,10 +373,11 @@ bool SelectFile(HWND hParent, std::wstring& file)
     hr = pDialog->GetOptions(&options);
     if (SUCCEEDED(hr))
     {
-        hr = pDialog->SetOptions(
+        pDialog->SetOptions(
             options |
-            FOS_FILEMUSTEXIST |
-            FOS_FORCEFILESYSTEM);
+            FOS_FORCEFILESYSTEM |
+            FOS_PATHMUSTEXIST |
+            FOS_OVERWRITEPROMPT);
     }
 
     if (SUCCEEDED(hr))

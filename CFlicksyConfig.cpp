@@ -18,7 +18,14 @@ void CFlicksyConfig::SetDefault()
     m_webRoot = L"./webroot";
     m_autoStartServer = false;
 
+    m_dataFolder = L"./data";
+
     m_inputMode = InputMode::SendInput;
+    m_inputinterval = 5;
+
+    m_log_enable = true;
+    m_log_file = L"./flicksy.log";
+    m_log_input = false;
 
     m_alwaysOnTop = false;
     m_startMinimized = false;
@@ -38,10 +45,19 @@ void CFlicksyConfig::SetServerPort(int port)
 
 bool CFlicksyConfig::Load(const std::filesystem::path& file)
 {
+    m_FlicksyConfig = file;
+
     SetDefault();
+
+    if (!std::filesystem::exists(file))
+    {
+        return Save(file);
+    }
 
     try
     {
+        //const auto fullPath = std::filesystem::absolute(file);
+
         std::ifstream ifs(file, std::ios::binary);
         if (!ifs)
             return false;
@@ -61,6 +77,13 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
                 (*server)["auto_start"].value_or(false);
         }
 
+        if (auto data = tbl["data"].as_table())
+        {
+            const std::string dataFolder =
+                (*data)["data_folder"].value_or<std::string>("");
+            m_dataFolder = Utf8ToWide(dataFolder);
+        }
+
         if (auto input = tbl["input"].as_table())
         {
             const std::string mode =
@@ -76,8 +99,8 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
                 (*input)["log_enable"].value_or(true);
 
             const std::string logfile =
-                (*input)["logfile"].value_or<std::string>("");
-            m_logfile = Utf8ToWide(logfile);
+                (*input)["log_file"].value_or<std::string>("");
+            m_log_file = Utf8ToWide(logfile);
 
             m_log_input =
                 (*input)["log_input"].value_or(false);
@@ -113,6 +136,11 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
     }
 }
 
+bool CFlicksyConfig::Save() const
+{
+    return Save(m_FlicksyConfig);
+}
+
 bool CFlicksyConfig::Save(const std::filesystem::path& file) const
 {
     try
@@ -125,9 +153,18 @@ bool CFlicksyConfig::Save(const std::filesystem::path& file) const
             { "auto_start", m_autoStartServer }
         });
 
+        tbl.insert("data", toml::table{
+            { "data_folder", WideToUtf8(m_dataFolder) }
+        });
+
         tbl.insert("input", toml::table{
             { "mode", InputModeToString(m_inputMode) },
-            { "interval", m_inputinterval },
+            { "interval", m_inputinterval }
+        });
+
+        tbl.insert("log", toml::table{
+            { "log_enable", m_log_enable },
+            { "log_file", WideToUtf8(m_log_file) },
             { "log_input", m_log_input }
         });
 
