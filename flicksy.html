@@ -2,275 +2,375 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-<meta name="theme-color" content="#f5f7fa">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f4f7fb">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Flicksy">
-
 <title>Flicksy</title>
-
 <style>
+:root {
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --text: #182333;
+    --muted: #748094;
+    --line: #dfe6ef;
+    --blue: #268cff;
+    --blue2: #4aa6ff;
+    --navy: #25344a;
+    --shadow: 0 10px 30px rgba(25, 48, 82, 0.08);
+    --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
 body {
-    font-family: sans-serif;
-    background: #f5f7fa;
-    padding: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+}
+button, input, textarea { font: inherit; }
+button { touch-action: manipulation; }
+
+.app-shell {
+    width: min(100%, 560px);
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: max(14px, env(safe-area-inset-top)) 14px calc(92px + env(safe-area-inset-bottom));
 }
 
-main {
-    max-width: 520px;
-    margin: auto;
-}
-
-img {
-    display: block;
-    max-width: 320px;
-    width: 100%;
-    margin: auto;
-}
-
-input {
-    width: 100%;
-    height: 48px;
-    margin-top: 12px;
-    font-size: 18px;
-    box-sizing: border-box;
-}
-
-.row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-}
-
-button {
-    flex: 1;
-    height: 46px;
-    border: 0;
-    border-radius: 8px;
-    font-weight: bold;
-    touch-action: manipulation;
-}
-
-button[data-hotkey="alt-tab"] {
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-    touch-action: manipulation;
-}
-
-.connection {
-    text-align: center;
-    margin-top: 4px;
-}
-
-.screenshot-preview-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-    align-items: stretch;
-}
-
-.screenshot-preview {
-    flex: 1;
-    min-width: 0;
-    height: 110px;
+.app-header {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 12px;
+    padding: 8px 4px 14px;
+}
+#banner {
+    width: 128px;
+    max-width: 38vw;
+    height: auto;
+    display: block;
+}
+.connection-pill {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    border-radius: 999px;
+    background: #eaf7ef;
+    color: #287347;
+    font-size: 12px;
+    font-weight: 700;
+}
+.connection-dot { width: 8px; height: 8px; border-radius: 50%; background: #35b66b; }
+
+.app-page { display: none; }
+.app-page.active { display: block; }
+
+.page-title {
+    margin: 8px 2px 14px;
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: .01em;
+}
+.page-subtitle {
+    margin: -8px 2px 16px;
+    color: var(--muted);
+    font-size: 13px;
+}
+.card {
+    background: var(--card);
+    border: 1px solid rgba(223,230,239,.9);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.screenshot-preview-row { display: grid; grid-template-columns: 1fr 116px; gap: 10px; }
+.screenshot-preview {
+    min-width: 0;
+    height: 116px;
+    border-radius: 14px;
     overflow: hidden;
-    border-radius: 8px;
-    background: #111827;
+    background: #101827;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
+}
+#screenshotPreviewImage { width: 100%; height: 100%; object-fit: contain; display: block; max-width: none; margin: 0; }
+#screenshotPreviewStatus { padding: 8px; color: #d6deea; font-size: 12px; text-align: center; }
+
+.primary-button, .soft-button, .key-button, .action-button, .memo-send {
+    border: 0;
+    border-radius: 13px;
+    font-weight: 800;
+}
+.primary-button {
+    background: linear-gradient(135deg, var(--blue), var(--blue2));
+    color: white;
+    box-shadow: 0 6px 16px rgba(38,140,255,.24);
+}
+#screenshotButton { height: 116px; padding: 10px; }
+
+.text-input, .memo-input, .memo-textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: #fbfcfe;
+    color: var(--text);
+    border-radius: 13px;
+    outline: none;
+}
+.text-input { height: 52px; padding: 0 14px; margin-top: 12px; font-size: 17px; }
+.text-input:focus, .memo-input:focus, .memo-textarea:focus {
+    border-color: #77b9ff;
+    box-shadow: 0 0 0 3px rgba(38,140,255,.10);
+}
+
+.key-grid { display: grid; gap: 8px; margin-top: 10px; }
+.key-grid.two { grid-template-columns: repeat(2, 1fr); }
+.key-grid.three { grid-template-columns: repeat(3, 1fr); }
+.key-grid.four { grid-template-columns: repeat(4, 1fr); }
+.key-button { height: 48px; background: #edf2f8; color: var(--navy); }
+.key-button.strong { background: #e6efff; color: #196dc7; }
+
+.key-button,
+.key-button * {
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
 }
 
-#screenshotPreviewImage {
-    display: block;
-    width: 100%;
-    max-width: none;
-    height: 100%;
-    margin: 0;
-    object-fit: contain;
+.action-list { display: grid; gap: 10px; }
+.action-button {
+    min-height: 64px;
+    padding: 12px 14px;
+    text-align: left;
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
+.action-icon {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    background: linear-gradient(135deg,#eaf4ff,#dcecff);
+    color: #237bd2;
+    display: grid; place-items: center;
+    flex: 0 0 auto;
+    font-size: 20px;
+}
+.action-text strong { display:block; font-size:15px; }
+.action-text small { display:block; margin-top:3px; color:var(--muted); font-size:12px; font-weight:600; }
 
-#screenshotPreviewStatus {
-    padding: 8px;
-    text-align: center;
+.memo-field { margin-bottom: 12px; }
+.memo-label { display:block; margin: 0 0 6px 2px; font-size:13px; font-weight:800; color:#536174; }
+.memo-input { height:48px; padding:0 12px; }
+.memo-textarea { min-height:140px; resize:vertical; padding:12px; }
+.file-picker {
+    display:flex; align-items:center; gap:10px;
+    border:1px dashed #b9c6d7;
+    background:#f8fbff;
+    border-radius:14px;
+    padding:12px;
+}
+.file-picker input { display:none; }
+.file-button {
+    flex:0 0 auto;
+    padding:10px 12px;
+    border-radius:11px;
+    background:#e6efff;
+    color:#1f73c8;
+    font-weight:800;
+    cursor:pointer;
+}
+#memoImageName { color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#memoPreview { width:100%; max-height:220px; object-fit:contain; margin-top:10px; border-radius:14px; background:#111827; }
+.memo-send { width:100%; height:52px; margin-top:4px; background:linear-gradient(135deg,var(--blue),var(--blue2)); color:white; }
+
+.bottom-nav {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: min(100%, 560px);
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 6px;
+    padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
+    background: rgba(255,255,255,.94);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 900;
+}
+.nav-button {
+    height: 58px;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: #7c8798;
     font-size: 12px;
-    color: #d1d5db;
+    font-weight: 800;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
 }
-
-#screenshotButton {
-    flex: 0 0 120px;
-    height: 110px;
+.nav-button .nav-icon { font-size:21px; line-height:1; }
+.nav-button.active {
+    color: white;
+    background: linear-gradient(135deg, var(--blue), var(--blue2));
+    box-shadow: 0 5px 14px rgba(38,140,255,.20);
 }
 
 .screenshot-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: none;
-    flex-direction: column;
-    background: #111827;
-    color: #ffffff;
-    box-sizing: border-box;
-    padding:
-        max(10px, env(safe-area-inset-top))
-        max(10px, env(safe-area-inset-right))
-        max(10px, env(safe-area-inset-bottom))
-        max(10px, env(safe-area-inset-left));
+    position: fixed; inset:0; z-index:1000; display:none; flex-direction:column;
+    background:#111827; color:white;
+    padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
 }
-
-.screenshot-overlay.show {
-    display: flex;
+.screenshot-overlay.show { display:flex; }
+.screenshot-toolbar, .screenshot-controls { display:flex; gap:8px; }
+.screenshot-toolbar { margin-bottom:8px; }
+.screenshot-controls { margin-top:8px; }
+.screenshot-toolbar button, .screenshot-controls button {
+    flex:1; height:44px; border:0; border-radius:10px; font-weight:800; background:#374151; color:white;
 }
-
-.screenshot-toolbar {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.screenshot-toolbar button {
-    height: 42px;
-    background: #374151;
-    color: #ffffff;
-}
-
-#screenshotRefreshButton {
-    background: #2563eb;
-}
-
+#screenshotRefreshButton { background:#2563eb; }
+#screenshotAltTabButton { background:#7c3aed; }
 .screenshot-view {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border-radius: 8px;
-    background: #000000;
+    flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; border-radius:12px; background:black;
 }
+#screenshotImage { display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; }
+#screenshotStatus { padding:20px; color:#d1d5db; text-align:center; }
 
-#screenshotImage {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-}
-
-#screenshotStatus {
-    padding: 20px;
-    text-align: center;
-    color: #d1d5db;
-}
-
-.screenshot-controls {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-}
-
-.screenshot-controls button {
-    background: #e5e7eb;
-    color: #111827;
-}
-
-#screenshotAltTabButton {
-    background: #7c3aed;
-    color: #ffffff;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-    touch-action: manipulation;
+@media (max-width: 380px) {
+    .app-shell { padding-left:10px; padding-right:10px; }
+    .screenshot-preview-row { grid-template-columns:1fr 94px; }
+    #screenshotButton { font-size:11px; }
 }
 </style>
 </head>
-
 <body>
+<div class="app-shell">
+    <header class="app-header">
+        <img id="banner" alt="Flicksy">
+        <div class="connection-pill">
+            <span class="connection-dot"></span>
+            <span id="host"></span>
+        </div>
+    </header>
 
-<main>
+    <section class="app-page active" data-page-panel="input">
+        <h1 class="page-title">入力</h1>
+        <p class="page-subtitle">PCへ文字・キー操作を送信します。</p>
 
-<img id="banner" alt="Flicksy">
+        <div class="card">
+            <div class="screenshot-preview-row">
+                <div id="screenshotPreview" class="screenshot-preview">
+                    <div id="screenshotPreviewStatus">Loading screenshot...</div>
+                    <img id="screenshotPreviewImage" alt="Screenshot preview" hidden>
+                </div>
+                <button id="screenshotButton" class="primary-button" tabindex="-1">SCREENSHOT</button>
+            </div>
 
-<div class="connection">
-    Connected / <span id="host"></span>
+            <input id="text" class="text-input" type="text" enterkeyhint="send" autocomplete="off" placeholder="文字を入力してEnter">
+
+            <div class="key-grid two">
+                <button class="key-button strong" data-hotkey="alt-tab" tabindex="-1">ALT+TAB</button>
+                <button class="key-button strong" data-vk="13" tabindex="-1">ENTER</button>
+            </div>
+            <div class="key-grid three">
+                <button class="key-button" data-vk="27" tabindex="-1">ESC</button>
+                <button class="key-button" data-vk="9" tabindex="-1">TAB</button>
+                <button class="key-button" data-vk="8" tabindex="-1">BS</button>
+            </div>
+            <div class="key-grid four">
+                <button class="key-button" data-vk="37" tabindex="-1">←</button>
+                <button class="key-button" data-vk="38" tabindex="-1">↑</button>
+                <button class="key-button" data-vk="40" tabindex="-1">↓</button>
+                <button class="key-button" data-vk="39" tabindex="-1">→</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="app-page" data-page-panel="action">
+        <h1 class="page-title">アクション</h1>
+        <p class="page-subtitle">PC側Configで登録した操作をここへ並べる想定。</p>
+
+        <div id="actionList" class="action-list">
+            <div class="card" id="actionStatus">Action一覧を読み込み中...</div>
+        </div>
+    </section>
+
+    <section class="app-page" data-page-panel="memo">
+        <h1 class="page-title">メモ</h1>
+        <p class="page-subtitle">文章と写真をPCへ送り、メモとして保存する画面。</p>
+
+        <div class="card">
+            <div class="memo-field">
+                <label class="memo-label" for="memoTitle">タイトル</label>
+                <input id="memoTitle" class="memo-input" type="text" autocomplete="off" placeholder="タイトル">
+            </div>
+
+            <div class="memo-field">
+                <label class="memo-label" for="memoBody">本文</label>
+                <textarea id="memoBody" class="memo-textarea" placeholder="メモを入力"></textarea>
+            </div>
+
+            <div class="memo-field">
+                <span class="memo-label">写真</span>
+                <div class="file-picker">
+                    <label class="file-button" for="memoImage">写真を撮る / 選ぶ</label>
+                    <span id="memoImageName">写真は選択されていません</span>
+                    <input id="memoImage" type="file" accept="image/*" capture="environment">
+                </div>
+                <img id="memoPreview" alt="Memo preview" hidden>
+            </div>
+
+            <button id="memoSendButton" class="memo-send" type="button">メモを送信</button>
+        </div>
+    </section>
 </div>
 
-<div class="screenshot-preview-row">
-
-    <div id="screenshotPreview" class="screenshot-preview">
-        <div id="screenshotPreviewStatus">Loading screenshot...</div>
-        <img id="screenshotPreviewImage" alt="Screenshot preview" hidden>
-    </div>
-
-    <button id="screenshotButton" tabindex="-1">SCREENSHOT</button>
-
-</div>
-
-<input
-    id="text"
-    type="text"
-    enterkeyhint="send"
-    autocomplete="off">
-
-<div class="row">
-    <button data-hotkey="alt-tab" tabindex="-1">ALT+TAB</button>
-    <button data-vk="13" tabindex="-1">ENTER</button>
-</div>
-
-<div class="row">
-    <button data-vk="27" tabindex="-1">ESC</button>
-    <button data-vk="9"  tabindex="-1">TAB</button>
-    <button data-vk="8"  tabindex="-1">BS</button>
-</div>
-
-<div class="row">
-    <button data-vk="38" tabindex="-1">↑</button>
-    <button data-vk="40" tabindex="-1">↓</button>
-    <button data-vk="37" tabindex="-1">←</button>
-    <button data-vk="39" tabindex="-1">→</button>
-</div>
+<nav class="bottom-nav" aria-label="Flicksy navigation">
+    <button class="nav-button active" data-page="input" type="button"><span class="nav-icon">⌨</span><span>入力</span></button>
+    <button class="nav-button" data-page="action" type="button"><span class="nav-icon">☷</span><span>Action</span></button>
+    <button class="nav-button" data-page="memo" type="button"><span class="nav-icon">▤</span><span>Memo</span></button>
+</nav>
 
 <div id="screenshotOverlay" class="screenshot-overlay">
-
     <div class="screenshot-toolbar">
         <button id="screenshotCloseButton" type="button">CLOSE</button>
         <button id="screenshotRefreshButton" type="button">REFRESH</button>
     </div>
-
     <div class="screenshot-view">
         <div id="screenshotStatus">Loading screenshot...</div>
         <img id="screenshotImage" alt="Screenshot" hidden>
     </div>
-
     <div class="screenshot-controls">
         <button id="screenshotAltTabButton" type="button">ALT+TAB</button>
         <button data-screen-vk="13" type="button">ENTER</button>
         <button data-screen-vk="27" type="button">ESC</button>
     </div>
-
     <div class="screenshot-controls">
         <button data-screen-vk="37" type="button">←</button>
         <button data-screen-vk="38" type="button">↑</button>
         <button data-screen-vk="40" type="button">↓</button>
         <button data-screen-vk="39" type="button">→</button>
     </div>
-
 </div>
 
-</main>
-
 <script>
+
 const input = document.getElementById("text");
 
 const params = new URLSearchParams(window.location.search);
@@ -562,7 +662,153 @@ bindAltTabButton(screenshotAltTabButton);
 
 refreshScreenshotPreview();
 
-</script>
 
+
+
+
+
+// --------------------------------------------------
+// Action list
+// --------------------------------------------------
+const actionList = document.getElementById('actionList');
+const actionStatus = document.getElementById('actionStatus');
+
+function renderActionList(actions)
+{
+    actionList.innerHTML = '';
+
+    if (!Array.isArray(actions) || actions.length === 0)
+    {
+        actionList.innerHTML = '<div class="card">登録されているActionはありません。</div>';
+        return;
+    }
+
+    actions.forEach(action =>
+    {
+        const button = document.createElement('button');
+        button.className = 'action-button';
+        button.type = 'button';
+        button.dataset.actionNo = action.id;
+
+        const icon = document.createElement('span');
+        icon.className = 'action-icon';
+        icon.textContent = '▶';
+
+        const text = document.createElement('span');
+        text.className = 'action-text';
+
+        const strong = document.createElement('strong');
+        strong.textContent = action.name ?? `Action ${action.id}`;
+
+        const small = document.createElement('small');
+        small.textContent = `Action No. ${action.id}`;
+
+        text.appendChild(strong);
+        text.appendChild(small);
+        button.appendChild(icon);
+        button.appendChild(text);
+
+        // 実行POSTは次段階で接続する。
+        button.addEventListener('click', () =>
+        {
+            console.log('Action selected:', action.id);
+        });
+
+        actionList.appendChild(button);
+    });
+}
+
+async function loadActions()
+{
+    try
+    {
+        const response = await fetch('/actions', { cache: 'no-store' });
+
+        if (!response.ok)
+            throw new Error(`HTTP ${response.status}`);
+
+        const actions = await response.json();
+        renderActionList(actions);
+    }
+    catch (error)
+    {
+        console.error('Action load failed:', error);
+        actionList.innerHTML = '<div class="card">Action一覧を取得できませんでした。</div>';
+    }
+}
+
+
+// --------------------------------------------------
+// Flicksy mobile UI navigation
+// --------------------------------------------------
+const navButtons = document.querySelectorAll('[data-page]');
+const pages = document.querySelectorAll('.app-page');
+
+function showPage(pageName)
+{
+    pages.forEach(page =>
+        page.classList.toggle('active', page.dataset.pagePanel === pageName));
+
+    navButtons.forEach(button =>
+        button.classList.toggle('active', button.dataset.page === pageName));
+}
+
+navButtons.forEach(button =>
+{
+    button.addEventListener('click', () =>
+    {
+        const pageName = button.dataset.page;
+        showPage(pageName);
+
+        if (pageName === 'action')
+            loadActions();
+    });
+});
+
+const memoImageInput = document.getElementById('memoImage');
+const memoPreview = document.getElementById('memoPreview');
+const memoImageName = document.getElementById('memoImageName');
+
+if (memoImageInput)
+{
+    memoImageInput.addEventListener('change', () =>
+    {
+        const file = memoImageInput.files && memoImageInput.files[0];
+        if (!file)
+        {
+            memoPreview.hidden = true;
+            memoPreview.removeAttribute('src');
+            memoImageName.textContent = '写真は選択されていません';
+            return;
+        }
+
+        memoImageName.textContent = file.name;
+        memoPreview.src = URL.createObjectURL(file);
+        memoPreview.hidden = false;
+    });
+}
+
+const memoSendButton = document.getElementById('memoSendButton');
+if (memoSendButton)
+{
+    memoSendButton.addEventListener('click', () =>
+    {
+        // TODO: CMemoManager 側のHTTPエンドポイント確定後にPOST処理を接続する。
+        const title = document.getElementById('memoTitle').value.trim();
+        const body = document.getElementById('memoBody').value.trim();
+
+        if (!title && !body)
+        {
+            alert('タイトルか本文を入力してください。');
+            return;
+        }
+
+        alert('Memo UIは準備OK。次にWindows側の保存APIへ接続します。');
+    });
+}
+
+showPage('input');
+
+</script>
 </body>
 </html>

@@ -36,6 +36,8 @@ public:
 		HINSTANCE hInst,
 		UINT uiPngRes);
 
+	void DrawSpriteIcon(Gdiplus::Graphics& g, Gdiplus::Bitmap* bitmap, int index, int x, int y, int size, COLORREF color);
+
 	int GetBtnCount() { return m_nBtn; };
 	int GetBtnWith() { return m_SizeBtn.cx; };
 	int GetBtnHeight() { return m_SizeBtn.cy; };

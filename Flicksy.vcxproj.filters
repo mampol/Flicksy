@@ -54,6 +54,9 @@
     <ClCompile Include="ConfigDlg.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="CMemoManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -104,6 +107,9 @@
     <ClInclude Include="DpiAware.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="CMemoManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Flicksy.rc">
@@ -133,6 +139,9 @@
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="007.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="008.png">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

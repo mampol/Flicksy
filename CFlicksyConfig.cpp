@@ -1,11 +1,95 @@
 #include "CFlicksyConfig.h"
 
 #include <Windows.h>
+#include <tchar.h>
 #include <algorithm>
 #include <cctype>
 #include <fstream>
 #include <string>
 #include <toml.hpp>
+
+bool SetRunAtStartup(bool enabled)
+{
+    HKEY hKey = nullptr;
+
+    if (RegOpenKeyEx(HKEY_CURRENT_USER,
+        REG_STARTUP,
+        0,
+        KEY_SET_VALUE,
+        &hKey) != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    LONG result;
+    if (enabled)
+    {
+        TCHAR exePath[MAX_PATH] = {};
+        GetModuleFileName(
+            nullptr,
+            exePath,
+            _countof(exePath));
+
+        std::basic_string<TCHAR> value = _T("\"");
+        value += exePath;
+        value += _T("\"");
+
+        result = RegSetValueEx(hKey,
+            REG_VALUE,
+            0,
+            REG_SZ,
+            reinterpret_cast<const BYTE*>(value.c_str()),
+            static_cast<DWORD>((value.size() + 1) * sizeof(TCHAR)));
+    }
+    else
+    {
+        result = RegDeleteValue(hKey,
+            REG_VALUE);
+        if (result == ERROR_FILE_NOT_FOUND) result = ERROR_SUCCESS;
+    }
+
+    RegCloseKey(hKey);
+
+    return result == ERROR_SUCCESS;
+}
+
+bool IsRunAtStartup()
+{
+    HKEY hKey = nullptr;
+
+    if (RegOpenKeyEx(HKEY_CURRENT_USER,
+        REG_STARTUP,
+        0,
+        KEY_QUERY_VALUE,
+        &hKey) != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    TCHAR exePath[MAX_PATH] = {};
+    DWORD type = 0;
+    DWORD size = sizeof(exePath);
+
+    LONG result = RegQueryValueEx(hKey,
+        REG_VALUE,
+        nullptr,
+        &type,
+        reinterpret_cast<BYTE*>(exePath),
+        &size);
+
+    RegCloseKey(hKey);
+
+    if (result != ERROR_SUCCESS || type != REG_SZ)
+        return false;
+
+    TCHAR cmpPath[MAX_PATH] = {};
+    GetModuleFileName(nullptr, cmpPath, _countof(cmpPath));
+    std::basic_string<TCHAR> value = _T("\"");
+    value += cmpPath;
+    value += _T("\"");
+
+    return _tcscmp(exePath, value.c_str()) == 0;
+}
 
 CFlicksyConfig::CFlicksyConfig()
 {
@@ -17,6 +101,8 @@ void CFlicksyConfig::SetDefault()
     m_port = 10000;
     m_webRoot = L"./webroot";
     m_autoStartServer = false;
+
+    m_actions.clear();
 
     m_dataFolder = L"./data";
 
@@ -41,6 +127,50 @@ void CFlicksyConfig::SetServerPort(int port)
         port = 65535;
 
     m_port = port;
+}
+
+std::string CFlicksyConfig::ActionTypeToString(const ActionType type)
+{
+    switch (type)
+    {
+    case ActionType::Url:
+        return "url";
+
+    case ActionType::Application:
+        return "application";
+
+    case ActionType::Folder:
+        return "folder";
+
+    case ActionType::Lock:
+        return "lock";
+
+    case ActionType::Shutdown:
+        return "shutdown";
+
+    default:
+        return "none";
+    }
+}
+
+ActionType CFlicksyConfig::StringToActionType(const std::string& type)
+{
+    if (type == "url")
+        return ActionType::Url;
+
+    if (type == "application")
+        return ActionType::Application;
+
+    if (type == "folder")
+        return ActionType::Folder;
+
+    if (type == "lock")
+        return ActionType::Lock;
+
+    if (type == "shutdown")
+        return ActionType::Shutdown;
+
+    return ActionType::None;
 }
 
 bool CFlicksyConfig::Load(const std::filesystem::path& file)
@@ -75,6 +205,30 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
 
             m_autoStartServer =
                 (*server)["auto_start"].value_or(false);
+        }
+
+        m_actions.clear();
+        if (auto* actions = tbl["action"].as_array())
+        {
+            for (auto&& node : *actions)
+            {
+                auto* item = node.as_table();
+                if (!item)
+                    continue;
+                ActionConfig action{};
+                action.enabled =
+                    (*item)["enabled"].value_or(true);
+                action.name =
+                    Utf8ToWide(
+                        (*item)["name"].value_or(std::string{}));
+                action.type =
+                    StringToActionType(
+                        (*item)["type"].value_or(std::string{ "none" }));
+                action.value =
+                    Utf8ToWide(
+                        (*item)["value"].value_or(std::string{}));
+                m_actions.push_back(std::move(action));
+            }
         }
 
         if (auto data = tbl["data"].as_table())
@@ -152,6 +306,18 @@ bool CFlicksyConfig::Save(const std::filesystem::path& file) const
             { "web_root", WideToUtf8(m_webRoot) },
             { "auto_start", m_autoStartServer }
         });
+
+        toml::array actions;
+        for (const auto& action : m_actions)
+        {
+            toml::table item;
+            item.insert("type", ActionTypeToString(action.type));
+            item.insert("enabled", action.enabled);
+            item.insert("name", WideToUtf8(action.name));
+            item.insert("value", WideToUtf8(action.value));
+            actions.push_back(std::move(item));
+        }
+        tbl.insert("action", std::move(actions));
 
         tbl.insert("data", toml::table{
             { "data_folder", WideToUtf8(m_dataFolder) }

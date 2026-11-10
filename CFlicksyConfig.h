@@ -1,7 +1,32 @@
 #pragma once
 
 #include <filesystem>
+#include <vector>
 #include <string>
+
+#define REG_STARTUP				_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
+#define REG_VALUE				_T("Flicksy")
+
+bool SetRunAtStartup(bool enabled);
+bool IsRunAtStartup();
+
+enum class ActionType
+{
+    Url, 
+    Application,
+    Folder,
+    Lock,
+    Shutdown,
+    None
+};
+
+struct ActionConfig
+{
+    ActionType type = ActionType::Url;
+    bool enabled = true;
+    std::wstring name;
+    std::wstring value;
+};
 
 class CFlicksyConfig
 {
@@ -30,11 +55,24 @@ public:
     int ServerPort() const { return m_port; }
     void SetServerPort(int port);
 
+    static std::string ActionTypeToString(const ActionType type);
+    ActionType StringToActionType(const std::string& type);
+
     const std::wstring& WebRoot() const { return m_webRoot; }
     void SetWebRoot(const std::wstring& webRoot) { m_webRoot = webRoot; }
 
     bool AutoStartServer() const { return m_autoStartServer; }
     void SetAutoStartServer(bool value) { m_autoStartServer = value; }
+
+    const size_t GetActionSize() { return m_actions.size(); };
+    const ActionConfig& GetAction(const size_t actionindex) const { return m_actions.at(actionindex); };
+    void SetAction(const size_t actionindex, const ActionConfig& action) { m_actions.at(actionindex) = action; };
+    size_t AddAction(const ActionConfig& action)
+    {
+        m_actions.push_back(action);
+        return m_actions.size() - 1;
+    };
+    void DeleteAction(size_t index) { m_actions.erase(m_actions.begin() + index); };
 
     const std::wstring& GetDataFolder() const { return m_dataFolder; }
     void SetDataFolder(const std::wstring& dataFolder) { m_dataFolder = dataFolder; }
@@ -67,11 +105,11 @@ private:
     static std::string WideToUtf8(const std::wstring& text);
     static std::wstring Utf8ToWide(const std::string& text);
 
-    static const char* InputModeToString(InputMode mode);
-    static InputMode StringToInputMode(const std::string& value);
-
     static const char* ThemeToString(Theme theme);
     static Theme StringToTheme(const std::string& value);
+
+    static const char* InputModeToString(InputMode mode);
+    static InputMode StringToInputMode(const std::string& value);
 
 private:
     std::wstring m_FlicksyConfig;
@@ -79,6 +117,8 @@ private:
     int          m_port;
     std::wstring m_webRoot;
     bool         m_autoStartServer;
+
+    std::vector<ActionConfig> m_actions;
 
     std::wstring m_dataFolder;
 

@@ -13,6 +13,7 @@
 #include "CAppColorTheme.h"
 #include "CImgListPng.h"
 #include "CFlicksyConfig.h"
+#include "CMemoManager.h"
 #include "CTrayIcon.h"
 #include "CToggleSwitch.h"
 #include "CPopupLayerWnd.h"
@@ -29,16 +30,17 @@
 #define CSIMPLEHTTPSERVER	_T("CSimpleHttpServer")
 #define CAPPCOLORTHEME		_T("CAppColorTheme")
 #define CFLICKSYCONFIG		_T("CFlicksyConfig")
+#define CMEMOMANAGER		_T("CMemoManager")
 #define CTRAYICON			_T("CTrayIcon")
 
-#define IDC_EDIT_PORT       1001
-#define IDC_SPIN_PORT		1002
-#define IDC_EDIT_ROOT       1003
+//#define IDC_EDIT_PORT       1001
+//#define IDC_SPIN_PORT		  1002
+//#define IDC_EDIT_ROOT       1003
 #define IDC_RADIO_SENDINPUT	1004
 #define IDC_RADIO_CLIPBOARD	1005
 #define IDC_CHECK_TOPMOST	1006
-#define IDC_CHECK_AUTOSTART	1007
-#define IDC_CHECK_STARTUP	1008
+//#define IDC_CHECK_AUTOSTART	1007
+//#define IDC_CHECK_STARTUP	1008
 #define IDC_LIST_LOG		1009
 #define IDC_SWITCH_THEME	1010
 
@@ -116,12 +118,12 @@ void DrawTextLine(HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT forma
 void EnterSubclassButton(HWND hButton);
 void LeaveSubclassButton(HWND hButton);
 LRESULT CALLBACK StartStopBtnProc(HWND hBtn, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
+/*
 #define REG_STARTUP				_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
 #define REG_VALUE				_T("Flicksy")
 bool SetRunAtStartup(bool enabled);
 bool IsRunAtStartup();
-
+*/
 void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height, LPVOID lpAnim);
 
 static CLogger logger;
@@ -649,8 +651,8 @@ void DrawOptionPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	SelectObject(hdc, ghFont);
 	wstr = _T("TRANSMISSION");
 	DrawTextLine(hdc, 287, 138, wstr);
-	wstr = _T("STARTUP");
-	DrawTextLine(hdc, 287, 216, wstr);
+	//wstr = _T("STARTUP");
+	//DrawTextLine(hdc, 287, 216, wstr);
 
 	SelectObject(hdc, hOldFont);
 	SetTextColor(hdc, oldtextcolor);
@@ -1089,6 +1091,9 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)new CFlicksyConfig();
 	SetProp(hWnd, CFLICKSYCONFIG, lpCFlicksyConfig);
 
+	CMemoManager* lpCMemoManager = (CMemoManager*)new CMemoManager();
+	SetProp(hWnd, CMEMOMANAGER, lpCMemoManager);
+
 	CTrayIcon* lpCTrayIcon = (CTrayIcon*)new CTrayIcon();
 	SetProp(hWnd, CTRAYICON, lpCTrayIcon);
 
@@ -1096,6 +1101,8 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	GetModuleFileName(nullptr, path, _countof(path));
 	std::filesystem::path flicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
 	lpCFlicksyConfig->Load(flicksytoml);
+
+	lpCMemoManager->Load(lpCFlicksyConfig->GetDataFolder());
 
 	//gnInputInterval = lpCFlicksyConfig->GetInputInterval();
 	inputsender.SetInputInterval(lpCFlicksyConfig->GetInputInterval());
@@ -1105,9 +1112,11 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			DpiScale(hWnd, 720),
 			DpiScale(hWnd, 508),
 			DpiScale(hWnd, 40),
-			DpiScale(hWnd, 23),
-			lpCAppColorTheme->Colors().windowBg,
-			lpCFlicksyConfig->GetTheme() == CFlicksyConfig::Theme::Dark ? true : false);
+			DpiScale(hWnd, 23));
+		CToggleSwitch::SetBgColor(hSwitch, lpCAppColorTheme->Colors().windowBg);
+		if (lpCFlicksyConfig->GetTheme() == CFlicksyConfig::Theme::Dark) {
+			SendDlgItemMessage(hWnd, IDC_SWITCH_THEME, BM_SETCHECK, static_cast<WPARAM>(BST_CHECKED), 0);
+		}
 		ApplyTheme(hWnd);
 	}
 
@@ -1150,7 +1159,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		WS_EX_CLIENTEDGE,
 		_T("EDIT"),
 		_T("10000"),
-		WS_CHILD | WS_VISIBLE | ES_CENTER | ES_NUMBER,
+		WS_CHILD | WS_VISIBLE | ES_READONLY | ES_CENTER | ES_NUMBER,
 		105, 165, 90, 26,
 		hWnd,
 		(HMENU)IDC_EDIT_PORT,
@@ -1159,6 +1168,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	SendMessage(hEditPort, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
 	SendMessage(hEditPort, EM_LIMITTEXT, (WPARAM)5, 0L);
 
+	/*
 	HWND hSpinPort = CreateWindowEx(0,
 		UPDOWN_CLASS,
 		nullptr,
@@ -1171,6 +1181,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	SendMessage(hSpinPort, UDM_SETBUDDY, (WPARAM)hEditPort, 0);
 	SendMessage(hSpinPort, UDM_SETRANGE32, 1, 65535);
 	SendMessage(hSpinPort, UDM_SETPOS32, 0, 10000);
+	*/
 
 	int port = lpCFlicksyConfig->ServerPort();
 	SetDlgItemInt(hWnd, IDC_EDIT_PORT, port, FALSE);
@@ -1179,10 +1190,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		WS_EX_CLIENTEDGE,
 		_T("EDIT"),
 		lpCFlicksyConfig->WebRoot().c_str(),
-		WS_CHILD | WS_VISIBLE,
+		WS_CHILD | WS_VISIBLE | ES_READONLY,
 		105, 196, 136, 26,
 		hWnd,
-		(HMENU)IDC_EDIT_ROOT,
+		(HMENU)IDC_EDIT_WEBROOT,
 		hInst,
 		nullptr);
 	SendMessage(hEdiRoot, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
@@ -1247,7 +1258,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		(HMENU)IDC_CHECK_TOPMOST,
 		hInst,
 		nullptr);
-
+	/*
 	HWND hChk1 = CreateWindowEx(0,
 		_T("BUTTON"),
 		_T("&Start server automatically"),
@@ -1271,7 +1282,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		nullptr);
 	SendMessage(hChk2, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
 	CheckDlgButton(hWnd, IDC_CHECK_STARTUP, IsRunAtStartup() ? BST_CHECKED : BST_UNCHECKED);
-
+	*/
 	HWND hList = CreateWindowEx(WS_EX_CLIENTEDGE,
 		_T("LISTBOX"),
 		nullptr,
@@ -1440,8 +1451,8 @@ LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	{
 	case IDC_RADIO_SENDINPUT:
 	case IDC_RADIO_CLIPBOARD:
-	case IDC_CHECK_AUTOSTART:
-	case IDC_CHECK_STARTUP:
+	//case IDC_CHECK_AUTOSTART:
+	//case IDC_CHECK_STARTUP:
 		SetTextColor(hdc, pTheme->Colors().panelText[1]);
 		SetBkColor(hdc, pTheme->Colors().panelBg[1]);
 		return (LRESULT)pTheme->PanelBrush(1);
@@ -1488,7 +1499,7 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				break;
 			}
 			TCHAR szRoot[MAX_PATH];
-			if (GetDlgItemText(hWnd, IDC_EDIT_ROOT, szRoot, _countof(szRoot)) < 1) {
+			if (GetDlgItemText(hWnd, IDC_EDIT_WEBROOT, szRoot, _countof(szRoot)) < 1) {
 				_tcscpy_s(szRoot, _countof(szRoot), _T("./web"));
 			}
 			lpCSimpleHttpServer =
@@ -1553,8 +1564,12 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		break;
 	case ID_CONFIG:
 		{
-			CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
-			if (lpCFlicksyConfig) ShowConfigDlg(hWnd, lpCFlicksyConfig);
+			ConfigContext configContext = {
+				(CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG),
+				(CMemoManager*)GetProp(hWnd, CMEMOMANAGER),
+				(CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME)
+			};
+			ShowConfigDlg(hWnd, &configContext);
 		}
 		break;
 	default:
@@ -1822,13 +1837,20 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	ReleaseHotkey(hWnd);
 
+	CMemoManager* lpCMemoManager= (CMemoManager*)GetProp(hWnd, CMEMOMANAGER);
+	if (lpCMemoManager)
+	{
+		RemoveProp(hWnd, CMEMOMANAGER);
+		delete lpCMemoManager;
+	}
+
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 	if (lpCFlicksyConfig)
 	{
-		lpCFlicksyConfig->SetServerPort(GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE));
+		//lpCFlicksyConfig->SetServerPort(GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE));
 
 		//TCHAR szRoot[MAX_PATH];
-		//GetDlgItemText(hWnd, IDC_EDIT_ROOT, szRoot, _countof(szRoot));
+		//GetDlgItemText(hWnd, IDC_EDIT_WEBROOT, szRoot, _countof(szRoot));
 		//lpCFlicksyConfig->SetWebRoot(szRoot);
 
 		lpCFlicksyConfig->SetInputMode(IsDlgButtonChecked(hWnd, IDC_RADIO_CLIPBOARD) == BST_CHECKED
@@ -1836,6 +1858,7 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 		lpCFlicksyConfig->SetAlwaysOnTop(static_cast<bool>(GetWindowLongPtr(GetDlgItem(hWnd, IDC_CHECK_TOPMOST), GWLP_USERDATA)));
 
+		/*
 		lpCFlicksyConfig->SetAutoStartServer(IsDlgButtonChecked(hWnd, IDC_CHECK_AUTOSTART) == BST_CHECKED);
 
 		if (IsDlgButtonChecked(hWnd, IDC_CHECK_STARTUP) == BST_CHECKED) {
@@ -1844,6 +1867,7 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		else {
 			SetRunAtStartup(false);
 		}
+		*/
 
 		HWND hSwitch = GetDlgItem(hWnd, IDC_SWITCH_THEME);
 		lpCFlicksyConfig->SetTheme(CToggleSwitch::IsChecked(hSwitch)
@@ -1968,7 +1992,7 @@ LRESULT CALLBACK StartStopBtnProc(HWND hBtn, UINT uMsg, WPARAM wParam, LPARAM lP
 	WNDPROC oldProc = reinterpret_cast<WNDPROC>(GetProp(hBtn, BUTTONSUBCLASS));
 	return CallWindowProc(oldProc, hBtn, uMsg, wParam, lParam);
 }
-
+/*
 bool SetRunAtStartup(bool enabled)
 {
 	HKEY hKey = nullptr;
@@ -2013,7 +2037,7 @@ bool SetRunAtStartup(bool enabled)
 
 	return result == ERROR_SUCCESS;
 }
-
+*/
 bool MakeQrBitmap(const std::string& text, int size, QrBitmapCache& cache)
 {
 	cache.Clear();
@@ -2085,7 +2109,7 @@ bool MakeQrBitmap(const std::string& text, int size, QrBitmapCache& cache)
 
 	return true;
 }
-
+/*
 bool IsRunAtStartup()
 {
 	HKEY hKey = nullptr;
@@ -2123,7 +2147,7 @@ bool IsRunAtStartup()
 
 	return _tcscmp(exePath, value.c_str()) == 0;
 }
-
+*/
 void ApplyTheme(HWND hWnd)
 {
 	CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);

@@ -115,7 +115,6 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -132,7 +131,6 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>
@@ -142,6 +140,7 @@
     <ClCompile Include="CFlicksyConfig.cpp" />
     <ClCompile Include="CImgListPng.cpp" />
     <ClCompile Include="CInputSender.cpp" />
+    <ClCompile Include="CMemoManager.cpp" />
     <ClCompile Include="ConfigDlg.cpp" />
     <ClCompile Include="CPopupLayerWnd.cpp" />
     <ClCompile Include="CScreenshot.cpp" />
@@ -158,6 +157,7 @@
     <ClInclude Include="CImgListPng.h" />
     <ClInclude Include="CAppColorTheme.h" />
     <ClInclude Include="CInputSender.h" />
+    <ClInclude Include="CMemoManager.h" />
     <ClInclude Include="ConfigDlg.h" />
     <ClInclude Include="CPopupLayerWnd.h" />
     <ClInclude Include="CScreenshot.h" />
@@ -183,6 +183,7 @@
     <Image Include="005.png" />
     <Image Include="006.png" />
     <Image Include="007.png" />
+    <Image Include="008.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

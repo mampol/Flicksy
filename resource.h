@@ -17,7 +17,8 @@
 #define IDD_CONFIG_MEMO                 112
 #define IDD_CONFIG_SECURITY             113
 #define IDD_CONFIG_INFO                 114
-#define IDD_CONFIG_TODO                 115
+#define IDD_MEMO_EDIT                   116
+#define IDB_PNG8                        118
 #define IDD_BTN_SYSTEM                  1001
 #define IDD_BTN_ACTION                  1002
 #define IDC_EDIT_WEBROOT                1003
@@ -27,7 +28,7 @@
 #define IDD_BTN_INFO                    1005
 #define IDC_EDIT_LOGFILE                1005
 #define IDC_BTN_LOGFILE                 1006
-#define IDD_BTN_TODO                    1006
+#define IDC_EDIT_PORT                   1007
 #define IDC_LIST_ACTION                 1008
 #define IDC_CHK_ENABLE                  1009
 #define IDC_EDIT_NAME                   1010
@@ -37,13 +38,18 @@
 #define IDC_BTN_DELETE                  1015
 #define IDC_EDIT_DATAFOLDER             1015
 #define IDC_BTN_ADD                     1016
-#define IDC_BTN_SAVEFOLDER              1016
 #define IDC_BTN_DATAFOLDER              1016
 #define IDC_EDIT_MAXIMAGESIZE           1017
-#define IDC_LIST_TODO                   1017
 #define IDC_EDIT_JPEGQUALITY            1018
-#define IDC_EDIT_RETENTIONDAYS          1019
+#define IDC_CHK_LOGENABLED              1019
 #define IDC_LIST_MEMO                   1020
+#define IDC_CHK_AUTOSTART               1020
+#define IDC_CHK_STARTUP                 1021
+#define IDC_BTN_ADDMEMO                 1021
+#define IDC_BTN_EDITMEMO                1022
+#define IDC_BTN_DELMEMO                 1023
+#define IDC_EDIT_MEMO_TEXT              1023
+#define IDC_EDIT_MEMO_DATE              1024
 #define ID_FILE_QUIT                    40001
 #define ID_FILE_STARTSERVER             40002
 #define ID_HTTP_START                   40003
@@ -63,9 +69,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        113
+#define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         40015
-#define _APS_NEXT_CONTROL_VALUE         1018
+#define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
