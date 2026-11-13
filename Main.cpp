@@ -126,6 +126,9 @@ bool IsRunAtStartup();
 */
 void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height, LPVOID lpAnim);
 
+bool ExecuteAction(const ActionConfig& action);
+bool EnableShutdownPrivilege();
+
 static CLogger logger;
 constexpr int MAX_LOG_COUNT = 1000;
 /*
@@ -162,6 +165,7 @@ LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
@@ -1052,6 +1056,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		return (OnHttpPopHotkey(hWnd, msg, wp, lp));
 	case UM_HTTPSTATE:
 		return (OnHttpState(hWnd, msg, wp, lp));
+	case UM_HTTPPOPACTION:
+		return (OnHttpPopAction(hWnd, msg, wp, lp));
 	case UM_HTTPLOG:
 		return (OnHttpLog(hWnd, msg, wp, lp));
 	case UM_TRAYICON:
@@ -1096,6 +1102,12 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 	CTrayIcon* lpCTrayIcon = (CTrayIcon*)new CTrayIcon();
 	SetProp(hWnd, CTRAYICON, lpCTrayIcon);
+
+	lpCSimpleHttpServer->SetActionProvider(
+		[lpCFlicksyConfig]()
+		{
+			return lpCFlicksyConfig->GetActions();
+		});
 
 	wchar_t path[MAX_PATH] = {};
 	GetModuleFileName(nullptr, path, _countof(path));
@@ -1762,6 +1774,27 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	return 0L;
 }
 
+LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+	if (pServer) {
+		std::wstring wstr;
+		size_t id{};
+		pServer->PopActions(id);
+
+		CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+		if (lpCFlicksyConfig) {
+
+			wstr = L"Execute Action : " + std::to_wstring(id);
+			AddLog(hWnd, LogType::Server, wstr);
+
+			ExecuteAction(lpCFlicksyConfig->GetAction(id));
+		}
+	}
+
+	return 0L;
+}
+
 LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
@@ -2294,4 +2327,83 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height, LPVOID lpV
 			&textBrush);
 
 	}
+}
+
+bool ExecuteAction(const ActionConfig& action)
+{
+	switch (action.type)
+	{
+	case ActionType::Url:
+	case ActionType::Application:
+	case ActionType::Folder:
+		{
+			SHELLEXECUTEINFO sei{};
+			sei.cbSize = sizeof(sei);
+			sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+			sei.lpVerb = L"open";
+			sei.lpFile = action.value.c_str();
+			sei.lpParameters = nullptr;
+			sei.nShow = SW_SHOWNORMAL;
+			if (!ShellExecuteEx(&sei))
+			{
+				return false;
+			}
+			return true;
+		}
+		break;
+
+	case ActionType::Lock:
+		LockWorkStation();
+		return true;
+
+	case ActionType::Shutdown:
+		EnableShutdownPrivilege();
+		ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCEIFHUNG,
+			SHTDN_REASON_MAJOR_APPLICATION | SHTDN_REASON_MINOR_MAINTENANCE | SHTDN_REASON_FLAG_PLANNED);
+		return true;
+
+	}
+
+	return false;
+}
+
+bool EnableShutdownPrivilege()
+{
+	HANDLE hToken{};
+
+	if (!OpenProcessToken(
+		GetCurrentProcess(),
+		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+		&hToken))
+	{
+		return false;
+	}
+
+	TOKEN_PRIVILEGES tp{};
+	tp.PrivilegeCount = 1;
+
+	if (!LookupPrivilegeValue(
+		nullptr,
+		SE_SHUTDOWN_NAME,
+		&tp.Privileges[0].Luid))
+	{
+		CloseHandle(hToken);
+		return false;
+	}
+
+	tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+	AdjustTokenPrivileges(
+		hToken,
+		FALSE,
+		&tp,
+		0,
+		nullptr,
+		nullptr);
+
+	DWORD err = GetLastError();
+
+	CloseHandle(hToken);
+
+	return err == ERROR_SUCCESS;
 }

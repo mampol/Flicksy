@@ -129,27 +129,27 @@ void CFlicksyConfig::SetServerPort(int port)
     m_port = port;
 }
 
-std::string CFlicksyConfig::ActionTypeToString(const ActionType type)
+std::wstring CFlicksyConfig::ActionTypeToString(const ActionType type)
 {
     switch (type)
     {
     case ActionType::Url:
-        return "url";
+        return L"url";
 
     case ActionType::Application:
-        return "application";
+        return L"application";
 
     case ActionType::Folder:
-        return "folder";
+        return L"folder";
 
     case ActionType::Lock:
-        return "lock";
+        return L"lock";
 
     case ActionType::Shutdown:
-        return "shutdown";
+        return L"shutdown";
 
     default:
-        return "none";
+        return L"none";
     }
 }
 
@@ -311,7 +311,7 @@ bool CFlicksyConfig::Save(const std::filesystem::path& file) const
         for (const auto& action : m_actions)
         {
             toml::table item;
-            item.insert("type", ActionTypeToString(action.type));
+            item.insert("type", WideToUtf8(ActionTypeToString(action.type)));
             item.insert("enabled", action.enabled);
             item.insert("name", WideToUtf8(action.name));
             item.insert("value", WideToUtf8(action.value));

@@ -1,8 +1,13 @@
 #include "CSimpleHttpServer.h"
+#include "TextEncoding.h"
+
+#include "json.hpp"
 
 #include <bcrypt.h>
 
 #pragma comment(lib, "bcrypt.lib")
+
+using json = nlohmann::json;
 
 CSimpleHttpServer::CSimpleHttpServer()
 {
@@ -200,7 +205,9 @@ CSimpleHttpServer::CSimpleHttpServer()
 
         });
 
-    m_server.Post("/hotkey", [this](const httplib::Request& req, httplib::Response& res)
+    m_server.Post("/hotkey",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
         {
             if (!CheckToken(req, res)) return;
 
@@ -241,7 +248,7 @@ CSimpleHttpServer::CSimpleHttpServer()
 
         });
 
-    m_server.Get(R"(/screenshot)",
+    m_server.Get("/screenshot",
         [this](const httplib::Request& req,
             httplib::Response& res)
         {
@@ -268,6 +275,84 @@ CSimpleHttpServer::CSimpleHttpServer()
 
             AddHttpLog(req, res.status);
         });
+
+    m_server.Get("/api/actions",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!CheckToken(req, res)) return;
+
+            std::string log =
+                "[" + req.remote_addr + "] " + req.method + " " + req.path;
+            AddServerLog(log);
+
+            json j = json::array();
+
+            if (!m_actionProvider)
+            {
+                res.status = 500;
+                res.set_content(
+                    "Flicksy http 500 error",
+                    "text/plain; charset=UTF-8");
+                AddHttpLog(req, res.status);
+                return;
+            }
+            auto actions = m_actionProvider();
+            for (size_t i = 0; i < actions.size(); ++i)
+            {
+                const auto& action = actions[i];
+
+                if (!action.enabled)
+                    continue;
+
+                j.push_back({
+                    { "id", i },
+                    { "name", TextEncoding::Utf16ToUtf8(action.name) },
+                    { "type", TextEncoding::Utf16ToUtf8(CFlicksyConfig::ActionTypeToString(action.type)) }
+                    });
+            }
+
+            res.status = 200;
+            res.set_content(
+                j.dump(),
+                "application/json; charset=UTF-8");
+
+            AddHttpLog(req, res.status);
+        }); 
+
+    m_server.Post("/api/actions/run",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!CheckToken(req, res))
+                return;
+
+            if (!req.has_param("id"))
+            {
+                res.status = 400;
+                return;
+            }
+
+            try
+            {
+                size_t id =
+                    static_cast<size_t>(
+                        std::stoull(req.get_param_value("id")));
+
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    m_actions.push(id);
+                }
+
+                PostMsg(UM_HTTPPOPACTION);
+
+                res.status = 200;
+            }
+            catch (...)
+            {
+                res.status = 400;
+            }
+        }); 
 }
 
 CSimpleHttpServer::~CSimpleHttpServer()
@@ -502,6 +587,19 @@ bool CSimpleHttpServer::PopHotkey(std::string& hotkey)
 
     hotkey = m_hotkey.front();
     m_hotkey.pop();
+
+    return true;
+}
+
+bool CSimpleHttpServer::PopActions(size_t& id)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_actions.empty())
+        return false;
+
+    id = m_actions.front();
+    m_actions.pop();
 
     return true;
 }

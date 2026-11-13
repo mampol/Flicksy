@@ -24,3 +24,4 @@ x86/
 
 qrcodegen.cpp
 qrcodegen.hpp
+json.hpp

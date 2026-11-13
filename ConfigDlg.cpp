@@ -371,12 +371,6 @@ void LayoutControls(HWND hParent, HWND hDlg)
 
 LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT dis, CAppColorTheme& apptheme)
 {
-    UINT dpi = GetDpiForWindow(dis->hwndItem);
-    auto Dpi = [dpi](int value)
-        {
-            return MulDiv(value, dpi, 96);
-        };
-
     COLORREF colBtn = apptheme.Colors().buttonBg;
     COLORREF colText = apptheme.Colors().buttonText;
     if (cds.uCurrentId == dis->CtlID)
@@ -389,9 +383,9 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
     HPEN hPen = CreatePen(PS_SOLID, 0, colBtn);
     HBRUSH oldBrush = static_cast<HBRUSH>(SelectObject(dis->hDC, hBrush));
     HPEN oldPen = static_cast<HPEN>(SelectObject(dis->hDC, hPen));
-    int padding = Dpi(12);
-    int radius = Dpi(8);
-    int accent = Dpi(4);
+    int padding = DpiScale(dis->hwndItem, 12);
+    int radius = DpiScale(dis->hwndItem, 8);
+    int accent = DpiScale(dis->hwndItem, 4);
     RECT rc = dis->rcItem;
     RoundRect(
         dis->hDC,
@@ -407,7 +401,7 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
     DeleteObject(hPen);
 
     CImgListPng cilp;
-    int iconSize = Dpi(38);
+    int iconSize = DpiScale(hDlg, 38);
     Gdiplus::Graphics g(dis->hDC);
     /*
     cilp.DrawSpriteIcon(
@@ -453,8 +447,8 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
         hOldFont = static_cast<HFONT>(SelectObject(dis->hDC, hFont));
     }
     RECT rcText = rc;
-    rcText.left += Dpi(40);
-    rcText.right -= Dpi(4);
+    rcText.left += DpiScale(hDlg, 40);
+    rcText.right -= DpiScale(hDlg, 4);
     wchar_t btnText[64];
     GetWindowText(dis->hwndItem, btnText, _countof(btnText));
     SetTextColor(dis->hDC, colText);
@@ -497,6 +491,7 @@ LRESULT OnCtlColorConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColo
 
     SetTextColor(hdc, appTheme.Colors().panelText[1]);
     SetBkColor(hdc, appTheme.Colors().panelBg[1]);
+
     return (LRESULT)appTheme.PanelBrush(1);
 }
 
@@ -601,6 +596,11 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             if (dis->itemID == static_cast<UINT>(-1))
                 return TRUE;
 
+            FillRect(dis->hDC, &(dis->rcItem), GetSysColorBrush(COLOR_WINDOW));
+
+            if (dis->itemState & ODS_SELECTED)
+                return TRUE;
+
             const size_t actionIndex =
                 static_cast<size_t>(
                     SendMessage(
@@ -612,11 +612,14 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             const ActionConfig& action =
                 lpConfigContext->config->GetAction(actionIndex);
 
-            // FillRect
-            // DrawText
-            DrawText(dis->hDC, (action.name).c_str(), static_cast<int>((action.name).size()), &(dis->rcItem), DT_SINGLELINE);
-            // 選択行の背景
-            // enabled/name/type/value の描画
+            std::wstring wstraction = (action.name).c_str() + 
+                lpConfigContext->config->ActionTypeToString(action.type) +
+                (action.value).c_str();
+            DrawText(dis->hDC,
+                wstraction.c_str(),
+                static_cast<int>(wstraction.size()),
+                &(dis->rcItem),
+                DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
 
         }
         break;
@@ -672,6 +675,7 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                     return TRUE;
                 }
                 break;
+
             case IDC_BTN_DELETE:
                 {
                     HWND hList = GetDlgItem(hDlg, IDC_LIST_ACTION);
@@ -738,6 +742,7 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                     return TRUE;
                 }
                 break;
+
             case IDC_LIST_ACTION:
                 if (HIWORD(wp) == LBN_SELCHANGE) {
                     HWND hList = reinterpret_cast<HWND>(lp);
@@ -843,45 +848,45 @@ static void ShowActionEditor(
     SetWindowPos(
         GetDlgItem(hDlg, IDC_CHK_ENABLE),
         HWND_TOP,
-        rc.left + 10,
+        rc.left + DpiScale(hDlg, 10),
         rc.top,
-        40,
+        DpiScale(hDlg, 40),
         rc.bottom - rc.top,
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
 
     SetWindowPos(
         GetDlgItem(hDlg, IDC_EDIT_NAME),
         HWND_TOP,
-        rc.left + 60,
+        rc.left + DpiScale(hDlg, 60),
         rc.top,
-        120,
+        DpiScale(hDlg, 120),
         rc.bottom - rc.top,
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
 
     SetWindowPos(
         GetDlgItem(hDlg, IDC_CMB_TYPE),
         HWND_TOP,
-        rc.left + 190,
+        rc.left + DpiScale(hDlg, 190),
         rc.top,
-        100,
-        150,
+        DpiScale(hDlg, 100),
+        DpiScale(hDlg, 150),
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
 
     SetWindowPos(
         GetDlgItem(hDlg, IDC_EDIT_VALUE),
         HWND_TOP,
-        rc.left + 300,
+        rc.left + DpiScale(hDlg, 300),
         rc.top,
-        120,
+        DpiScale(hDlg, 220),
         rc.bottom - rc.top,
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
 
     SetWindowPos(
         GetDlgItem(hDlg, IDC_BTN_VALUE),
         HWND_TOP,
-        rc.left + 430,
+        rc.left + DpiScale(hDlg, 530),
         rc.top,
-        30,
+        DpiScale(hDlg, 30),
         rc.bottom - rc.top,
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
 

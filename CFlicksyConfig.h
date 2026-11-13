@@ -55,7 +55,7 @@ public:
     int ServerPort() const { return m_port; }
     void SetServerPort(int port);
 
-    static std::string ActionTypeToString(const ActionType type);
+    static std::wstring ActionTypeToString(const ActionType type);
     ActionType StringToActionType(const std::string& type);
 
     const std::wstring& WebRoot() const { return m_webRoot; }
@@ -66,6 +66,7 @@ public:
 
     const size_t GetActionSize() { return m_actions.size(); };
     const ActionConfig& GetAction(const size_t actionindex) const { return m_actions.at(actionindex); };
+    const std::vector<ActionConfig>& GetActions() const { return m_actions; };
     void SetAction(const size_t actionindex, const ActionConfig& action) { m_actions.at(actionindex) = action; };
     size_t AddAction(const ActionConfig& action)
     {

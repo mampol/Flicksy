@@ -433,18 +433,6 @@ function sendHotKey(combo)
     return hotKeyRequest;
 }
 
-input.addEventListener("keydown", e =>
-{
-    if (e.isComposing)
-        return;
-
-    if (e.key === "Enter")
-    {
-        e.preventDefault();
-        sendText();
-    }
-});
-
 document.querySelectorAll("[data-vk]").forEach(button =>
 {
     button.onpointerdown = () => input.focus();
@@ -708,10 +696,23 @@ function renderActionList(actions)
         button.appendChild(icon);
         button.appendChild(text);
 
-        // 実行POSTは次段階で接続する。
-        button.addEventListener('click', () =>
+        button.addEventListener('click', async () =>
         {
-            console.log('Action selected:', action.id);
+            try
+            {
+                const response = await post(
+                    "/api/actions/run",
+                    "id=" + encodeURIComponent(action.id));
+
+                if (!response.ok)
+                    throw new Error(`HTTP ${response.status}`);
+
+                console.log('Action executed:', action.id);
+            }
+            catch (error)
+            {
+                console.error('Action execute failed:', error);
+            }
         });
 
         actionList.appendChild(button);
@@ -722,7 +723,9 @@ async function loadActions()
 {
     try
     {
-        const response = await fetch('/actions', { cache: 'no-store' });
+        const response = await fetch(
+            '/api/actions?token=' + encodeURIComponent(token),
+            { cache: 'no-store' });
 
         if (!response.ok)
             throw new Error(`HTTP ${response.status}`);
@@ -733,10 +736,10 @@ async function loadActions()
     catch (error)
     {
         console.error('Action load failed:', error);
-        actionList.innerHTML = '<div class="card">Action一覧を取得できませんでした。</div>';
+        actionList.innerHTML =
+            '<div class="card">Action一覧を取得できませんでした。</div>';
     }
 }
-
 
 // --------------------------------------------------
 // Flicksy mobile UI navigation
