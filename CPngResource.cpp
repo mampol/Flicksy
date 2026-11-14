@@ -327,6 +327,42 @@ void CPngResource::DrawPng(
 		destRect);
 }
 
+void CPngResource::DrawSprite(
+	Gdiplus::Graphics& g,
+	Gdiplus::Bitmap* bitmap,
+	int index,
+	int x, int y,
+	int srcw, int srch,
+	int destw, int desth)
+{
+	if (!bitmap)
+		return;
+
+	Gdiplus::Rect destRect(
+		x,
+		y,
+		destw,
+		desth);
+
+	Gdiplus::Rect srcRect(
+		index * srcw,
+		0,
+		srcw,
+		srch);
+
+	g.SetInterpolationMode(
+		Gdiplus::InterpolationModeHighQualityBicubic);
+
+	g.DrawImage(
+		bitmap,
+		destRect,
+		srcRect.X,
+		srcRect.Y,
+		srcRect.Width,
+		srcRect.Height,
+		Gdiplus::UnitPixel);
+}
+
 void CPngResource::DrawSpriteIcon(
 	Gdiplus::Graphics& g,
 	Gdiplus::Bitmap* bitmap,
@@ -342,14 +378,14 @@ void CPngResource::DrawSpriteIcon(
 	Gdiplus::Rect destRect(
 		x,
 		y,
-		srcsize,
-		srcsize);
-
-	Gdiplus::Rect srcRect(
-		index * destsize,
-		0,
 		destsize,
 		destsize);
+
+	Gdiplus::Rect srcRect(
+		index * srcsize,
+		0,
+		srcsize,
+		srcsize);
 
 	g.SetInterpolationMode(
 		Gdiplus::InterpolationModeHighQualityBicubic);

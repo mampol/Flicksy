@@ -333,7 +333,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             ShowWindow(cds.hInfo, SW_HIDE);
             cds.hCurrent = cds.hSystem;
             cds.uCurrentId = LOWORD(wp);
-            InvalidateRect(hDlg, NULL, TRUE);
+            InvalidateRect(hDlg, NULL, FALSE);
             break;
         case IDD_BTN_ACTION:
             ShowWindow(cds.hAction, SW_SHOW);
@@ -343,7 +343,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             ShowWindow(cds.hInfo, SW_HIDE);
             cds.hCurrent = cds.hAction;
             cds.uCurrentId = LOWORD(wp);
-            InvalidateRect(hDlg, NULL, TRUE);
+            InvalidateRect(hDlg, NULL, FALSE);
             break;
         case IDD_BTN_MEMO:
             ReloadMemoList(
@@ -356,7 +356,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             ShowWindow(cds.hInfo, SW_HIDE);
             cds.hCurrent = cds.hMemo;
             cds.uCurrentId = LOWORD(wp);
-            InvalidateRect(hDlg, NULL, TRUE);
+            InvalidateRect(hDlg, NULL, FALSE);
             break;
         case IDD_BTN_SECURITY:
             ShowWindow(cds.hAction, SW_HIDE);
@@ -366,7 +366,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             ShowWindow(cds.hInfo, SW_HIDE);
             cds.hCurrent = cds.hSecurity;
             cds.uCurrentId = LOWORD(wp);
-            InvalidateRect(hDlg, NULL, TRUE);
+            InvalidateRect(hDlg, NULL, FALSE);
             break;
         case IDD_BTN_INFO:
             ShowWindow(cds.hAction, SW_HIDE);
@@ -376,7 +376,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             ShowWindow(cds.hInfo, SW_SHOW);
             cds.hCurrent = cds.hInfo;
             cds.uCurrentId = LOWORD(wp);
-            InvalidateRect(hDlg, NULL, TRUE);
+            InvalidateRect(hDlg, NULL, FALSE);
             break;
         case IDCANCEL:
             EndDialog(hDlg, IDCANCEL);
@@ -434,30 +434,41 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
         colText = apptheme.Colors().buttonSelText;;
     }
 
+    HDC hdc = dis->hDC;
+    RECT rc = dis->rcItem;
+    int w = rc.right - rc.left;
+    int h = rc.bottom - rc.top;
+    HDC memDC = CreateCompatibleDC(hdc);
+    HBITMAP memBmp = CreateCompatibleBitmap(hdc, w, h);
+    HBITMAP oldBmp =
+        static_cast<HBITMAP>(
+            SelectObject(memDC, memBmp));
+
+    FillRect(memDC, &rc, GetSysColorBrush(COLOR_BTNFACE));
     HBRUSH hBrush = CreateSolidBrush(colBtn);
     HPEN hPen = CreatePen(PS_SOLID, 0, colBtn);
-    HBRUSH oldBrush = static_cast<HBRUSH>(SelectObject(dis->hDC, hBrush));
-    HPEN oldPen = static_cast<HPEN>(SelectObject(dis->hDC, hPen));
+    HBRUSH oldBrush = static_cast<HBRUSH>(SelectObject(memDC, hBrush));
+    HPEN oldPen = static_cast<HPEN>(SelectObject(memDC, hPen));
     int padding = DpiScale(dis->hwndItem, 12);
     int radius = DpiScale(dis->hwndItem, 8);
     int accent = DpiScale(dis->hwndItem, 4);
-    RECT rc = dis->rcItem;
+    RECT rcFrame = dis->rcItem;
     RoundRect(
-        dis->hDC,
-        rc.left,
-        rc.top,
-        rc.right,
-        rc.bottom,
+        memDC,
+        rcFrame.left,
+        rcFrame.top,
+        rcFrame.right,
+        rcFrame.bottom,
         radius,
         radius);
-    SelectObject(dis->hDC, oldBrush);
-    SelectObject(dis->hDC, oldPen);
+    SelectObject(memDC, oldBrush);
+    SelectObject(memDC, oldPen);
     DeleteObject(hBrush);
     DeleteObject(hPen);
 
     CPngResource png;
     int iconSize = DpiScale(hDlg, 38);
-    Gdiplus::Graphics g(dis->hDC);
+    Gdiplus::Graphics g(memDC);
     int iconIndex = 0;
 
     switch (dis->CtlID)
@@ -483,28 +494,39 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
         iconIndex,
         dis->rcItem.left,
         dis->rcItem.top,
-        iconSize,
         128,
+        iconSize,
         iconColor);
 
     HFONT hFont = reinterpret_cast<HFONT>(SendMessage(dis->hwndItem, WM_GETFONT, 0, 0));
     HFONT hOldFont = nullptr;
     if (hFont)
     {
-        hOldFont = static_cast<HFONT>(SelectObject(dis->hDC, hFont));
+        hOldFont = static_cast<HFONT>(SelectObject(memDC, hFont));
     }
     RECT rcText = rc;
     rcText.left += DpiScale(hDlg, 40);
     rcText.right -= DpiScale(hDlg, 4);
     wchar_t btnText[64];
     GetWindowText(dis->hwndItem, btnText, _countof(btnText));
-    SetTextColor(dis->hDC, colText);
-    SetBkColor(dis->hDC, colBtn);
-    DrawText(dis->hDC, btnText, -1, &rcText, DT_SINGLELINE | DT_VCENTER);
+    SetTextColor(memDC, colText);
+    SetBkColor(memDC, colBtn);
+    DrawText(memDC, btnText, -1, &rcText, DT_SINGLELINE | DT_VCENTER);
     if (hFont)
     {
-        SelectObject(dis->hDC, hOldFont);
+        SelectObject(memDC, hOldFont);
     }
+
+    BitBlt(hdc,
+        rc.left, rc.top,
+        w, h,
+        memDC,
+        0, 0,
+        SRCCOPY);
+
+    SelectObject(memDC, oldBmp);
+    DeleteObject(memBmp);
+    DeleteDC(memDC);
 
     return TRUE;
 }

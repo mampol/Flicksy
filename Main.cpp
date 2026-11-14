@@ -48,7 +48,12 @@
 static Gdiplus::GdiplusStartupInput ggdiplusStartupInput;
 static Gdiplus::Bitmap* gpBitmapBanner;
 static Gdiplus::Bitmap* gpBitmapBannerDark;
-static HIMAGELIST ghImgListBtn, ghImgListBtnHover, ghImgListBtnPressed, ghImgListBtnGrayed, ghImgListBtnPin;
+//static HIMAGELIST ghImgListBtn, ghImgListBtnHover, ghImgListBtnPressed, ghImgListBtnGrayed, ghImgListBtnPin;
+static Gdiplus::Bitmap* ghImgListBtn;
+static Gdiplus::Bitmap* ghImgListBtnHover;
+static Gdiplus::Bitmap* ghImgListBtnPressed;
+static Gdiplus::Bitmap* ghImgListBtnGrayed;
+static Gdiplus::Bitmap* ghImgListBtnPin;
 static ULONG_PTR ggdiplusToken = 0;
 static HFONT ghFontBold, ghFont;
 static HWND ghPopupQrWnd = nullptr;
@@ -111,8 +116,8 @@ void DrawOptionPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme);
 void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme);
 void DrawLogPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme);
 void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size);
-void DrawTextLine(HDC hdc, int x, int y, const std::wstring& strTextLine, const UINT format = DT_SINGLELINE | DT_END_ELLIPSIS);
-void DrawTextLine(HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT format);
+void DrawTextLine(HWND hWnd, HDC hdc, int x, int y, const std::wstring& strTextLine, const UINT format = DT_SINGLELINE | DT_END_ELLIPSIS);
+void DrawTextLine(HWND hWnd, HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT format);
 
 #define BUTTONSUBCLASS			_T("OldButtonProc")
 void EnterSubclassButton(HWND hButton);
@@ -149,29 +154,30 @@ typedef struct LogItem
 void AddLog(HWND hWnd, const LogType type, const std::wstring& text);
 COLORREF GetLogColor(LogType type);
 
-INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow);
-LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnPaint(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnMeasureItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnDrawItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
-LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
-LRESULT OnDrawListLogs(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
-LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnDestroy(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow);
+static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnPaint(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnDpiChanged(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnMeasureItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnDrawItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
+static LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
+static LRESULT OnDrawListLogs(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
+static LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnDestroy(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 
-void ApplyTheme(HWND hWnd);
+static void ApplyTheme(HWND hWnd);
 /*
 std::wstring Utf8ToUtf16(const std::string& src)
 {
@@ -521,30 +527,40 @@ void DrawBackground(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 	SetTextColor(hdc, (theme.Colors()).subText);
 	SetBkColor(hdc, (theme.Colors()).windowBg);
 	std::wstring wstr = _T("DarkMode");
-	DrawTextLine(hdc, 640, 509, wstr);
+	DrawTextLine(hWnd, hdc, 640, 509, wstr);
 }
 
 void DrawHeader(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 {
 	HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, theme.HeaderBrush());
 	HPEN hOldPen = (HPEN)SelectObject(hdc, theme.HeaderPen());
-	RoundRect(hdc, 2, 1, rc.right - 2, 84, 4, 4);
+	RoundRect(hdc, 2, 1, DpiScale(hWnd, rc.right - 2), DpiScale(hWnd, 84), 4, 4);
 
 	if (gpBitmapBanner && gpBitmapBannerDark)
 	{
 		Gdiplus::Graphics graphics(hdc);
 		if (theme.Mode() == ColorMode::Dark) {
-			graphics.DrawImage(gpBitmapBannerDark, 16, 6, gpBitmapBannerDark->GetWidth(), gpBitmapBannerDark->GetHeight());
+			graphics.DrawImage(gpBitmapBannerDark,
+				DpiScale(hWnd, 16),
+				DpiScale(hWnd, 6),
+				DpiScale(hWnd, gpBitmapBannerDark->GetWidth()),
+				DpiScale(hWnd, gpBitmapBannerDark->GetHeight()));
 		}
 		else {
-			graphics.DrawImage(gpBitmapBanner, 16, 6, gpBitmapBanner->GetWidth(), gpBitmapBanner->GetHeight());
+			graphics.DrawImage(gpBitmapBanner,
+				DpiScale(hWnd, 16),
+				DpiScale(hWnd, 6),
+				DpiScale(hWnd, gpBitmapBanner->GetWidth()),
+				DpiScale(hWnd, gpBitmapBanner->GetHeight()));
 		}
 	}
 
 	HFONT hOldFont = (HFONT)SelectObject(hdc, ghFont);
 	COLORREF colOldBkColor = SetBkColor(hdc, (theme.Colors()).headerBg);
 	COLORREF colOldText = SetTextColor(hdc, (theme.Colors()).subText);
-	DrawTextLine(hdc, 700, 52, gwstrVer);
+	DrawTextLine(hWnd, hdc,
+		700, 52,
+		gwstrVer);
 	SetBkColor(hdc, colOldBkColor);
 	SetTextColor(hdc, colOldText);
 	SelectObject(hdc, hOldFont);
@@ -556,16 +572,16 @@ void DrawHeader(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 void DrawPanels(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 {
 	DrawPanel(hdc, theme, 0,
-		{ 16, 96, 255, 296 });
+		{ DpiScale(hWnd, 16), DpiScale(hWnd, 96), DpiScale(hWnd, 255), DpiScale(hWnd, 296) });
 
 	DrawPanel(hdc, theme, 1,
-		{ 271, 96, 510, 296 });
+		{ DpiScale(hWnd, 271), DpiScale(hWnd, 96), DpiScale(hWnd, 510), DpiScale(hWnd, 296) });
 
 	DrawPanel(hdc, theme, 2,
-		{ 526, 96, 764, 296 });
+		{ DpiScale(hWnd, 526), DpiScale(hWnd, 96), DpiScale(hWnd, 764), DpiScale(hWnd, 296) });
 
 	DrawPanel(hdc, theme, 3,
-		{ 16, 310, 764, 502 });
+		{ DpiScale(hWnd, 16), DpiScale(hWnd, 310), DpiScale(hWnd, 764), DpiScale(hWnd, 502) });
 }
 
 void DrawPanel(HDC hdc, const CAppColorTheme& theme, int index, const RECT& rc)
@@ -591,7 +607,7 @@ void DrawServerPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	COLORREF oldtextcolor = SetTextColor(hdc, (theme.Colors()).text);
 	COLORREF oldbkcolor = SetBkColor(hdc, (theme.Colors()).panelBg[0]);
 	std::wstring wstr = _T("Server");
-	DrawTextLine(hdc, 32, 102, wstr);
+	DrawTextLine(hWnd, hdc, 32, 102, wstr);
 
 	std::wstring wstrState;
 	COLORREF colState = theme.Colors().subText;
@@ -629,14 +645,14 @@ void DrawServerPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	SetTextColor(hdc, (theme.Colors()).panelText[0]);
 	SelectObject(hdc, ghFont);
 	wstr = _T("STATUS");
-	DrawTextLine(hdc, 32, 138, wstr);
+	DrawTextLine(hWnd, hdc, 32, 138, wstr);
 	wstr = _T("PORT");
-	DrawTextLine(hdc, 32, 167, wstr);
+	DrawTextLine(hWnd, hdc, 32, 167, wstr);
 	wstr = _T("ROOT");
-	DrawTextLine(hdc, 32, 198, wstr);
+	DrawTextLine(hWnd, hdc, 32, 198, wstr);
 
 	SetTextColor(hdc, colState);
-	DrawTextLine(hdc, 106, 138, wstrState);
+	DrawTextLine(hWnd, hdc, 106, 138, wstrState);
 
 	SelectObject(hdc, hOldFont);
 	SetTextColor(hdc, oldtextcolor);
@@ -649,12 +665,12 @@ void DrawOptionPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	COLORREF oldtextcolor = SetTextColor(hdc, (theme.Colors()).text);
 	COLORREF oldbkcolor = SetBkColor(hdc, (theme.Colors()).panelBg[1]);
 	std::wstring wstr = _T("Options");
-	DrawTextLine(hdc, 287, 102, wstr);
+	DrawTextLine(hWnd, hdc, 287, 102, wstr);
 
 	SetTextColor(hdc, (theme.Colors()).panelText[1]);
 	SelectObject(hdc, ghFont);
 	wstr = _T("TRANSMISSION");
-	DrawTextLine(hdc, 287, 138, wstr);
+	DrawTextLine(hWnd, hdc, 287, 138, wstr);
 	//wstr = _T("STARTUP");
 	//DrawTextLine(hdc, 287, 216, wstr);
 
@@ -669,7 +685,7 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	COLORREF oldtextcolor = SetTextColor(hdc, (theme.Colors()).text);
 	COLORREF oldbkcolor = SetBkColor(hdc, (theme.Colors()).panelBg[2]);
 	std::wstring wstr = _T("QR code");
-	DrawTextLine(hdc, 542, 102, wstr);
+	DrawTextLine(hWnd, hdc, 542, 102, wstr);
 
 	SetTextColor(hdc, (theme.Colors()).panelText[2]);
 	CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
@@ -690,25 +706,26 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 			{
 				HDC memDC = CreateCompatibleDC(hdc);
 				HBITMAP old = static_cast<HBITMAP>(SelectObject(memDC, gQRcache.hBitmap));
-				BitBlt(hdc,
-					588, 134,
-					gQRcache.width, gQRcache.height,
+				StretchBlt(hdc,
+					DpiScale(hWnd, 588), DpiScale(hWnd, 134),
+					DpiScale(hWnd, gQRcache.width), DpiScale(hWnd, gQRcache.height),
 					memDC,
 					0, 0,
+					gQRcache.width, gQRcache.height,
 					SRCCOPY);
 				SelectObject(memDC, old);
 				DeleteDC(memDC);
 			}
 
 			SelectObject(hdc, ghFont);
-			RECT rc = { 527, 250, 762, 290 };
-			DrawTextLine(hdc, rc, gwstrShowURL, DT_SINGLELINE | DT_CENTER);
+			RECT rc = { DpiScale(hWnd, 527), DpiScale(hWnd, 250), DpiScale(hWnd, 762), DpiScale(hWnd, 290) };
+			DrawTextLine(hWnd, hdc, rc, gwstrShowURL, DT_SINGLELINE | DT_CENTER);
 		}
 		else {
 			SelectObject(hdc, ghFont);
 			wstr = _T("Server is stopped.\nStart the server to display the QR code.");
-			RECT rc = { 542, 137, 724, 294 };
-			DrawTextLine(hdc, rc, wstr, DT_WORDBREAK | DT_END_ELLIPSIS);
+			RECT rc = { DpiScale(hWnd, 542), DpiScale(hWnd, 137), DpiScale(hWnd, 724), DpiScale(hWnd, 294) };
+			DrawTextLine(hWnd, hdc, rc, wstr, DT_WORDBREAK | DT_END_ELLIPSIS);
 		}
 	}
 
@@ -723,8 +740,7 @@ void DrawLogPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	COLORREF oldtextcolor = SetTextColor(hdc, (theme.Colors()).text);
 	COLORREF oldbkcolor = SetBkColor(hdc, (theme.Colors()).panelBg[3]);
 	std::wstring wstr = _T("Logs");
-	DrawTextLine(hdc, 32, 318, wstr);
-
+	DrawTextLine(hWnd, hdc, 32, 318, wstr);
 
 	SelectObject(hdc, hOldFont);
 	SetTextColor(hdc, oldtextcolor);
@@ -802,17 +818,23 @@ void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size)
 	}
 }
 
-void DrawTextLine(HDC hdc, int x, int y, const std::wstring& strTextLine, UINT format)
+void DrawTextLine(HWND hWnd, HDC hdc, int x, int y, const std::wstring& strTextLine, UINT format)
 {
 	SIZE sz;
 	GetTextExtentPoint32(hdc, strTextLine.c_str(), static_cast<int>(strTextLine.length()), &sz);
 	RECT rc = { x, y, x + sz.cx + 4, y + sz.cy + 4 };
-	DrawTextLine(hdc, rc, strTextLine.c_str(), format);
+	DrawTextLine(hWnd, hdc, rc, strTextLine.c_str(), format);
 }
 
-void DrawTextLine(HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT format)
+void DrawTextLine(HWND hWnd, HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT format)
 {
-	DrawText(hdc, strTextLine.c_str(), -1, &rc, format);
+	RECT rcDpi = { 
+		DpiScale(hWnd, rc.left),
+		DpiScale(hWnd, rc.top),
+		DpiScale(hWnd, rc.right),
+		DpiScale(hWnd, rc.bottom)
+	};
+	DrawText(hdc, strTextLine.c_str(), -1, &rcDpi, format);
 }
 
 void AddLog(HWND hWnd, const LogType type, const std::wstring& text)
@@ -1030,6 +1052,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		return 1;
 	case WM_PAINT:
 		return (OnPaint(hWnd, msg, wp, lp));
+	case WM_DPICHANGED:
+		return (OnDpiChanged(hWnd, msg, wp, lp));
 	case WM_MEASUREITEM:
 		return (OnMeasureItem(hWnd, msg, wp, lp));
 	case WM_DRAWITEM:
@@ -1139,11 +1163,18 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 	CPngResource png;
 	gpBitmapBanner = png.LoadPngBitmap(hInst, IDB_PNG1);
+	/*
 	ghImgListBtn = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG2));
 	ghImgListBtnHover = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG3));
 	ghImgListBtnPressed = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG4));
 	ghImgListBtnGrayed = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG5));
 	ghImgListBtnPin = png.MakeImageListPng(16, png.LoadPngResource(hInst, IDB_PNG6));
+	*/
+	ghImgListBtn = png.LoadPngBitmap(hInst, IDB_PNG2);
+	ghImgListBtnHover = png.LoadPngBitmap(hInst, IDB_PNG3);
+	ghImgListBtnPressed = png.LoadPngBitmap(hInst, IDB_PNG4);
+	ghImgListBtnGrayed = png.LoadPngBitmap(hInst, IDB_PNG5);
+	ghImgListBtnPin = png.LoadPngBitmap(hInst, IDB_PNG6);
 	gpBitmapBannerDark = png.LoadPngBitmap(hInst, IDB_PNG7);
 
 	HDC hdc = GetDC(hWnd);
@@ -1172,7 +1203,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("EDIT"),
 		_T("10000"),
 		WS_CHILD | WS_VISIBLE | ES_READONLY | ES_CENTER | ES_NUMBER,
-		105, 165, 90, 26,
+		DpiScale(hWnd, 105),
+		DpiScale(hWnd, 165),
+		DpiScale(hWnd, 90),
+		DpiScale(hWnd, 26),
 		hWnd,
 		(HMENU)IDC_EDIT_PORT,
 		hInst,
@@ -1203,7 +1237,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("EDIT"),
 		lpCFlicksyConfig->WebRoot().c_str(),
 		WS_CHILD | WS_VISIBLE | ES_READONLY,
-		105, 196, 136, 26,
+		DpiScale(hWnd, 105),
+		DpiScale(hWnd, 196),
+		DpiScale(hWnd, 136),
+		DpiScale(hWnd, 26),
 		hWnd,
 		(HMENU)IDC_EDIT_WEBROOT,
 		hInst,
@@ -1215,7 +1252,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("START"),
 		WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW,
-		32, 238, 98, 44,
+		DpiScale(hWnd, 32),
+		DpiScale(hWnd, 238),
+		DpiScale(hWnd, 98),
+		DpiScale(hWnd, 44),
 		hWnd,
 		(HMENU)ID_HTTP_START,
 		hInst,
@@ -1226,7 +1266,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("STOP"),
 		WS_CHILD | WS_VISIBLE | WS_DISABLED | BS_PUSHBUTTON | BS_OWNERDRAW,
-		142, 238, 98, 44,
+		DpiScale(hWnd, 142),
+		DpiScale(hWnd, 238),
+		DpiScale(hWnd, 98),
+		DpiScale(hWnd, 44),
 		hWnd,
 		(HMENU)ID_HTTP_STOP,
 		hInst,
@@ -1237,7 +1280,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("&SendInput (Default)"),
 		WS_CHILD | WS_VISIBLE | WS_GROUP | BS_AUTORADIOBUTTON,
-		296, 160, 180, 24,
+		DpiScale(hWnd, 296),
+		DpiScale(hWnd, 160),
+		DpiScale(hWnd, 180),
+		DpiScale(hWnd, 24),
 		hWnd,
 		(HMENU)IDC_RADIO_SENDINPUT,
 		hInst,
@@ -1248,7 +1294,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("&Clipboard (Paste)"),
 		WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON,
-		296, 184, 180, 24,
+		DpiScale(hWnd, 296),
+		DpiScale(hWnd, 184),
+		DpiScale(hWnd, 180),
+		DpiScale(hWnd, 24),
 		hWnd,
 		(HMENU)IDC_RADIO_CLIPBOARD,
 		hInst,
@@ -1265,7 +1314,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("&Always on Top"),
 		WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
-		750, 11, 16, 16,
+		DpiScale(hWnd, 750),
+		DpiScale(hWnd, 11),
+		DpiScale(hWnd, 16),
+		DpiScale(hWnd, 16),
 		hWnd,
 		(HMENU)IDC_CHECK_TOPMOST,
 		hInst,
@@ -1300,7 +1352,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		nullptr,
 		WS_CHILD | WS_VISIBLE | WS_VSCROLL |
 		LBS_OWNERDRAWFIXED | LBS_NOINTEGRALHEIGHT | LBS_NOSEL,
-		32, 351, 716, 128,
+		DpiScale(hWnd, 32),
+		DpiScale(hWnd, 351),
+		DpiScale(hWnd, 716),
+		DpiScale(hWnd, 128),
 		hWnd,
 		(HMENU)IDC_LIST_LOG,
 		hInst,
@@ -1346,6 +1401,76 @@ LRESULT OnPaint(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	return 0L;
 }
 
+LRESULT OnDpiChanged(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	MoveWindow(GetDlgItem(hWnd, IDC_EDIT_PORT),
+		DpiScale(hWnd, 105),
+		DpiScale(hWnd, 165),
+		DpiScale(hWnd, 90),
+		DpiScale(hWnd, 26),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_EDIT_WEBROOT),
+		DpiScale(hWnd, 105),
+		DpiScale(hWnd, 196),
+		DpiScale(hWnd, 136),
+		DpiScale(hWnd, 26),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, ID_HTTP_START),
+		DpiScale(hWnd, 32),
+		DpiScale(hWnd, 238),
+		DpiScale(hWnd, 98),
+		DpiScale(hWnd, 44),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, ID_HTTP_STOP),
+		DpiScale(hWnd, 142),
+		DpiScale(hWnd, 238),
+		DpiScale(hWnd, 98),
+		DpiScale(hWnd, 44),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_RADIO_SENDINPUT),
+		DpiScale(hWnd, 296),
+		DpiScale(hWnd, 160),
+		DpiScale(hWnd, 180),
+		DpiScale(hWnd, 24),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_RADIO_CLIPBOARD),
+		DpiScale(hWnd, 296),
+		DpiScale(hWnd, 184),
+		DpiScale(hWnd, 180),
+		DpiScale(hWnd, 24),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_CHECK_TOPMOST),
+		DpiScale(hWnd, 750),
+		DpiScale(hWnd, 11),
+		DpiScale(hWnd, 16),
+		DpiScale(hWnd, 16),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_LIST_LOG),
+		DpiScale(hWnd, 32),
+		DpiScale(hWnd, 351),
+		DpiScale(hWnd, 716),
+		DpiScale(hWnd, 128),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_SWITCH_THEME),
+		DpiScale(hWnd, 720),
+		DpiScale(hWnd, 508),
+		DpiScale(hWnd, 40),
+		DpiScale(hWnd, 23),
+		FALSE);
+
+	InvalidateRect(hWnd, NULL, TRUE);
+
+	return 0L;
+}
+
 LRESULT OnMeasureItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	LPMEASUREITEMSTRUCT p = (LPMEASUREITEMSTRUCT)lp;
@@ -1377,29 +1502,90 @@ LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 {
 	CAppColorTheme* pTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
 	if (!pTheme) return 0L;
-	FillRect(lpdis->hDC, &(lpdis->rcItem), pTheme->PanelBrush(0));
+
+	HDC hdc = lpdis->hDC;
+	RECT rc = lpdis->rcItem;
+	int w = rc.right - rc.left;
+	int h = rc.bottom - rc.top;
+	HDC memDC = CreateCompatibleDC(hdc);
+	HBITMAP memBmp = CreateCompatibleBitmap(hdc, w, h);
+	HBITMAP oldBmp =
+		static_cast<HBITMAP>(
+			SelectObject(memDC, memBmp));
+
+	FillRect(memDC, &(lpdis->rcItem), pTheme->PanelBrush(0));
 	int img = (lpdis->CtlID == ID_HTTP_START ? 0 : 1);
 	bool hover = GetWindowLongPtr(lpdis->hwndItem,GWLP_USERDATA) != 0;
+	CPngResource png;
+	Gdiplus::Graphics g(memDC);
 	if (lpdis->itemState & ODS_DISABLED)
 	{
-		ImageList_Draw(ghImgListBtnGrayed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+		//ImageList_Draw(ghImgListBtnGrayed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+		png.DrawSprite(
+			g,
+			ghImgListBtnGrayed,
+			img,
+			lpdis->rcItem.left,
+			lpdis->rcItem.top,
+			98, 44,
+			DpiScale(hWnd, 98),
+			DpiScale(hWnd, 44));
 	}
 	else {
 		if (hover) {
-			ImageList_Draw(ghImgListBtnHover, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+			//ImageList_Draw(ghImgListBtnHover, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+			png.DrawSprite(
+				g,
+				ghImgListBtnHover,
+				img,
+				lpdis->rcItem.left,
+				lpdis->rcItem.top,
+				98, 44,
+				DpiScale(hWnd, 98),
+				DpiScale(hWnd, 44));
 		}
 		else {
 			if (lpdis->itemState & ODS_SELECTED) {
 				if (!ghImgListBtnPressed) return 0L;
-				ImageList_Draw(ghImgListBtnPressed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+				//ImageList_Draw(ghImgListBtnPressed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+				png.DrawSprite(
+					g,
+					ghImgListBtnPressed,
+					img,
+					lpdis->rcItem.left,
+					lpdis->rcItem.top,
+					98, 44,
+					DpiScale(hWnd, 98),
+					DpiScale(hWnd, 44));
 			}
 			else {
 				if (!ghImgListBtn) return 0L;
-				ImageList_Draw(ghImgListBtn, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+				//ImageList_Draw(ghImgListBtn, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+				png.DrawSprite(
+					g,
+					ghImgListBtn,
+					img,
+					lpdis->rcItem.left,
+					lpdis->rcItem.top,
+					98, 44,
+					DpiScale(hWnd, 98),
+					DpiScale(hWnd, 44));
 			}
 
 		}
 	}
+
+	BitBlt(hdc,
+		rc.left, rc.top,
+		w, h,
+		memDC,
+		0, 0,
+		SRCCOPY);
+
+	SelectObject(memDC, oldBmp);
+	DeleteObject(memBmp);
+	DeleteDC(memDC);
+
 	return 0L;
 }
 
@@ -1411,7 +1597,18 @@ LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 	if (!ghImgListBtnPin) return 0L;
 	BOOL checked = (BOOL)GetWindowLongPtr(lpdis->hwndItem, GWLP_USERDATA);
 	int imageIndex = checked ? 0 : 1;
-	ImageList_Draw(ghImgListBtnPin, imageIndex, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+	CPngResource png;
+	Gdiplus::Graphics g(lpdis->hDC);
+	//ImageList_Draw(ghImgListBtnPin, imageIndex, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+	png.DrawSprite(
+		g,
+		ghImgListBtnPin,
+		imageIndex,
+		DpiScale(hWnd, lpdis->rcItem.left),
+		DpiScale(hWnd, lpdis->rcItem.top),
+		16, 16,
+		DpiScale(hWnd, 16),
+		DpiScale(hWnd, 16));
 	return 0L;
 }
 
@@ -1951,11 +2148,18 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	}
 
 	if (gpBitmapBanner) delete gpBitmapBanner;
+	/*
 	if (ghImgListBtn) ImageList_Destroy(ghImgListBtn);
 	if (ghImgListBtnHover) ImageList_Destroy(ghImgListBtnHover);
 	if (ghImgListBtnPressed) ImageList_Destroy(ghImgListBtnPressed);
 	if (ghImgListBtnGrayed) ImageList_Destroy(ghImgListBtnGrayed);
 	if (ghImgListBtnPin) ImageList_Destroy(ghImgListBtnPin);
+	*/
+	if (ghImgListBtn) delete ghImgListBtn;
+	if (ghImgListBtnHover) delete ghImgListBtnHover;
+	if (ghImgListBtnPressed) delete ghImgListBtnPressed;
+	if (ghImgListBtnGrayed) delete ghImgListBtnGrayed;
+	if (ghImgListBtnPin) delete ghImgListBtnPin;
 	if (gpBitmapBannerDark) delete gpBitmapBannerDark;
 	if (ghFontBold) DeleteObject(ghFontBold);
 	if (ghFont) DeleteObject(ghFont);
@@ -2011,14 +2215,14 @@ LRESULT CALLBACK StartStopBtnProc(HWND hBtn, UINT uMsg, WPARAM wParam, LPARAM lP
 				tme.dwFlags = TME_LEAVE;
 				tme.hwndTrack = hBtn;
 				TrackMouseEvent(&tme);
-				InvalidateRect(hBtn, NULL, TRUE);
+				InvalidateRect(hBtn, NULL, FALSE);
 			}
 		}
 		break;
 
 	case WM_MOUSELEAVE:
 		SetWindowLongPtr(hBtn, GWLP_USERDATA, FALSE);
-		InvalidateRect(hBtn, NULL, TRUE);
+		InvalidateRect(hBtn, NULL, FALSE);
 		break;
 	}
 

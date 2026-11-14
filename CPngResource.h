@@ -44,6 +44,16 @@ public:
 		int width,
 		int height);
 
+	void DrawSprite(Gdiplus::Graphics& g,
+		Gdiplus::Bitmap* bitmap, 
+		int index,
+		int x,
+		int y,
+		int srcw,
+		int srch,
+		int destw,
+		int desth);
+
 	void DrawSpriteIcon(Gdiplus::Graphics& g,
 		Gdiplus::Bitmap* bitmap,
 		int index,

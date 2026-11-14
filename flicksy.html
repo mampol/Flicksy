@@ -233,7 +233,7 @@ button { touch-action: manipulation; }
 
 .screenshot-overlay {
     position: fixed; inset:0; z-index:1000; display:none; flex-direction:column;
-    background:#111827; color:white;
+    background:var(--bg); color:var(--text);
     padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
 }
 .screenshot-overlay.show { display:flex; }
@@ -241,16 +241,37 @@ button { touch-action: manipulation; }
 .screenshot-toolbar { margin-bottom:8px; }
 .screenshot-controls { margin-top:8px; }
 .screenshot-toolbar button, .screenshot-controls button {
-    flex:1; height:44px; border:0; border-radius:10px; font-weight:800; background:#374151; color:white;
+    flex:1;
+    height:44px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    font-weight:800;
+    background:#edf2f8;
+    color:var(--navy);
 }
-#screenshotRefreshButton { background:#2563eb; }
-#screenshotAltTabButton { background:#7c3aed; }
+#screenshotRefreshButton {
+    border:0;
+    background:linear-gradient(135deg,var(--blue),var(--blue2));
+    color:white;
+}
+#screenshotAltTabButton {
+    background:#e6efff;
+    color:#196dc7;
+}
 .screenshot-view {
-    flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
-    overflow:hidden; border-radius:12px; background:black;
+    flex:1;
+    min-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:var(--card);
+    box-shadow:var(--shadow);
 }
 #screenshotImage { display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; }
-#screenshotStatus { padding:20px; color:#d1d5db; text-align:center; }
+#screenshotStatus { padding:20px; color:var(--muted); text-align:center; }
 
 @media (max-width: 380px) {
     .app-shell { padding-left:10px; padding-right:10px; }
@@ -432,6 +453,18 @@ function sendHotKey(combo)
 
     return hotKeyRequest;
 }
+
+input.addEventListener("keydown", e =>
+{
+    if (e.isComposing)
+        return;
+
+    if (e.key === "Enter")
+    {
+        e.preventDefault();
+        sendText();
+    }
+});
 
 document.querySelectorAll("[data-vk]").forEach(button =>
 {
