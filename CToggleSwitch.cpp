@@ -28,7 +28,7 @@ namespace CToggleSwitch
                 GetWindowLongPtr(hSwitch, GWLP_USERDATA));
         }
 
-        static void SetCheckedInternal(HWND hSwitch, bool checked)
+        static void SetCheckedInternal(HWND hSwitch, bool checked, bool animate)
         {
             auto* state = GetState(hSwitch);
             if (!state)
@@ -37,7 +37,14 @@ namespace CToggleSwitch
             state->checked = checked;
             state->target = checked ? 1.0f : 0.0f;
 
-            SetTimer(hSwitch, 1, 15, nullptr);
+            if (animate) {
+                SetTimer(hSwitch, 1, 15, nullptr);
+            }
+            else {
+                KillTimer(hSwitch, 1);
+                state->pos = state->target;
+            }
+
             InvalidateRect(hSwitch, nullptr, FALSE);
         }
 
@@ -268,10 +275,10 @@ namespace CToggleSwitch
             if (state)
             {
                 if (wParam == BST_CHECKED) {
-                    Checked(hSwitch);
+                    CheckedImmediate(hSwitch);
                 }
                 else {
-                    UnChecked(hSwitch);
+                    UnCheckedImmediate(hSwitch);
                 }
             }
 
@@ -323,12 +330,22 @@ bool CToggleSwitch::IsChecked(HWND hSwitch)
 
 void CToggleSwitch::Checked(HWND hSwitch)
 {
-    SetCheckedInternal(hSwitch, true);
+    SetCheckedInternal(hSwitch, true, true);
+}
+
+void CToggleSwitch::CheckedImmediate(HWND hSwitch)
+{
+    SetCheckedInternal(hSwitch, true, false);
 }
 
 void CToggleSwitch::UnChecked(HWND hSwitch)
 {
-    SetCheckedInternal(hSwitch, false);
+    SetCheckedInternal(hSwitch, false, true);
+}
+
+void CToggleSwitch::UnCheckedImmediate(HWND hSwitch)
+{
+    SetCheckedInternal(hSwitch, false, false);
 }
 
 void CToggleSwitch::Toggle(HWND hSwitch)
@@ -336,7 +353,7 @@ void CToggleSwitch::Toggle(HWND hSwitch)
     auto* state = GetState(hSwitch);
     if (!state) return;
 
-    SetCheckedInternal(hSwitch, !state->checked);
+    SetCheckedInternal(hSwitch, !state->checked, true);
 }
 
 void CToggleSwitch::SetBgColor(HWND hSwitch, COLORREF colBg)

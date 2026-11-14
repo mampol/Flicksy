@@ -1,14 +1,14 @@
-﻿#include "CImgListPng.h"
+﻿#include "CPngResource.h"
 
-CImgListPng::CImgListPng()
+CPngResource::CPngResource()
 {
 }
 
-CImgListPng::~CImgListPng()
+CPngResource::~CPngResource()
 {
 }
 
-BOOL CImgListPng::InitGdiPlus()
+BOOL CPngResource::InitGdiPlus()
 {
 	if (GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, nullptr) != Gdiplus::Ok)
 	{
@@ -17,12 +17,12 @@ BOOL CImgListPng::InitGdiPlus()
 	return TRUE;
 }
 
-void CImgListPng::EndGdiPlus()
+void CPngResource::EndGdiPlus()
 {
 	Gdiplus::GdiplusShutdown(m_gdiplusToken);
 }
 
-HBITMAP CImgListPng::LoadPngResource(HINSTANCE hInst, UINT uiPngRes)
+HBITMAP CPngResource::LoadPngResource(HINSTANCE hInst, UINT uiPngRes)
 {
 	HBITMAP hBitmap = NULL;
 
@@ -168,7 +168,7 @@ HBITMAP CImgListPng::LoadPngResource(HINSTANCE hInst, UINT uiPngRes)
 	return hBitmap;
 }
 
-HIMAGELIST CImgListPng::MakeImageListPng(int nWidth, HBITMAP hBmp)
+HIMAGELIST CPngResource::MakeImageListPng(int nWidth, HBITMAP hBmp)
 {
 	if (!hBmp || nWidth <= 0)
 	{
@@ -214,7 +214,7 @@ HIMAGELIST CImgListPng::MakeImageListPng(int nWidth, HBITMAP hBmp)
 	return hImgList;
 }
 
-Gdiplus::Bitmap* CImgListPng::LoadPngBitmap(
+Gdiplus::Bitmap* CPngResource::LoadPngBitmap(
 	HINSTANCE hInst,
 	UINT uiPngRes)
 {
@@ -304,45 +304,56 @@ Gdiplus::Bitmap* CImgListPng::LoadPngBitmap(
 	return pBitmap;
 }
 
-void CImgListPng::DrawSpriteIcon(
+void CPngResource::DrawPng(
+	Gdiplus::Graphics& g,
+	Gdiplus::Bitmap* bitmap,
+	int x, int y,
+	int width, int height)
+{
+	if (!bitmap || width <= 0 || height <= 0)
+		return;
+
+	g.SetInterpolationMode(
+		Gdiplus::InterpolationModeHighQualityBicubic);
+
+	Gdiplus::Rect destRect(
+		x,
+		y,
+		width,
+		height);
+
+	g.DrawImage(
+		bitmap,
+		destRect);
+}
+
+void CPngResource::DrawSpriteIcon(
 	Gdiplus::Graphics& g,
 	Gdiplus::Bitmap* bitmap,
 	int index,
-	int x,
-	int y,
-	int size,
+	int x, int y,
+	int srcsize,
+	int destsize,
 	COLORREF color)
 {
 	if (!bitmap)
 		return;
 
-	constexpr int SRC_SIZE = 128;
-
 	Gdiplus::Rect destRect(
 		x,
 		y,
-		size,
-		size);
+		srcsize,
+		srcsize);
 
 	Gdiplus::Rect srcRect(
-		index * SRC_SIZE,
+		index * destsize,
 		0,
-		SRC_SIZE,
-		SRC_SIZE);
+		destsize,
+		destsize);
 
 	g.SetInterpolationMode(
 		Gdiplus::InterpolationModeHighQualityBicubic);
 
-	/*
-	g.DrawImage(
-		bitmap,
-		destRect,
-		srcRect.X,
-		srcRect.Y,
-		srcRect.Width,
-		srcRect.Height,
-		Gdiplus::UnitPixel);
-	*/
 	BYTE r = GetRValue(color);
 	BYTE gcol = GetGValue(color);
 	BYTE b = GetBValue(color);

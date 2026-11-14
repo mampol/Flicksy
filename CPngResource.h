@@ -8,7 +8,7 @@
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "comctl32.lib")
 
-class CImgListPng
+class CPngResource
 {
 	Gdiplus::GdiplusStartupInput m_gdiplusStartupInput;
 	ULONG_PTR m_gdiplusToken = 0;
@@ -18,8 +18,8 @@ class CImgListPng
 
 public:
 
-	CImgListPng();
-	~CImgListPng();
+	CPngResource();
+	~CPngResource();
 
 	BOOL InitGdiPlus();
 	void EndGdiPlus();
@@ -36,7 +36,22 @@ public:
 		HINSTANCE hInst,
 		UINT uiPngRes);
 
-	void DrawSpriteIcon(Gdiplus::Graphics& g, Gdiplus::Bitmap* bitmap, int index, int x, int y, int size, COLORREF color);
+	void DrawPng(
+		Gdiplus::Graphics& g,
+		Gdiplus::Bitmap* bitmap,
+		int x,
+		int y,
+		int width,
+		int height);
+
+	void DrawSpriteIcon(Gdiplus::Graphics& g,
+		Gdiplus::Bitmap* bitmap,
+		int index,
+		int x,
+		int y,
+		int srcsize,
+		int destsize,
+		COLORREF color);
 
 	int GetBtnCount() { return m_nBtn; };
 	int GetBtnWith() { return m_SizeBtn.cx; };

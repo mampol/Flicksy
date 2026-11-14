@@ -11,7 +11,7 @@
 #include "TextEncoding.h"
 #include "CSimpleHttpServer.h"
 #include "CAppColorTheme.h"
-#include "CImgListPng.h"
+#include "CPngResource.h"
 #include "CFlicksyConfig.h"
 #include "CMemoManager.h"
 #include "CTrayIcon.h"
@@ -1137,14 +1137,14 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		CPopupLayerWnd::SetDrawContentsProc(ghPopupQrWnd, DrawQrPopupContents);
 	}
 
-	CImgListPng cilp;
-	gpBitmapBanner = cilp.LoadPngBitmap(hInst, IDB_PNG1);
-	ghImgListBtn = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG2));
-	ghImgListBtnHover = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG3));
-	ghImgListBtnPressed = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG4));
-	ghImgListBtnGrayed = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG5));
-	ghImgListBtnPin = cilp.MakeImageListPng(16, cilp.LoadPngResource(hInst, IDB_PNG6));
-	gpBitmapBannerDark = cilp.LoadPngBitmap(hInst, IDB_PNG7);
+	CPngResource png;
+	gpBitmapBanner = png.LoadPngBitmap(hInst, IDB_PNG1);
+	ghImgListBtn = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG2));
+	ghImgListBtnHover = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG3));
+	ghImgListBtnPressed = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG4));
+	ghImgListBtnGrayed = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG5));
+	ghImgListBtnPin = png.MakeImageListPng(16, png.LoadPngResource(hInst, IDB_PNG6));
+	gpBitmapBannerDark = png.LoadPngBitmap(hInst, IDB_PNG7);
 
 	HDC hdc = GetDC(hWnd);
 	ghFontBold = CreateFont(-MulDiv((INT_PTR)14, GetDeviceCaps(hdc, LOGPIXELSY), 72),

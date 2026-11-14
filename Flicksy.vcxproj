@@ -138,7 +138,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CFlicksyConfig.cpp" />
-    <ClCompile Include="CImgListPng.cpp" />
+    <ClCompile Include="CPngResource.cpp" />
     <ClCompile Include="CInputSender.cpp" />
     <ClCompile Include="CMemoManager.cpp" />
     <ClCompile Include="ConfigDlg.cpp" />
@@ -148,13 +148,14 @@
     <ClCompile Include="CToggleSwitch.cpp" />
     <ClCompile Include="CTrayIcon.cpp" />
     <ClCompile Include="CLogger.cpp" />
+    <ClCompile Include="GetFileVersion.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="qrcodegen.cpp" />
     <ClCompile Include="TextEncoding.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CFlicksyConfig.h" />
-    <ClInclude Include="CImgListPng.h" />
+    <ClInclude Include="CPngResource.h" />
     <ClInclude Include="CAppColorTheme.h" />
     <ClInclude Include="CInputSender.h" />
     <ClInclude Include="CMemoManager.h" />
@@ -166,6 +167,7 @@
     <ClInclude Include="CTrayIcon.h" />
     <ClInclude Include="CLogger.h" />
     <ClInclude Include="DpiAware.h" />
+    <ClInclude Include="GetFileVersion.h" />
     <ClInclude Include="qrcodegen.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="TextEncoding.h" />

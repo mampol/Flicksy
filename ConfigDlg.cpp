@@ -5,10 +5,14 @@
 #include "DpiAware.h"
 #include "CToggleSwitch.h"
 #include "ConfigDlg.h"
-#include "CImgListPng.h"
+#include "CPngResource.h"
+#include "GetFileVersion.h"
 #include "resource.h"
 
+static Gdiplus::Bitmap* gBmpBanner = nullptr;
 static Gdiplus::Bitmap* gBmpIcon = nullptr;
+static HFONT ghFontBold = nullptr;
+static HFONT ghFont = nullptr;
 
 struct ConfigDialogState
 {
@@ -34,14 +38,16 @@ static bool SelectFolder(HWND hParent, std::wstring& folder);
 static bool SetInitialFolder(IFileOpenDialog* pDialog, const std::wstring& folderPath);
 
 static INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnPaintConfigDlg(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme);
 static void LayoutControls(HWND hParent, HWND hDlg);
 static LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT dis, CAppColorTheme& apptheme);
 
-static LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme);
+static LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme, UINT pageId);
 static LRESULT OnCtlColorConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme);
 
 static INT_PTR CALLBACK ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
 static const wchar_t* ActionTypeToDisplayString(ActionType type);
+static const ActionType GetSelActionType(HWND hCombo);
 static void ShowActionEditor(HWND hDlg, HWND hList, int sel, CFlicksyConfig* config);
 static void HideActionEditor(HWND hDlg, HWND hList);
 static void SaveActionEditor(HWND hDlg, HWND hList, int sel, CFlicksyConfig* config);
@@ -207,8 +213,30 @@ void ShowConfigDlg(HWND hParent, ConfigContext* lpConfigContext)
         reinterpret_cast<HINSTANCE>(
             GetWindowLongPtr(hParent, GWLP_HINSTANCE));
 
-    CImgListPng cilp;
-    gBmpIcon = cilp.LoadPngBitmap(hInst, IDB_PNG8);
+    CPngResource png;
+    gBmpBanner = png.LoadPngBitmap(hInst, IDB_PNG1);
+    gBmpIcon = png.LoadPngBitmap(hInst, IDB_PNG8);
+
+    HDC hdc = GetDC(hParent);
+    ghFontBold = CreateFont(-MulDiv((INT_PTR)14, GetDeviceCaps(hdc, LOGPIXELSY), 72),
+        0, 0, 0, FW_BOLD,
+        FALSE, FALSE, FALSE,
+        DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        CLEARTYPE_NATURAL_QUALITY,
+        DEFAULT_PITCH | FF_DONTCARE,
+        _T("Segoe UI"));
+    ghFont = CreateFont(-MulDiv((INT_PTR)9, GetDeviceCaps(hdc, LOGPIXELSY), 72),
+        0, 0, 0, FW_NORMAL,
+        FALSE, FALSE, FALSE,
+        DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        CLEARTYPE_NATURAL_QUALITY,
+        DEFAULT_PITCH | FF_DONTCARE,
+        _T("Segoe UI"));
+    ReleaseDC(hParent, hdc);
 
     DialogBoxParam(
         hInst,
@@ -217,8 +245,13 @@ void ShowConfigDlg(HWND hParent, ConfigContext* lpConfigContext)
         ConfigDlgProc,
         reinterpret_cast<LPARAM>(lpConfigContext));
 
+    delete gBmpBanner;
+    gBmpBanner = nullptr;
     delete gBmpIcon;
     gBmpIcon = nullptr;
+
+    DeleteObject(ghFontBold);
+    DeleteObject(ghFont);
 }
 
 INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
@@ -350,11 +383,33 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             return TRUE;
         }
         break;
+
     case WM_DRAWITEM:
         return OnDrawItemConfigDlg(hDlg, cds, reinterpret_cast<LPDRAWITEMSTRUCT>(lp), *(lpConfigContext->appColorTheme));
+
+    case WM_PAINT:
+        return OnPaintConfigDlg(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
     }
 
     return FALSE;
+}
+
+LRESULT OnPaintConfigDlg(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme)
+{
+    PAINTSTRUCT ps;
+    BeginPaint(hDlg, &ps);
+
+    CPngResource png;
+    Gdiplus::Graphics g(ps.hdc);
+    png.DrawPng(g, gBmpBanner,
+        DpiScale(hDlg, 10),
+        DpiScale(hDlg, 10),
+        DpiScale(hDlg, 132),
+        DpiScale(hDlg, 52));
+
+    EndPaint(hDlg, &ps);
+
+    return TRUE;
 }
 
 void LayoutControls(HWND hParent, HWND hDlg)
@@ -362,10 +417,10 @@ void LayoutControls(HWND hParent, HWND hDlg)
     RECT rc;
     GetClientRect(hParent, &rc);
     MoveWindow(hDlg,
-        150,
-        10,
-        rc.right - 160,
-        rc.bottom - 20,
+        DpiScale(hDlg, 150),
+        DpiScale(hDlg, 10),
+        rc.right - DpiScale(hDlg, 160),
+        rc.bottom - DpiScale(hDlg, 20),
         TRUE);
 }
 
@@ -400,18 +455,9 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
     DeleteObject(hBrush);
     DeleteObject(hPen);
 
-    CImgListPng cilp;
+    CPngResource png;
     int iconSize = DpiScale(hDlg, 38);
     Gdiplus::Graphics g(dis->hDC);
-    /*
-    cilp.DrawSpriteIcon(
-        g,
-        gBmpIcon,
-        0,
-        dis->rcItem.left,
-        dis->rcItem.top,
-        iconSize);
-    */
     int iconIndex = 0;
 
     switch (dis->CtlID)
@@ -431,13 +477,14 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
         ? RGB(255, 255, 255)
         : RGB(55, 70, 90);
 
-    cilp.DrawSpriteIcon(
+    png.DrawSpriteIcon(
         g,
         gBmpIcon,
         iconIndex,
         dis->rcItem.left,
         dis->rcItem.top,
         iconSize,
+        128,
         iconColor);
 
     HFONT hFont = reinterpret_cast<HFONT>(SendMessage(dis->hwndItem, WM_GETFONT, 0, 0));
@@ -462,7 +509,7 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
     return TRUE;
 }
 
-LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme)
+LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme, UINT pageId)
 {
     PAINTSTRUCT ps;
     BeginPaint(hDlg, &ps);
@@ -475,10 +522,93 @@ LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTh
 
     RoundRect(ps.hdc, rc.left + 2, rc.top + 2, rc.right - 2, rc.bottom - 2, 8, 8);
 
+    std::wstring ver;
+    const wchar_t* title = L"";
+    const wchar_t* description = L"";
+    bool japanese =
+        PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_JAPANESE;
+    switch (pageId)
+    {
+    case IDD_CONFIG_SYSTEM:
+        title = japanese ? L"SYSTEM" : L"System";
+        description = japanese
+            ? L"Flicksy の基本動作や保存先を設定します。"
+            : L"Configure Flicksy's basic behavior and storage settings.";
+        break;
+
+    case IDD_CONFIG_ACTION:
+        title = japanese ? L"ACTION" : L"Action";
+        description = japanese
+            ? L"スマートフォンから実行する操作を登録・編集します。"
+            : L"Create and edit actions that can be triggered from your smartphone.";
+        break;
+
+    case IDD_CONFIG_MEMO:
+        title = japanese ? L"MEMO" : L"Memo";
+        description = japanese
+            ? L"スマートフォンから送信されたメモや添付データを管理します。"
+            : L"Manage memos and attachments sent from your smartphone.";
+        break;
+
+    case IDD_CONFIG_SECURITY:
+        title = japanese ? L"SECURITY" : L"Security";
+        description = japanese
+            ? L"Flicksy への接続や認証に関する設定を管理します。"
+            : L"Manage connection and authentication settings for Flicksy.";
+        break;
+
+    case IDD_CONFIG_INFO:
+        title = japanese ? L"INFOMATION" : L"Infomation";
+        wchar_t path[MAX_PATH]{};
+        GetModuleFileName(
+            nullptr,
+            path,
+            MAX_PATH);
+        ver = L"Flicksy Version " + GetFileVersion(path) + L"\nCopyright (c) 2026 Pol.";
+        description = ver.c_str();
+        break;
+    }
+
+    HFONT hOldFont = static_cast<HFONT>(SelectObject(ps.hdc, ghFontBold));
+
+    SetBkMode(ps.hdc, TRANSPARENT);
+    SetTextColor(ps.hdc, appTheme.Colors().panelText[1]);
+
+    RECT rcTitle{
+        DpiScale(hDlg, 20),
+        DpiScale(hDlg, 16),
+        rc.right - DpiScale(hDlg, 20),
+        DpiScale(hDlg, 44)
+    };
+
+    DrawText(
+        ps.hdc,
+        title,
+        -1,
+        &rcTitle,
+        DT_LEFT | DT_SINGLELINE);
+
+    static_cast<HFONT>(SelectObject(ps.hdc, ghFont));
+
+    RECT rcDesc{
+        DpiScale(hDlg, 20),
+        DpiScale(hDlg, 44),
+        rc.right - DpiScale(hDlg, 20),
+        DpiScale(hDlg, 96)
+    };
+
+    DrawText(
+        ps.hdc,
+        description,
+        -1,
+        &rcDesc,
+        DT_LEFT | DT_WORDBREAK);
+
     EndPaint(hDlg, &ps);
 
-    SelectObject(ps.hdc, reinterpret_cast<HBRUSH>(hOldBrush));
+    SelectObject(ps.hdc, reinterpret_cast<HBRUSH>(hOldFont));
     SelectObject(ps.hdc, reinterpret_cast<HPEN>(hOldPen));
+    SelectObject(ps.hdc, reinterpret_cast<HBRUSH>(hOldBrush));
 
     return TRUE;
 }
@@ -514,6 +644,9 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             }
 
             s_prevSel = LB_ERR;
+
+            SendDlgItemMessage(hDlg, IDC_CHK_ENABLE,
+                TSM_SETBGCOLOR, 0, static_cast<LPARAM>(GetSysColor(COLOR_WINDOW)));
 
             SendDlgItemMessage(
                 hDlg,
@@ -572,7 +705,7 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
         break;
 
     case WM_PAINT:
-        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
+        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme), IDD_CONFIG_ACTION);
 
     case WM_CTLCOLORSTATIC:
         return OnCtlColorConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
@@ -581,7 +714,7 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
         {
             auto* mis =
                 reinterpret_cast<MEASUREITEMSTRUCT*>(lp);
-            mis->itemHeight = 40;
+            mis->itemHeight = DpiScale(hDlg, 40);
         }
         break;
 
@@ -644,7 +777,7 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                     ActionConfig action{
                         ActionType::None,
                         false,
-                        L"new action",
+                        L"NewAction",
                         L""
                     };
 
@@ -768,10 +901,68 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                     return TRUE;
                 }
                 break;
+
+            case IDC_CMB_TYPE:
+                if (HIWORD(wp) == CBN_SELCHANGE) {
+                    HWND hCombo = reinterpret_cast<HWND>(lp);
+
+                    switch (GetSelActionType(hCombo)) {
+                    case ActionType::Url:
+                        EnableWindow(GetDlgItem(hDlg, IDC_EDIT_VALUE), TRUE);
+                        EnableWindow(GetDlgItem(hDlg, IDC_BTN_VALUE), FALSE);
+                        break;
+
+                    case ActionType::Folder:
+                    case ActionType::Application:
+                        EnableWindow(GetDlgItem(hDlg, IDC_EDIT_VALUE), TRUE);
+                        EnableWindow(GetDlgItem(hDlg, IDC_BTN_VALUE), TRUE);
+                        break;
+
+                    case ActionType::Lock:
+                    case ActionType::Shutdown:
+                    case ActionType::None:
+                        EnableWindow(GetDlgItem(hDlg, IDC_EDIT_VALUE), FALSE);
+                        EnableWindow(GetDlgItem(hDlg, IDC_BTN_VALUE), FALSE);
+                        break;
+                    }
+                }
+
+                return TRUE;
+
+            case IDC_BTN_VALUE:
+                HWND hCombo = reinterpret_cast<HWND>(GetDlgItem(hDlg, IDC_CMB_TYPE));
+
+                switch (GetSelActionType(hCombo)) {
+                case ActionType::Folder:
+                    {
+                        wchar_t buf[MAX_PATH] = {};
+                        GetDlgItemText(hDlg, IDC_EDIT_VALUE, buf, _countof(buf));
+                        std::wstring value = buf;
+                        if (SelectFolder(hDlg, value)) {
+                            SetDlgItemText(hDlg, IDC_EDIT_VALUE, value.c_str());
+                        }
+                    }
+                    break;
+
+                case ActionType::Application:
+                    {
+                        wchar_t buf[MAX_PATH] = {};
+                        GetDlgItemText(hDlg, IDC_EDIT_VALUE, buf, _countof(buf));
+                        std::wstring value = buf;
+                        if (SelectFile(hDlg, value)) {
+                            SetDlgItemText(hDlg, IDC_EDIT_VALUE, value.c_str());
+                        }
+                    }
+                    break;
+
+                }
+
+                break;
             }
         }
         break;
 
+    case WM_CLOSE:
     case WM_SHOWWINDOW:
         if (wp == FALSE)
         {
@@ -795,6 +986,7 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
     default:
         return FALSE;
     }
+
     return TRUE;
 }
 
@@ -803,13 +995,13 @@ static const wchar_t* ActionTypeToDisplayString(ActionType type)
     switch (type)
     {
     case ActionType::Url:
-        return L"URL";
+        return L"Open URL";
 
     case ActionType::Application:
-        return L"Application";
+        return L"Execute App";
 
     case ActionType::Folder:
-        return L"Folder";
+        return L"Open Folder";
 
     case ActionType::Lock:
         return L"Windows Lock";
@@ -820,6 +1012,31 @@ static const wchar_t* ActionTypeToDisplayString(ActionType type)
     default:
         return L"None";
     }
+}
+
+static const ActionType GetSelActionType(HWND hCombo)
+{
+    int sel = static_cast<int>(SendMessage(hCombo, CB_GETCURSEL, 0, 0));
+
+    switch (sel)
+    {
+    case 0:
+        return ActionType::Url;
+
+    case 1:
+        return ActionType::Application;
+
+    case 2:
+        return ActionType::Folder;
+
+    case 3:
+        return ActionType::Lock;
+
+    case 4:
+        return ActionType::Shutdown;
+    }
+
+    return ActionType::None;
 }
 
 static void ShowActionEditor(
@@ -845,50 +1062,62 @@ static void ShowActionEditor(
         reinterpret_cast<POINT*>(&rc),
         2);
 
+    int nCtlLeft = 10;
+    RECT rcCtl{};
+    GetWindowRect(GetDlgItem(hDlg, IDC_CHK_ENABLE), &rcCtl);
     SetWindowPos(
         GetDlgItem(hDlg, IDC_CHK_ENABLE),
         HWND_TOP,
-        rc.left + DpiScale(hDlg, 10),
-        rc.top,
-        DpiScale(hDlg, 40),
-        rc.bottom - rc.top,
+        rc.left + DpiScale(hDlg, nCtlLeft),
+        rc.top + (((rc.bottom - rc.top) - (rcCtl.bottom - rcCtl.top)) / 2),
+        rcCtl.right- rcCtl.left,
+        rcCtl.bottom - rcCtl.top,
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
+    nCtlLeft += (rcCtl.right - rcCtl.left) + DpiScale(hDlg, 6);
 
+    GetWindowRect(GetDlgItem(hDlg, IDC_EDIT_NAME), &rcCtl);
     SetWindowPos(
         GetDlgItem(hDlg, IDC_EDIT_NAME),
         HWND_TOP,
-        rc.left + DpiScale(hDlg, 60),
-        rc.top,
-        DpiScale(hDlg, 120),
-        rc.bottom - rc.top,
+        rc.left + nCtlLeft,
+        rc.top + (((rc.bottom - rc.top) - (rcCtl.bottom - rcCtl.top)) / 2),
+        rcCtl.right - rcCtl.left,
+        rcCtl.bottom - rcCtl.top,
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
+    nCtlLeft += (rcCtl.right - rcCtl.left) + DpiScale(hDlg, 6);
 
+    GetWindowRect(GetDlgItem(hDlg, IDC_CMB_TYPE), &rcCtl);
     SetWindowPos(
         GetDlgItem(hDlg, IDC_CMB_TYPE),
         HWND_TOP,
-        rc.left + DpiScale(hDlg, 190),
-        rc.top,
+        rc.left + nCtlLeft,
+        rc.top + (((rc.bottom - rc.top) - (rcCtl.bottom - rcCtl.top)) / 2),
+        rcCtl.right - rcCtl.left,
         DpiScale(hDlg, 100),
-        DpiScale(hDlg, 150),
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
+    nCtlLeft += (rcCtl.right - rcCtl.left) + DpiScale(hDlg, 6);
 
+    GetWindowRect(GetDlgItem(hDlg, IDC_EDIT_VALUE), &rcCtl);
     SetWindowPos(
         GetDlgItem(hDlg, IDC_EDIT_VALUE),
         HWND_TOP,
-        rc.left + DpiScale(hDlg, 300),
-        rc.top,
-        DpiScale(hDlg, 220),
-        rc.bottom - rc.top,
+        rc.left + nCtlLeft,
+        rc.top + (((rc.bottom - rc.top) - (rcCtl.bottom - rcCtl.top)) / 2),
+        rcCtl.right - rcCtl.left,
+        rcCtl.bottom - rcCtl.top,
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
+    nCtlLeft += (rcCtl.right - rcCtl.left) + DpiScale(hDlg, 6);
 
+    GetWindowRect(GetDlgItem(hDlg, IDC_BTN_VALUE), &rcCtl);
     SetWindowPos(
         GetDlgItem(hDlg, IDC_BTN_VALUE),
         HWND_TOP,
-        rc.left + DpiScale(hDlg, 530),
-        rc.top,
-        DpiScale(hDlg, 30),
-        rc.bottom - rc.top,
+        rc.left + nCtlLeft,
+        rc.top + (((rc.bottom - rc.top) - (rcCtl.bottom - rcCtl.top)) / 2),
+        rcCtl.right - rcCtl.left,
+        rcCtl.bottom - rcCtl.top,
         SWP_SHOWWINDOW | SWP_NOACTIVATE);
+    nCtlLeft += (rcCtl.right - rcCtl.left) + DpiScale(hDlg, 6);
 
     const auto actionIndex =
         static_cast<size_t>(
@@ -900,7 +1129,27 @@ static void ShowActionEditor(
     CheckDlgButton(hDlg, IDC_CHK_ENABLE, (action.enabled ? BST_CHECKED : BST_UNCHECKED));
     SetDlgItemText(hDlg, IDC_EDIT_NAME, (action.name).c_str());
     SendDlgItemMessage(hDlg, IDC_CMB_TYPE, CB_SETCURSEL, static_cast<WPARAM>(action.type), 0);
+    switch (action.type) {
+    case ActionType::Url:
+        EnableWindow(GetDlgItem(hDlg, IDC_EDIT_VALUE), TRUE);
+        EnableWindow(GetDlgItem(hDlg, IDC_BTN_VALUE), FALSE);
+        break;
+
+    case ActionType::Folder:
+    case ActionType::Application:
+        EnableWindow(GetDlgItem(hDlg, IDC_EDIT_VALUE), TRUE);
+        EnableWindow(GetDlgItem(hDlg, IDC_BTN_VALUE), TRUE);
+        break;
+
+    case ActionType::Lock:
+    case ActionType::Shutdown:
+    case ActionType::None:
+        EnableWindow(GetDlgItem(hDlg, IDC_EDIT_VALUE), FALSE);
+        EnableWindow(GetDlgItem(hDlg, IDC_BTN_VALUE), FALSE);
+        break;
+    }
     SetDlgItemText(hDlg, IDC_EDIT_VALUE, (action.value).c_str());
+
 }
 
 static void HideActionEditor(
@@ -1044,7 +1293,7 @@ INT_PTR MemoDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
         break;
 
     case WM_PAINT:
-        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
+        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme), IDD_CONFIG_MEMO);
 
     case WM_CTLCOLORSTATIC:
         return OnCtlColorConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
@@ -1363,7 +1612,7 @@ INT_PTR SecurityDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             return TRUE;
         }
     case WM_PAINT:
-        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
+        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme), IDD_CONFIG_SECURITY);
 
     case WM_CTLCOLORSTATIC:
         return OnCtlColorConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
@@ -1412,7 +1661,7 @@ INT_PTR SystemDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
         return TRUE;
 
     case WM_PAINT:
-        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
+        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme), IDD_CONFIG_SYSTEM);
 
     case WM_CTLCOLORSTATIC:
         return OnCtlColorConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
@@ -1548,7 +1797,7 @@ INT_PTR InfoDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
         }
 
     case WM_PAINT:
-        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
+        return OnPaintConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme), IDD_CONFIG_INFO);
 
     case WM_CTLCOLORSTATIC:
         return OnCtlColorConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));

@@ -25,7 +25,9 @@ namespace CToggleSwitch
     bool IsChecked(HWND hSwitch);
 
     void Checked(HWND hSwitch);
+    void CheckedImmediate(HWND hSwitch);
     void UnChecked(HWND hSwitch);
+    void UnCheckedImmediate(HWND hSwitch);
 
     void Toggle(HWND hSwitch);
 
