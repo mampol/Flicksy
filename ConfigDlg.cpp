@@ -466,9 +466,6 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
     DeleteObject(hBrush);
     DeleteObject(hPen);
 
-    CPngResource png;
-    int iconSize = DpiScale(hDlg, 38);
-    Gdiplus::Graphics g(memDC);
     int iconIndex = 0;
 
     switch (dis->CtlID)
@@ -488,15 +485,20 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
         ? RGB(255, 255, 255)
         : RGB(55, 70, 90);
 
-    png.DrawSpriteIcon(
-        g,
-        gBmpIcon,
-        iconIndex,
-        dis->rcItem.left,
-        dis->rcItem.top,
-        128,
-        iconSize,
-        iconColor);
+    {
+        CPngResource png;
+        int iconSize = DpiScale(hDlg, 38);
+        Gdiplus::Graphics g(memDC);
+        png.DrawSpriteIcon(
+            g,
+            gBmpIcon,
+            iconIndex,
+            dis->rcItem.left,
+            dis->rcItem.top,
+            128,
+            iconSize,
+            iconColor);
+    }
 
     HFONT hFont = reinterpret_cast<HFONT>(SendMessage(dis->hwndItem, WM_GETFONT, 0, 0));
     HFONT hOldFont = nullptr;
@@ -580,7 +582,7 @@ LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTh
         break;
 
     case IDD_CONFIG_INFO:
-        title = japanese ? L"INFOMATION" : L"Infomation";
+        title = japanese ? L"INFORMATION" : L"Information";
         wchar_t path[MAX_PATH]{};
         GetModuleFileName(
             nullptr,
@@ -626,11 +628,11 @@ LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTh
         &rcDesc,
         DT_LEFT | DT_WORDBREAK);
 
-    EndPaint(hDlg, &ps);
-
-    SelectObject(ps.hdc, reinterpret_cast<HBRUSH>(hOldFont));
+    SelectObject(ps.hdc, reinterpret_cast<HFONT>(hOldFont));
     SelectObject(ps.hdc, reinterpret_cast<HPEN>(hOldPen));
     SelectObject(ps.hdc, reinterpret_cast<HBRUSH>(hOldBrush));
+
+    EndPaint(hDlg, &ps);
 
     return TRUE;
 }

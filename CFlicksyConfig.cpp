@@ -119,6 +119,28 @@ void CFlicksyConfig::SetDefault()
     m_theme = Theme::Light;
 }
 
+std::filesystem::path CFlicksyConfig::GetResolvedDataFolder() const
+{
+    std::filesystem::path path(m_dataFolder);
+
+    if (path.is_absolute())
+    {
+        return path;
+    }
+
+    wchar_t exePath[MAX_PATH]{};
+
+    GetModuleFileName(
+        nullptr,
+        exePath,
+        MAX_PATH);
+
+    std::filesystem::path exeDir(exePath);
+    exeDir = exeDir.parent_path();
+
+    return exeDir / path;
+}
+
 void CFlicksyConfig::SetServerPort(int port)
 {
     if (port < 1)

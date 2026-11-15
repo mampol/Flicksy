@@ -172,6 +172,7 @@ static LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
@@ -1082,6 +1083,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		return (OnHttpState(hWnd, msg, wp, lp));
 	case UM_HTTPPOPACTION:
 		return (OnHttpPopAction(hWnd, msg, wp, lp));
+	case UM_HTTPPOPMEMO:
+		return (OnHttpPopMemo(hWnd, msg, wp, lp));
 	case UM_HTTPLOG:
 		return (OnHttpLog(hWnd, msg, wp, lp));
 	case UM_TRAYICON:
@@ -1516,27 +1519,15 @@ LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 	FillRect(memDC, &(lpdis->rcItem), pTheme->PanelBrush(0));
 	int img = (lpdis->CtlID == ID_HTTP_START ? 0 : 1);
 	bool hover = GetWindowLongPtr(lpdis->hwndItem,GWLP_USERDATA) != 0;
-	CPngResource png;
-	Gdiplus::Graphics g(memDC);
-	if (lpdis->itemState & ODS_DISABLED)
 	{
-		//ImageList_Draw(ghImgListBtnGrayed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
-		png.DrawSprite(
-			g,
-			ghImgListBtnGrayed,
-			img,
-			lpdis->rcItem.left,
-			lpdis->rcItem.top,
-			98, 44,
-			DpiScale(hWnd, 98),
-			DpiScale(hWnd, 44));
-	}
-	else {
-		if (hover) {
-			//ImageList_Draw(ghImgListBtnHover, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+		CPngResource png;
+		Gdiplus::Graphics g(memDC);
+		if (lpdis->itemState & ODS_DISABLED)
+		{
+			//ImageList_Draw(ghImgListBtnGrayed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
 			png.DrawSprite(
 				g,
-				ghImgListBtnHover,
+				ghImgListBtnGrayed,
 				img,
 				lpdis->rcItem.left,
 				lpdis->rcItem.top,
@@ -1545,12 +1536,11 @@ LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 				DpiScale(hWnd, 44));
 		}
 		else {
-			if (lpdis->itemState & ODS_SELECTED) {
-				if (!ghImgListBtnPressed) return 0L;
-				//ImageList_Draw(ghImgListBtnPressed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+			if (hover) {
+				//ImageList_Draw(ghImgListBtnHover, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
 				png.DrawSprite(
 					g,
-					ghImgListBtnPressed,
+					ghImgListBtnHover,
 					img,
 					lpdis->rcItem.left,
 					lpdis->rcItem.top,
@@ -1559,19 +1549,34 @@ LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 					DpiScale(hWnd, 44));
 			}
 			else {
-				if (!ghImgListBtn) return 0L;
-				//ImageList_Draw(ghImgListBtn, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
-				png.DrawSprite(
-					g,
-					ghImgListBtn,
-					img,
-					lpdis->rcItem.left,
-					lpdis->rcItem.top,
-					98, 44,
-					DpiScale(hWnd, 98),
-					DpiScale(hWnd, 44));
-			}
+				if (lpdis->itemState & ODS_SELECTED) {
+					if (!ghImgListBtnPressed) return 0L;
+					//ImageList_Draw(ghImgListBtnPressed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+					png.DrawSprite(
+						g,
+						ghImgListBtnPressed,
+						img,
+						lpdis->rcItem.left,
+						lpdis->rcItem.top,
+						98, 44,
+						DpiScale(hWnd, 98),
+						DpiScale(hWnd, 44));
+				}
+				else {
+					if (!ghImgListBtn) return 0L;
+					//ImageList_Draw(ghImgListBtn, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+					png.DrawSprite(
+						g,
+						ghImgListBtn,
+						img,
+						lpdis->rcItem.left,
+						lpdis->rcItem.top,
+						98, 44,
+						DpiScale(hWnd, 98),
+						DpiScale(hWnd, 44));
+				}
 
+			}
 		}
 	}
 
@@ -1604,8 +1609,8 @@ LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 		g,
 		ghImgListBtnPin,
 		imageIndex,
-		DpiScale(hWnd, lpdis->rcItem.left),
-		DpiScale(hWnd, lpdis->rcItem.top),
+		lpdis->rcItem.left,
+		lpdis->rcItem.top,
 		16, 16,
 		DpiScale(hWnd, 16),
 		DpiScale(hWnd, 16));
@@ -1721,7 +1726,7 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	case ID_HTTP_STOP:
 		lpCSimpleHttpServer =
 			(CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
-		if (lpCSimpleHttpServer){
+		if (lpCSimpleHttpServer) {
 			lpCSimpleHttpServer->Stop();
 		}
 		break;
@@ -1992,6 +1997,85 @@ LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	return 0L;
 }
 
+LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+	if (pServer) {
+		MemoRequest memor;
+		if (pServer->PopMemo(memor)) {
+			CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+			CMemoManager* lpCMemoManager = (CMemoManager*)GetProp(hWnd, CMEMOMANAGER);
+			if (lpCFlicksyConfig && lpCMemoManager)
+			{
+				MemoItem memo;
+
+				memo.id = lpCMemoManager->MakeMemoId();
+				memo.text = std::move(memor.text);
+				memo.created = lpCMemoManager->GetCurrentDateTimeString();
+				memo.updated = memo.created;
+
+				if (!memor.imageData.empty())
+				{
+					std::filesystem::path dataFolder = lpCFlicksyConfig->GetResolvedDataFolder();
+					std::filesystem::path attachmentFolder =
+						dataFolder / L"attachments";
+					try
+					{
+						if (!std::filesystem::exists(
+							attachmentFolder))
+						{
+							std::filesystem::create_directories(
+								attachmentFolder);
+						}
+
+						std::wstring fileName{};
+						if (memor.imageContentType == "image/jpeg") {
+							fileName = memo.id + L".jpg";
+						}
+						if (memor.imageContentType == "image/png") {
+							fileName = memo.id + L".png";
+						}
+						if (memor.imageContentType == "image/webp") {
+							fileName = memo.id + L".webp";
+						}
+
+						std::filesystem::path filePath =
+							attachmentFolder / fileName;
+
+						std::ofstream ofs(
+							filePath,
+							std::ios::binary |
+							std::ios::trunc);
+
+						if (ofs)
+						{
+							ofs.write(
+								memor.imageData.data(),
+								static_cast<std::streamsize>(
+									memor.imageData.size()));
+
+							if (ofs.good())
+							{
+								memo.attachments.push_back(
+									std::filesystem::path(
+										L"attachments") /
+									fileName);
+							}
+						}
+					}
+					catch (...)
+					{
+					}
+				}
+
+				lpCMemoManager->AddMemo(memo);
+			}
+		}
+	}
+
+	return 0L;
+}
+
 LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
@@ -2067,14 +2151,51 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	ReleaseHotkey(hWnd);
 
+	CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 	CMemoManager* lpCMemoManager= (CMemoManager*)GetProp(hWnd, CMEMOMANAGER);
+
+	LeaveSubclassButton(GetDlgItem(hWnd, ID_HTTP_START));
+	LeaveSubclassButton(GetDlgItem(hWnd, ID_HTTP_STOP));
+
+	if (lpCSimpleHttpServer)
+	{
+		lpCSimpleHttpServer->Stop();
+
+		if (lpCMemoManager)
+		{
+			MemoRequest memor;
+			while (lpCSimpleHttpServer->PopMemo(memor))
+			{
+				MemoItem memo;
+				memo.id =
+					lpCMemoManager->MakeMemoId();
+				memo.text =
+					std::move(memor.text);
+				memo.created =
+					lpCMemoManager->GetCurrentDateTimeString();
+				memo.updated =
+					memo.created;
+				lpCMemoManager->AddMemo(memo);
+			}
+		}
+
+		RemoveProp(hWnd, CSIMPLEHTTPSERVER);
+		delete lpCSimpleHttpServer;
+	}
+
 	if (lpCMemoManager)
 	{
+		if (lpCFlicksyConfig)
+		{
+			std::wstring dataFolder = lpCFlicksyConfig->GetDataFolder();
+			lpCMemoManager->Save(dataFolder);
+		}
+
 		RemoveProp(hWnd, CMEMOMANAGER);
 		delete lpCMemoManager;
 	}
 
-	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 	if (lpCFlicksyConfig)
 	{
 		//lpCFlicksyConfig->SetServerPort(GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE));
@@ -2107,18 +2228,6 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 		RemoveProp(hWnd, CFLICKSYCONFIG);
 		delete lpCFlicksyConfig;
-	}
-
-	LeaveSubclassButton(GetDlgItem(hWnd, ID_HTTP_START));
-	LeaveSubclassButton(GetDlgItem(hWnd, ID_HTTP_STOP));
-
-	CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
-	if (lpCSimpleHttpServer)
-	{
-		lpCSimpleHttpServer->Stop();
-
-		RemoveProp(hWnd, CSIMPLEHTTPSERVER);
-		delete lpCSimpleHttpServer;
 	}
 
 	CAppColorTheme* lpCAppColorTheme  = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);

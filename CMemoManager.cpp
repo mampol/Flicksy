@@ -1,7 +1,6 @@
 #include "CMemoManager.h"
 
 #include <windows.h>
-#include <filesystem>
 #include <fstream>
 #include <toml.hpp>
 #include "TextEncoding.h"
@@ -10,21 +9,43 @@ namespace
 {
     constexpr wchar_t MEMO_FILE_NAME[] = L"fmemo.toml";
 
+    std::filesystem::path ResolveDataFolder(
+        const std::wstring& dataFolder)
+    {
+        std::filesystem::path path(dataFolder);
+
+        if (path.is_absolute())
+        {
+            return path;
+        }
+
+        wchar_t exePath[MAX_PATH]{};
+
+        GetModuleFileName(
+            nullptr,
+            exePath,
+            MAX_PATH);
+
+        std::filesystem::path exeDir(exePath);
+        exeDir = exeDir.parent_path();
+
+        return exeDir / path;
+    }
+
     std::filesystem::path MakeMemoFilePath(
         const std::wstring& dataFolder)
     {
-        return std::filesystem::path(dataFolder)
-            / MEMO_FILE_NAME;
+        std::filesystem::path folder = ResolveDataFolder(dataFolder);
+        return std::filesystem::path(folder) / MEMO_FILE_NAME;
     }
 }
 
-std::wstring CMemoManager::MakeMemoId()
+std::wstring CMemoManager::MakeMemoId() const
 {
     SYSTEMTIME st{};
     GetLocalTime(&st);
 
     wchar_t buf[64]{};
-
     swprintf_s(
         buf,
         L"%04d%02d%02d_%02d%02d%02d_%03d",
@@ -36,7 +57,32 @@ std::wstring CMemoManager::MakeMemoId()
         st.wSecond,
         st.wMilliseconds);
 
-    return buf;
+    std::wstring baseId = buf;
+    std::wstring id = baseId;
+
+    int cnt = 1;
+
+    auto exists = [&](const std::wstring& target)
+        {
+            for (const auto& memo : m_memos)
+            {
+                if (memo.id == target)
+                    return true;
+            }
+
+            return false;
+        };
+
+    while (exists(id))
+    {
+        id =
+            baseId + L"_" +
+            std::to_wstring(cnt);
+
+        cnt++;
+    }
+
+    return id;
 }
 
 std::wstring CMemoManager::GetCurrentDateTimeString()
@@ -126,20 +172,17 @@ bool CMemoManager::Load(const std::wstring& dataFolder)
 }
 
 bool CMemoManager::Save(
-    const std::wstring& dataFolder) const
+    const std::wstring & dataFolder) const
 {
     try
     {
-        std::filesystem::path folder(dataFolder);
+        const auto path = MakeMemoFilePath(dataFolder);
 
-        if (!std::filesystem::exists(folder))
+        if (!std::filesystem::exists(path.parent_path()))
         {
-            if (!std::filesystem::create_directories(folder))
+            if (!std::filesystem::create_directories(path.parent_path()))
                 return false;
         }
-
-        const std::filesystem::path path =
-            MakeMemoFilePath(dataFolder);
 
         toml::table tbl;
         toml::array memos;

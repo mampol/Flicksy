@@ -327,6 +327,10 @@ CSimpleHttpServer::CSimpleHttpServer()
             if (!CheckToken(req, res))
                 return;
 
+            std::string log =
+                "[" + req.remote_addr + "] " + req.method + " " + req.path;
+            AddServerLog(log);
+
             if (!req.has_param("id"))
             {
                 res.status = 400;
@@ -352,7 +356,90 @@ CSimpleHttpServer::CSimpleHttpServer()
             {
                 res.status = 400;
             }
-        }); 
+        });
+
+    m_server.Post(
+        "/api/memo",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!CheckToken(req, res))
+                return;
+
+            std::string log =
+                "[" + req.remote_addr + "] " + req.method + " " + req.path;
+            AddServerLog(log);
+
+            if (!req.is_multipart_form_data())
+            {
+                res.status = 400;
+                res.set_content(
+                    "multipart/form-data required",
+                    "text/plain");
+                return;
+            }
+
+            std::string textUtf8;
+
+            if (req.form.has_field("text"))
+            {
+                textUtf8 =
+                    req.form.get_field("text");
+            }
+
+            std::string imageData;
+            std::string imageFileName;
+            std::string imageContentType;
+
+            if (req.form.has_file("image"))
+            {
+                const auto& file =
+                    req.form.get_file("image");
+
+                imageData =
+                    file.content;
+
+                imageFileName =
+                    file.filename;
+
+                imageContentType =
+                    file.content_type;
+            }
+
+            if (textUtf8.empty() &&
+                imageData.empty())
+            {
+                res.status = 400;
+                res.set_content(
+                    "Memo is empty",
+                    "text/plain");
+                return;
+            }
+
+            MemoRequest memo;
+            memo.text =
+                TextEncoding::Utf8ToUtf16(textUtf8);
+            memo.imageData =
+                std::move(imageData);
+            memo.imageFileName =
+                TextEncoding::Utf8ToUtf16(imageFileName);
+            memo.imageContentType =
+                imageContentType;
+
+            {
+                std::lock_guard<std::mutex> lock(
+                    m_mutex);
+
+                m_memor.push(
+                    std::move(memo));
+            }
+
+            PostMsg(UM_HTTPPOPMEMO);
+
+            res.status = 200;
+            res.set_content("OK", "text/plain");
+        });
+
 }
 
 CSimpleHttpServer::~CSimpleHttpServer()
@@ -600,6 +687,19 @@ bool CSimpleHttpServer::PopActions(size_t& id)
 
     id = m_actions.front();
     m_actions.pop();
+
+    return true;
+}
+
+bool CSimpleHttpServer::PopMemo(MemoRequest& memor)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_memor.empty())
+        return false;
+
+    memor = std::move(m_memor.front());
+    m_memor.pop();
 
     return true;
 }

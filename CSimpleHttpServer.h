@@ -28,6 +28,7 @@
 #define UM_HTTPSTATE     (WM_APP+4)
 #define UM_HTTPLOG       (WM_APP+5)
 #define UM_HTTPPOPACTION (WM_APP+6)
+#define UM_HTTPPOPMEMO   (WM_APP+7)
 
 enum class ServerState
 {
@@ -36,6 +37,15 @@ enum class ServerState
     Running,
     Stopping,
     Error
+};
+
+struct MemoRequest
+{
+    std::wstring text;
+
+    std::string imageData;
+    std::wstring imageFileName;
+    std::string imageContentType;
 };
 
 using ActionProvider = std::function<std::vector<ActionConfig>()>;
@@ -71,6 +81,7 @@ public:
     bool PopKey(WORD& vk);
     bool PopHotkey(std::string& hotkey);
     bool PopActions(size_t& id);
+    bool PopMemo(MemoRequest& memor);
     bool PopLog(std::string& log);
 
     const std::string& GetLastError() const { return m_lastError; }
@@ -176,6 +187,7 @@ private:
     std::queue<WORD> m_keys;
     std::queue<std::string> m_hotkey;
     std::queue<size_t> m_actions;
+    std::queue<MemoRequest> m_memor;
 
     std::queue<std::string> m_logs;
     std::mutex m_mutex;

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 struct MemoItem
 {
@@ -18,7 +19,7 @@ class CMemoManager
 public:
     CMemoManager() = default;
 
-    static std::wstring MakeMemoId();
+    std::wstring MakeMemoId() const;
     static std::wstring GetCurrentDateTimeString();
 
     bool Load(const std::wstring& dataFolder);

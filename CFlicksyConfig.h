@@ -48,6 +48,9 @@ public:
 
     void SetDefault();
 
+    std::filesystem::path
+        GetResolvedDataFolder() const;
+
     bool Load(const std::filesystem::path& file);
     bool Save(const std::filesystem::path& file) const;
     bool Save() const;

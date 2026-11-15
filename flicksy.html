@@ -193,6 +193,15 @@ button { touch-action: manipulation; }
 #memoImageName { color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #memoPreview { width:100%; max-height:220px; object-fit:contain; margin-top:10px; border-radius:14px; background:#111827; }
 .memo-send { width:100%; height:52px; margin-top:4px; background:linear-gradient(135deg,var(--blue),var(--blue2)); color:white; }
+.memo-send:disabled { opacity:.65; }
+.memo-send-status {
+    min-height:20px;
+    margin-top:8px;
+    color:var(--muted);
+    font-size:12px;
+    text-align:center;
+}
+.memo-send-status.error { color:#c23b3b; }
 
 .bottom-nav {
     position: fixed;
@@ -334,16 +343,11 @@ button { touch-action: manipulation; }
 
     <section class="app-page" data-page-panel="memo">
         <h1 class="page-title">メモ</h1>
-        <p class="page-subtitle">文章と写真をPCへ送り、メモとして保存する画面。</p>
+        <p class="page-subtitle">メモをPCへ送信して保存します。</p>
 
         <div class="card">
             <div class="memo-field">
-                <label class="memo-label" for="memoTitle">タイトル</label>
-                <input id="memoTitle" class="memo-input" type="text" autocomplete="off" placeholder="タイトル">
-            </div>
-
-            <div class="memo-field">
-                <label class="memo-label" for="memoBody">本文</label>
+                <label class="memo-label" for="memoBody">メモ</label>
                 <textarea id="memoBody" class="memo-textarea" placeholder="メモを入力"></textarea>
             </div>
 
@@ -352,12 +356,17 @@ button { touch-action: manipulation; }
                 <div class="file-picker">
                     <label class="file-button" for="memoImage">写真を撮る / 選ぶ</label>
                     <span id="memoImageName">写真は選択されていません</span>
-                    <input id="memoImage" type="file" accept="image/*" capture="environment">
+                    <input
+                        id="memoImage"
+                        type="file"
+                        accept="image/*"
+                        capture="environment">
                 </div>
                 <img id="memoPreview" alt="Memo preview" hidden>
             </div>
 
             <button id="memoSendButton" class="memo-send" type="button">メモを送信</button>
+            <div id="memoSendStatus" class="memo-send-status" aria-live="polite"></div>
         </div>
     </section>
 </div>
@@ -412,6 +421,23 @@ function post(url, body)
                 "Content-Type": "application/x-www-form-urlencoded"
             },
             body: body
+        });
+}
+
+function postMemo(text, file)
+{
+    const form = new FormData();
+
+    form.append("text", text);
+
+    if (file)
+        form.append("image", file);
+
+    return fetch(
+        "/api/memo?token=" + encodeURIComponent(token),
+        {
+            method: "POST",
+            body: form
         });
 }
 
@@ -801,45 +827,130 @@ navButtons.forEach(button =>
     });
 });
 
-const memoImageInput = document.getElementById('memoImage');
-const memoPreview = document.getElementById('memoPreview');
-const memoImageName = document.getElementById('memoImageName');
+const memoBody =
+    document.getElementById('memoBody');
+
+const memoImageInput =
+    document.getElementById('memoImage');
+
+const memoPreview =
+    document.getElementById('memoPreview');
+
+const memoImageName =
+    document.getElementById('memoImageName');
+
+let memoPreviewUrl = null;
 
 if (memoImageInput)
 {
     memoImageInput.addEventListener('change', () =>
     {
-        const file = memoImageInput.files && memoImageInput.files[0];
+        if (memoPreviewUrl)
+        {
+            URL.revokeObjectURL(memoPreviewUrl);
+            memoPreviewUrl = null;
+        }
+
+        const file =
+            memoImageInput.files &&
+            memoImageInput.files[0];
+
         if (!file)
         {
+            memoImageName.textContent =
+                '写真は選択されていません';
+
             memoPreview.hidden = true;
             memoPreview.removeAttribute('src');
-            memoImageName.textContent = '写真は選択されていません';
             return;
         }
 
         memoImageName.textContent = file.name;
-        memoPreview.src = URL.createObjectURL(file);
+
+        memoPreviewUrl =
+            URL.createObjectURL(file);
+
+        memoPreview.src = memoPreviewUrl;
         memoPreview.hidden = false;
     });
 }
 
-const memoSendButton = document.getElementById('memoSendButton');
+const memoSendButton =
+    document.getElementById('memoSendButton');
+
+const memoSendStatus =
+    document.getElementById('memoSendStatus');
+
 if (memoSendButton)
 {
-    memoSendButton.addEventListener('click', () =>
+    memoSendButton.addEventListener('click', async () =>
     {
-        // TODO: CMemoManager 側のHTTPエンドポイント確定後にPOST処理を接続する。
-        const title = document.getElementById('memoTitle').value.trim();
-        const body = document.getElementById('memoBody').value.trim();
+        const text = memoBody.value.trim();
 
-        if (!title && !body)
+        const file =
+            memoImageInput &&
+            memoImageInput.files &&
+            memoImageInput.files[0]
+                ? memoImageInput.files[0]
+                : null;
+
+        if (!text && !file)
         {
-            alert('タイトルか本文を入力してください。');
+            memoSendStatus.classList.remove('error');
+            memoSendStatus.textContent =
+                'メモか写真を入力してください。';
+            memoBody.focus();
             return;
         }
 
-        alert('Memo UIは準備OK。次にWindows側の保存APIへ接続します。');
+        memoSendButton.disabled = true;
+        memoSendButton.textContent = '送信中...';
+        memoSendStatus.classList.remove('error');
+        memoSendStatus.textContent = '';
+
+        try
+        {
+            const response =
+                await postMemo(text, file);
+
+            if (!response.ok)
+                throw new Error(`HTTP ${response.status}`);
+
+            // 送信成功時だけ入力内容をクリア
+            memoBody.value = '';
+
+            if (memoImageInput)
+                memoImageInput.value = '';
+
+            if (memoImageName)
+                memoImageName.textContent =
+                    '写真は選択されていません';
+
+            if (memoPreview)
+            {
+                memoPreview.hidden = true;
+                memoPreview.removeAttribute('src');
+            }
+
+            if (memoPreviewUrl)
+            {
+                URL.revokeObjectURL(memoPreviewUrl);
+                memoPreviewUrl = null;
+            }
+
+            memoSendStatus.textContent = '送信しました。';
+        }
+        catch (error)
+        {
+            console.error('Memo send failed:', error);
+            memoSendStatus.classList.add('error');
+            memoSendStatus.textContent = '送信に失敗しました。';
+        }
+        finally
+        {
+            memoSendButton.disabled = false;
+            memoSendButton.textContent = 'メモを送信';
+        }
     });
 }
 
