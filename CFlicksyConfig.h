@@ -102,6 +102,9 @@ public:
     bool StartMinimized() const { return m_startMinimized; }
     void SetStartMinimized(bool value) { m_startMinimized = value; }
 
+    bool UseToken() const { return m_useToken; }
+    void SetUseToken(bool value) { m_useToken  = value; }
+
     Theme GetTheme() const { return m_theme; }
     void SetTheme(Theme theme) { m_theme = theme; }
 
@@ -134,6 +137,8 @@ private:
 
     bool         m_alwaysOnTop;
     bool         m_startMinimized;
+
+    bool         m_useToken;
 
     Theme        m_theme;
 };

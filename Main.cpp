@@ -173,6 +173,7 @@ static LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static bool CommitMemoReq(CMemoManager* pMemoManager, CFlicksyConfig* pConfig, MemoRequest&& request);
 static LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
@@ -1706,6 +1707,11 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		break;
 	case ID_HTTP_START:
 		{
+			CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+			if (!lpCFlicksyConfig) {
+				MessageBox(hWnd, _T("Flicksy config not found"), APP_CLASS, MB_OK | MB_ICONWARNING);
+				break;
+			}
 			int port = GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE);
 			if (port <= 0 || port > 65535)
 			{
@@ -1719,7 +1725,7 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			lpCSimpleHttpServer =
 				(CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 			if (lpCSimpleHttpServer) {
-				lpCSimpleHttpServer->Start(hWnd, port, szRoot);
+				lpCSimpleHttpServer->Start(hWnd, port, szRoot, lpCFlicksyConfig->UseToken());
 			}
 		}
 		break;
@@ -2005,6 +2011,7 @@ LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		if (pServer->PopMemo(memor)) {
 			CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 			CMemoManager* lpCMemoManager = (CMemoManager*)GetProp(hWnd, CMEMOMANAGER);
+			/*
 			if (lpCFlicksyConfig && lpCMemoManager)
 			{
 				MemoItem memo;
@@ -2070,10 +2077,86 @@ LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 				lpCMemoManager->AddMemo(memo);
 			}
+			*/
+			CommitMemoReq(lpCMemoManager, lpCFlicksyConfig, std::move(memor));
 		}
 	}
 
 	return 0L;
+}
+
+bool CommitMemoReq(
+	CMemoManager* pMemoManager,
+	CFlicksyConfig* pConfig,
+	MemoRequest&& request)
+{
+	if (pConfig && pMemoManager)
+	{
+		MemoItem memo;
+
+		memo.id = pMemoManager->MakeMemoId();
+		memo.text = std::move(request.text);
+		memo.created = pMemoManager->GetCurrentDateTimeString();
+		memo.updated = memo.created;
+
+		if (!request.imageData.empty())
+		{
+			std::filesystem::path dataFolder = pConfig->GetResolvedDataFolder();
+			std::filesystem::path attachmentFolder =
+				dataFolder / L"attachments";
+			try
+			{
+				if (!std::filesystem::exists(
+					attachmentFolder))
+				{
+					std::filesystem::create_directories(
+						attachmentFolder);
+				}
+
+				std::wstring fileName{};
+				if (request.imageContentType == "image/jpeg") {
+					fileName = memo.id + L".jpg";
+				}
+				if (request.imageContentType == "image/png") {
+					fileName = memo.id + L".png";
+				}
+				if (request.imageContentType == "image/webp") {
+					fileName = memo.id + L".webp";
+				}
+
+				std::filesystem::path filePath =
+					attachmentFolder / fileName;
+
+				std::ofstream ofs(
+					filePath,
+					std::ios::binary |
+					std::ios::trunc);
+
+				if (ofs)
+				{
+					ofs.write(
+						request.imageData.data(),
+						static_cast<std::streamsize>(
+							request.imageData.size()));
+
+					if (ofs.good())
+					{
+						memo.attachments.push_back(
+							std::filesystem::path(
+								L"attachments") /
+							fileName);
+					}
+				}
+			}
+			catch (...)
+			{
+				return false;
+			}
+
+			pMemoManager->AddMemo(memo);
+		}
+	}
+	return true;
 }
 
 LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
@@ -2167,16 +2250,7 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			MemoRequest memor;
 			while (lpCSimpleHttpServer->PopMemo(memor))
 			{
-				MemoItem memo;
-				memo.id =
-					lpCMemoManager->MakeMemoId();
-				memo.text =
-					std::move(memor.text);
-				memo.created =
-					lpCMemoManager->GetCurrentDateTimeString();
-				memo.updated =
-					memo.created;
-				lpCMemoManager->AddMemo(memo);
+				CommitMemoReq(lpCMemoManager, lpCFlicksyConfig, std::move(memor));
 			}
 		}
 

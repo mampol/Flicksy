@@ -13,6 +13,7 @@ static Gdiplus::Bitmap* gBmpBanner = nullptr;
 static Gdiplus::Bitmap* gBmpIcon = nullptr;
 static HFONT ghFontBold = nullptr;
 static HFONT ghFont = nullptr;
+static bool japanese = true;
 
 struct ConfigDialogState
 {
@@ -46,6 +47,7 @@ static LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CApp
 static LRESULT OnCtlColorConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme);
 
 static INT_PTR CALLBACK ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+static std::wstring GetActionDescription(const ActionConfig& action, bool japanese);
 static const wchar_t* ActionTypeToDisplayString(ActionType type);
 static const ActionType GetSelActionType(HWND hCombo);
 static void ShowActionEditor(HWND hDlg, HWND hList, int sel, CFlicksyConfig* config);
@@ -217,6 +219,13 @@ void ShowConfigDlg(HWND hParent, ConfigContext* lpConfigContext)
     gBmpBanner = png.LoadPngBitmap(hInst, IDB_PNG1);
     gBmpIcon = png.LoadPngBitmap(hInst, IDB_PNG8);
 
+    bool japanese =
+        PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_JAPANESE;
+    const wchar_t* fontName =
+        japanese
+        ? L"Noto Sans JP"
+        : L"Segoe UI";
+
     HDC hdc = GetDC(hParent);
     ghFontBold = CreateFont(-MulDiv((INT_PTR)14, GetDeviceCaps(hdc, LOGPIXELSY), 72),
         0, 0, 0, FW_BOLD,
@@ -226,7 +235,7 @@ void ShowConfigDlg(HWND hParent, ConfigContext* lpConfigContext)
         CLIP_DEFAULT_PRECIS,
         CLEARTYPE_NATURAL_QUALITY,
         DEFAULT_PITCH | FF_DONTCARE,
-        _T("Segoe UI"));
+        fontName);
     ghFont = CreateFont(-MulDiv((INT_PTR)9, GetDeviceCaps(hdc, LOGPIXELSY), 72),
         0, 0, 0, FW_NORMAL,
         FALSE, FALSE, FALSE,
@@ -235,7 +244,7 @@ void ShowConfigDlg(HWND hParent, ConfigContext* lpConfigContext)
         CLIP_DEFAULT_PRECIS,
         CLEARTYPE_NATURAL_QUALITY,
         DEFAULT_PITCH | FF_DONTCARE,
-        _T("Segoe UI"));
+        fontName);
     ReleaseDC(hParent, hdc);
 
     DialogBoxParam(
@@ -431,7 +440,7 @@ LRESULT OnDrawItemConfigDlg(HWND hDlg, ConfigDialogState& cds, LPDRAWITEMSTRUCT 
     if (cds.uCurrentId == dis->CtlID)
     {
         colBtn = apptheme.Colors().buttonSelBg;
-        colText = apptheme.Colors().buttonSelText;;
+        colText = apptheme.Colors().buttonSelText;
     }
 
     HDC hdc = dis->hDC;
@@ -549,8 +558,6 @@ LRESULT OnPaintConfigPage(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTh
     std::wstring ver;
     const wchar_t* title = L"";
     const wchar_t* description = L"";
-    bool japanese =
-        PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_JAPANESE;
     switch (pageId)
     {
     case IDD_CONFIG_SYSTEM:
@@ -653,6 +660,8 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
 {
     static ConfigContext* lpConfigContext = nullptr;
     static int s_prevSel = LB_ERR;
+    static HFONT hFontBold, hFont;
+
     switch (msg)
     {
     case WM_INITDIALOG:
@@ -668,6 +677,32 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             }
 
             s_prevSel = LB_ERR;
+
+            const wchar_t* fontName =
+                japanese
+                ? L"Noto Sans JP"
+                : L"Segoe UI";
+
+            HDC hdc = GetDC(hDlg);
+            hFontBold = CreateFont(-MulDiv((INT_PTR)10, GetDeviceCaps(hdc, LOGPIXELSY), 72),
+                0, 0, 0, FW_BOLD,
+                FALSE, FALSE, FALSE,
+                DEFAULT_CHARSET,
+                OUT_DEFAULT_PRECIS,
+                CLIP_DEFAULT_PRECIS,
+                CLEARTYPE_NATURAL_QUALITY,
+                DEFAULT_PITCH | FF_DONTCARE,
+                fontName);
+            hFont = CreateFont(-MulDiv((INT_PTR)10, GetDeviceCaps(hdc, LOGPIXELSY), 72),
+                0, 0, 0, FW_NORMAL,
+                FALSE, FALSE, FALSE,
+                DEFAULT_CHARSET,
+                OUT_DEFAULT_PRECIS,
+                CLIP_DEFAULT_PRECIS,
+                CLEARTYPE_NATURAL_QUALITY,
+                DEFAULT_PITCH | FF_DONTCARE,
+                fontName);
+            ReleaseDC(hDlg, hdc);
 
             SendDlgItemMessage(hDlg, IDC_CHK_ENABLE,
                 TSM_SETBGCOLOR, 0, static_cast<LPARAM>(GetSysColor(COLOR_WINDOW)));
@@ -755,6 +790,13 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
 
             FillRect(dis->hDC, &(dis->rcItem), GetSysColorBrush(COLOR_WINDOW));
 
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(187, 206, 204));
+            HPEN hOldPen = static_cast<HPEN>(SelectObject(dis->hDC, hPen));
+            MoveToEx(dis->hDC, DpiScale(hDlg, 12), dis->rcItem.bottom - 1, NULL);
+            LineTo(dis->hDC, DpiScale(hDlg, dis->rcItem.right - 12), dis->rcItem.bottom - 1);
+            SelectObject(dis->hDC, hOldPen);
+            DeleteObject(hPen);
+
             if (dis->itemState & ODS_SELECTED)
                 return TRUE;
 
@@ -769,15 +811,38 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             const ActionConfig& action =
                 lpConfigContext->config->GetAction(actionIndex);
 
-            std::wstring wstraction = (action.name).c_str() + 
-                lpConfigContext->config->ActionTypeToString(action.type) +
-                (action.value).c_str();
+            std::wstring wstractiontitle = L"#" + std::to_wstring(actionIndex + 1) + L" " + action.name;
+            std::wstring wstraction = GetActionDescription(action, japanese);
+
+            HFONT hOldFont = static_cast<HFONT>(SelectObject(dis->hDC, hFontBold));
+            RECT rcactiontitle = { DpiScale(hDlg, 12), dis->rcItem.top, DpiScale(hDlg, 140), dis->rcItem.bottom };
+            if (action.enabled) {
+                SetTextColor(dis->hDC, lpConfigContext->appColorTheme->Colors().buttonSelBg);
+            }
+            else {
+                SetTextColor(dis->hDC, RGB(204, 204, 204));
+            }
+            DrawText(dis->hDC,
+                wstractiontitle.c_str(),
+                static_cast<int>(wstractiontitle.size()),
+                &rcactiontitle,
+                DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
+
+            static_cast<HFONT>(SelectObject(dis->hDC, hFont));
+            RECT rcaction = { DpiScale(hDlg, 150), dis->rcItem.top, dis->rcItem.right - DpiScale(hDlg, 10), dis->rcItem.bottom };
+            if (action.enabled) {
+                SetTextColor(dis->hDC, RGB(10, 20, 50));
+            }
+            else {
+                SetTextColor(dis->hDC, RGB(204, 204, 204));
+            }
             DrawText(dis->hDC,
                 wstraction.c_str(),
                 static_cast<int>(wstraction.size()),
-                &(dis->rcItem),
+                &rcaction,
                 DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
 
+            SelectObject(dis->hDC, hOldFont);
         }
         break;
 
@@ -986,8 +1051,8 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
         }
         break;
 
-    case WM_CLOSE:
     case WM_SHOWWINDOW:
+    case WM_CLOSE:
         if (wp == FALSE)
         {
             HWND hList = GetDlgItem(hDlg, IDC_LIST_ACTION);
@@ -1007,11 +1072,71 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
         }
         break;
 
+    case WM_DESTROY:
+        if (hFontBold) {
+            DeleteObject(hFontBold);
+            hFontBold = nullptr;
+        }
+        if (hFont) {
+            DeleteObject(hFont);
+            hFont = nullptr;
+        }
+        break;
+
     default:
         return FALSE;
     }
 
     return TRUE;
+}
+
+static std::wstring GetActionDescription(
+    const ActionConfig& action,
+    bool japanese)
+{
+    switch (action.type)
+    {
+    case ActionType::Url:
+        return japanese
+            ? L"既定のブラウザで " +
+            action.value +
+            L" のWEBサイトを開きます"
+            : L"Open " +
+            action.value +
+            L" in the default browser";
+
+    case ActionType::Folder:
+        return japanese
+            ? L"Windowsエクスプローラーで " +
+            action.value +
+            L" を開きます"
+            : L"Open " +
+            action.value +
+            L" in File Explorer";
+
+    case ActionType::Application:
+        return japanese
+            ? action.value +
+            L" を起動します"
+            : L"Launch " +
+            action.value;
+
+    case ActionType::Lock:
+        return japanese
+            ? L"Windowsをロックします"
+            : L"Lock Windows";
+
+    case ActionType::Shutdown:
+        return japanese
+            ? L"Windowsをシャットダウンします"
+            : L"Shut down Windows";
+
+    case ActionType::None:
+    default:
+        return japanese
+            ? L"未定義です"
+            : L"Not defined";
+    }
 }
 
 static const wchar_t* ActionTypeToDisplayString(ActionType type)
@@ -1633,6 +1758,19 @@ INT_PTR SecurityDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             lpConfigContext =
                 reinterpret_cast<ConfigContext*>(lp);
 
+            if (!lpConfigContext ||
+                !lpConfigContext->config ||
+                !lpConfigContext->memoManager)
+            {
+                return FALSE;
+            }
+
+            if (lpConfigContext->config->UseToken()) {
+                SendDlgItemMessage(hDlg, IDC_CHK_USETOKEN, BM_SETCHECK, static_cast<WPARAM>(BST_CHECKED), 0);
+            }
+
+            SendDlgItemMessage(hDlg, IDC_CHK_USETOKEN, TSM_SETBGCOLOR, 0, static_cast<LPARAM>(lpConfigContext->appColorTheme->Colors().panelBg[1]));
+
             return TRUE;
         }
     case WM_PAINT:
@@ -1640,6 +1778,21 @@ INT_PTR SecurityDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_CTLCOLORSTATIC:
         return OnCtlColorConfigPage(hDlg, msg, wp, lp, *(lpConfigContext->appColorTheme));
+
+    case WM_COMMAND:
+        switch (LOWORD(wp)) {
+        case IDC_CHK_USETOKEN:
+            if (HIWORD(wp) == BN_CLICKED)
+            {
+                HWND hSwitch = reinterpret_cast<HWND>(lp);
+                lpConfigContext->config->SetUseToken(CToggleSwitch::IsChecked(hSwitch));
+                lpConfigContext->config->Save();
+            }
+            break;
+        default:
+            return FALSE;
+        }
+        break;
 
     default:
         return FALSE;

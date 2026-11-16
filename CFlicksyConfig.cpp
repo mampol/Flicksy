@@ -116,6 +116,8 @@ void CFlicksyConfig::SetDefault()
     m_alwaysOnTop = false;
     m_startMinimized = false;
 
+    m_useToken = true;
+
     m_theme = Theme::Light;
 }
 
@@ -291,6 +293,12 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
                 (*window)["start_minimized"].value_or(false);
         }
 
+        if (auto security = tbl["security"].as_table())
+        {
+            m_useToken =
+                (*security)["usetoken"].value_or(true);
+        }
+
         if (auto appearance = tbl["appearance"].as_table())
         {
             const std::string theme =
@@ -360,6 +368,10 @@ bool CFlicksyConfig::Save(const std::filesystem::path& file) const
             { "always_on_top", m_alwaysOnTop },
             { "start_minimized", m_startMinimized }
         });
+
+        tbl.insert("security", toml::table{
+            { "usetoken", m_useToken }
+            });
 
         tbl.insert("appearance", toml::table{
             { "theme", ThemeToString(m_theme) }

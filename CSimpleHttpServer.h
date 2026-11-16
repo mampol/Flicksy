@@ -56,7 +56,7 @@ public:
     CSimpleHttpServer();
     ~CSimpleHttpServer();
 
-    bool Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot);
+    bool Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot, bool usetoken);
     void Stop();
 
     int GetPort() { return m_port; };
@@ -172,6 +172,7 @@ private:
         }
     }
 private:
+    bool m_usetoken;
     std::string m_token;
 
     std::atomic<ServerState> m_state = ServerState::Stopped;

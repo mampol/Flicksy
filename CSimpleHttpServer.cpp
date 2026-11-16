@@ -506,6 +506,8 @@ std::string CSimpleHttpServer::GenerateToken()
 
 bool CSimpleHttpServer::CheckToken(const httplib::Request& req, httplib::Response& res)
 {
+    if (!m_usetoken) return true;
+
     if (!req.has_param("token"))
     {
         res.status = 403;
@@ -523,9 +525,11 @@ bool CSimpleHttpServer::CheckToken(const httplib::Request& req, httplib::Respons
     return true;
 }
 
-bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot)
+bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot, bool usetoken)
 {
     m_lastError.clear();
+
+    m_usetoken = usetoken;
 
     if (m_thread.joinable())
     {
