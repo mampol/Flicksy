@@ -6,16 +6,19 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include "DpiAware.h"
 #include "qrcodegen.hpp"
 #include "TextEncoding.h"
 #include "CSimpleHttpServer.h"
 #include "CAppColorTheme.h"
-#include "CImgListPng.h"
+#include "CPngResource.h"
 #include "CFlicksyConfig.h"
+#include "CMemoManager.h"
 #include "CTrayIcon.h"
 #include "CToggleSwitch.h"
 #include "CPopupLayerWnd.h"
 #include "CInputSender.h"
+#include "ConfigDlg.h"
 #include "CLogger.h"
 #include "resource.h"
 #include "Win32VisualStyle.h"
@@ -27,24 +30,30 @@
 #define CSIMPLEHTTPSERVER	_T("CSimpleHttpServer")
 #define CAPPCOLORTHEME		_T("CAppColorTheme")
 #define CFLICKSYCONFIG		_T("CFlicksyConfig")
+#define CMEMOMANAGER		_T("CMemoManager")
 #define CTRAYICON			_T("CTrayIcon")
 
-#define IDC_EDIT_PORT       1001
-#define IDC_SPIN_PORT		1002
-#define IDC_EDIT_ROOT       1003
+//#define IDC_EDIT_PORT       1001
+//#define IDC_SPIN_PORT		  1002
+//#define IDC_EDIT_ROOT       1003
 #define IDC_RADIO_SENDINPUT	1004
 #define IDC_RADIO_CLIPBOARD	1005
 #define IDC_CHECK_TOPMOST	1006
-#define IDC_CHECK_AUTOSTART	1007
-#define IDC_CHECK_STARTUP	1008
+//#define IDC_CHECK_AUTOSTART	1007
+//#define IDC_CHECK_STARTUP	1008
 #define IDC_LIST_LOG		1009
 #define IDC_SWITCH_THEME	1010
 
-std::filesystem::path gflicksytoml;
+//std::filesystem::path gflicksytoml;
 static Gdiplus::GdiplusStartupInput ggdiplusStartupInput;
 static Gdiplus::Bitmap* gpBitmapBanner;
 static Gdiplus::Bitmap* gpBitmapBannerDark;
-static HIMAGELIST ghImgListBtn, ghImgListBtnHover, ghImgListBtnPressed, ghImgListBtnGrayed, ghImgListBtnPin;
+//static HIMAGELIST ghImgListBtn, ghImgListBtnHover, ghImgListBtnPressed, ghImgListBtnGrayed, ghImgListBtnPin;
+static Gdiplus::Bitmap* ghImgListBtn;
+static Gdiplus::Bitmap* ghImgListBtnHover;
+static Gdiplus::Bitmap* ghImgListBtnPressed;
+static Gdiplus::Bitmap* ghImgListBtnGrayed;
+static Gdiplus::Bitmap* ghImgListBtnPin;
 static ULONG_PTR ggdiplusToken = 0;
 static HFONT ghFontBold, ghFont;
 static HWND ghPopupQrWnd = nullptr;
@@ -75,9 +84,9 @@ struct QrBitmapCache
 static QrBitmapCache gQRcache;
 bool MakeQrBitmap(const std::string& text, int size, QrBitmapCache& cache);
 /*
-std::wstring Utf8ToUtf16(const std::string& src);
-std::wstring SjisToUtf16(const std::string& s);
-std::string Utf16ToUtf8(const std::wstring& s);
+std::wstring Utf8ToWide(const std::string& src);
+std::wstring SJisToWide(const std::string& s);
+std::string WideToUtf8(const std::wstring& s);
 std::string SjisToUtf8(const std::string& s);
 */
 /*
@@ -107,20 +116,23 @@ void DrawOptionPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme);
 void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme);
 void DrawLogPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme);
 void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size);
-void DrawTextLine(HDC hdc, int x, int y, const std::wstring& strTextLine, const UINT format = DT_SINGLELINE | DT_END_ELLIPSIS);
-void DrawTextLine(HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT format);
+void DrawTextLine(HWND hWnd, HDC hdc, int x, int y, const std::wstring& strTextLine, const UINT format = DT_SINGLELINE | DT_END_ELLIPSIS);
+void DrawTextLine(HWND hWnd, HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT format);
 
 #define BUTTONSUBCLASS			_T("OldButtonProc")
 void EnterSubclassButton(HWND hButton);
 void LeaveSubclassButton(HWND hButton);
 LRESULT CALLBACK StartStopBtnProc(HWND hBtn, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
+/*
 #define REG_STARTUP				_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
 #define REG_VALUE				_T("Flicksy")
 bool SetRunAtStartup(bool enabled);
 bool IsRunAtStartup();
-
+*/
 void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height, LPVOID lpAnim);
+
+bool ExecuteAction(const ActionConfig& action);
+bool EnableShutdownPrivilege();
 
 static CLogger logger;
 constexpr int MAX_LOG_COUNT = 1000;
@@ -142,30 +154,34 @@ typedef struct LogItem
 void AddLog(HWND hWnd, const LogType type, const std::wstring& text);
 COLORREF GetLogColor(LogType type);
 
-INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow);
-LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnPaint(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnMeasureItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnDrawItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
-LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
-LRESULT OnDrawListLogs(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
-LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT OnDestroy(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow);
+static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnPaint(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnDpiChanged(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnMeasureItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnDrawItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
+static LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
+static LRESULT OnDrawListLogs(HWND hWnd, LPDRAWITEMSTRUCT lpdis);
+static LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnTimer(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopKey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static bool CommitMemoReq(HWND hWnd, CMemoManager* pMemoManager, CFlicksyConfig* pConfig, MemoRequest&& request);
+static LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
+static LRESULT OnDestroy(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 
-void ApplyTheme(HWND hWnd);
+static void ApplyTheme(HWND hWnd);
 /*
-std::wstring Utf8ToUtf16(const std::string& src)
+std::wstring Utf8ToWide(const std::string& src)
 {
 	if (src.empty()) return L"";
 
@@ -192,7 +208,7 @@ std::wstring Utf8ToUtf16(const std::string& src)
 	return dst;
 }
 
-std::wstring SjisToUtf16(const std::string& s)
+std::wstring SJisToWide(const std::string& s)
 {
 	if (s.empty()) return L"";
 
@@ -217,7 +233,7 @@ std::wstring SjisToUtf16(const std::string& s)
 	return dst;
 }
 
-std::string Utf16ToUtf8(const std::wstring& s)
+std::string WideToUtf8(const std::wstring& s)
 {
 	if (s.empty()) return "";
 
@@ -248,8 +264,8 @@ std::string Utf16ToUtf8(const std::wstring& s)
 
 std::string SjisToUtf8(const std::string& s)
 {
-	std::wstring utf16 = SjisToUtf16(s);
-	std::string utf8 = Utf16ToUtf8(utf16);
+	std::wstring utf16 = SJisToWide(s);
+	std::string utf8 = WideToUtf8(utf16);
 	return utf8;
 }
 */
@@ -513,30 +529,40 @@ void DrawBackground(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 	SetTextColor(hdc, (theme.Colors()).subText);
 	SetBkColor(hdc, (theme.Colors()).windowBg);
 	std::wstring wstr = _T("DarkMode");
-	DrawTextLine(hdc, 640, 509, wstr);
+	DrawTextLine(hWnd, hdc, 640, 509, wstr);
 }
 
 void DrawHeader(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 {
 	HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, theme.HeaderBrush());
 	HPEN hOldPen = (HPEN)SelectObject(hdc, theme.HeaderPen());
-	RoundRect(hdc, 2, 1, rc.right - 2, 84, 4, 4);
+	RoundRect(hdc, 2, 1, DpiScale(hWnd, rc.right - 2), DpiScale(hWnd, 84), 4, 4);
 
 	if (gpBitmapBanner && gpBitmapBannerDark)
 	{
 		Gdiplus::Graphics graphics(hdc);
 		if (theme.Mode() == ColorMode::Dark) {
-			graphics.DrawImage(gpBitmapBannerDark, 16, 6, gpBitmapBannerDark->GetWidth(), gpBitmapBannerDark->GetHeight());
+			graphics.DrawImage(gpBitmapBannerDark,
+				DpiScale(hWnd, 16),
+				DpiScale(hWnd, 6),
+				DpiScale(hWnd, gpBitmapBannerDark->GetWidth()),
+				DpiScale(hWnd, gpBitmapBannerDark->GetHeight()));
 		}
 		else {
-			graphics.DrawImage(gpBitmapBanner, 16, 6, gpBitmapBanner->GetWidth(), gpBitmapBanner->GetHeight());
+			graphics.DrawImage(gpBitmapBanner,
+				DpiScale(hWnd, 16),
+				DpiScale(hWnd, 6),
+				DpiScale(hWnd, gpBitmapBanner->GetWidth()),
+				DpiScale(hWnd, gpBitmapBanner->GetHeight()));
 		}
 	}
 
 	HFONT hOldFont = (HFONT)SelectObject(hdc, ghFont);
 	COLORREF colOldBkColor = SetBkColor(hdc, (theme.Colors()).headerBg);
 	COLORREF colOldText = SetTextColor(hdc, (theme.Colors()).subText);
-	DrawTextLine(hdc, 700, 52, gwstrVer);
+	DrawTextLine(hWnd, hdc,
+		700, 52,
+		gwstrVer);
 	SetBkColor(hdc, colOldBkColor);
 	SetTextColor(hdc, colOldText);
 	SelectObject(hdc, hOldFont);
@@ -548,16 +574,16 @@ void DrawHeader(HWND hWnd, HDC hdc, RECT& rc, const CAppColorTheme& theme)
 void DrawPanels(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 {
 	DrawPanel(hdc, theme, 0,
-		{ 16, 96, 255, 296 });
+		{ DpiScale(hWnd, 16), DpiScale(hWnd, 96), DpiScale(hWnd, 255), DpiScale(hWnd, 296) });
 
 	DrawPanel(hdc, theme, 1,
-		{ 271, 96, 510, 296 });
+		{ DpiScale(hWnd, 271), DpiScale(hWnd, 96), DpiScale(hWnd, 510), DpiScale(hWnd, 296) });
 
 	DrawPanel(hdc, theme, 2,
-		{ 526, 96, 764, 296 });
+		{ DpiScale(hWnd, 526), DpiScale(hWnd, 96), DpiScale(hWnd, 764), DpiScale(hWnd, 296) });
 
 	DrawPanel(hdc, theme, 3,
-		{ 16, 310, 764, 502 });
+		{ DpiScale(hWnd, 16), DpiScale(hWnd, 310), DpiScale(hWnd, 764), DpiScale(hWnd, 502) });
 }
 
 void DrawPanel(HDC hdc, const CAppColorTheme& theme, int index, const RECT& rc)
@@ -583,7 +609,7 @@ void DrawServerPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	COLORREF oldtextcolor = SetTextColor(hdc, (theme.Colors()).text);
 	COLORREF oldbkcolor = SetBkColor(hdc, (theme.Colors()).panelBg[0]);
 	std::wstring wstr = _T("Server");
-	DrawTextLine(hdc, 32, 102, wstr);
+	DrawTextLine(hWnd, hdc, 32, 102, wstr);
 
 	std::wstring wstrState;
 	COLORREF colState = theme.Colors().subText;
@@ -621,14 +647,14 @@ void DrawServerPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	SetTextColor(hdc, (theme.Colors()).panelText[0]);
 	SelectObject(hdc, ghFont);
 	wstr = _T("STATUS");
-	DrawTextLine(hdc, 32, 138, wstr);
+	DrawTextLine(hWnd, hdc, 32, 138, wstr);
 	wstr = _T("PORT");
-	DrawTextLine(hdc, 32, 167, wstr);
+	DrawTextLine(hWnd, hdc, 32, 167, wstr);
 	wstr = _T("ROOT");
-	DrawTextLine(hdc, 32, 198, wstr);
+	DrawTextLine(hWnd, hdc, 32, 198, wstr);
 
 	SetTextColor(hdc, colState);
-	DrawTextLine(hdc, 106, 138, wstrState);
+	DrawTextLine(hWnd, hdc, 106, 138, wstrState);
 
 	SelectObject(hdc, hOldFont);
 	SetTextColor(hdc, oldtextcolor);
@@ -641,14 +667,14 @@ void DrawOptionPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	COLORREF oldtextcolor = SetTextColor(hdc, (theme.Colors()).text);
 	COLORREF oldbkcolor = SetBkColor(hdc, (theme.Colors()).panelBg[1]);
 	std::wstring wstr = _T("Options");
-	DrawTextLine(hdc, 287, 102, wstr);
+	DrawTextLine(hWnd, hdc, 287, 102, wstr);
 
 	SetTextColor(hdc, (theme.Colors()).panelText[1]);
 	SelectObject(hdc, ghFont);
 	wstr = _T("TRANSMISSION");
-	DrawTextLine(hdc, 287, 138, wstr);
-	wstr = _T("STARTUP");
-	DrawTextLine(hdc, 287, 216, wstr);
+	DrawTextLine(hWnd, hdc, 287, 138, wstr);
+	//wstr = _T("STARTUP");
+	//DrawTextLine(hdc, 287, 216, wstr);
 
 	SelectObject(hdc, hOldFont);
 	SetTextColor(hdc, oldtextcolor);
@@ -661,7 +687,7 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	COLORREF oldtextcolor = SetTextColor(hdc, (theme.Colors()).text);
 	COLORREF oldbkcolor = SetBkColor(hdc, (theme.Colors()).panelBg[2]);
 	std::wstring wstr = _T("QR code");
-	DrawTextLine(hdc, 542, 102, wstr);
+	DrawTextLine(hWnd, hdc, 542, 102, wstr);
 
 	SetTextColor(hdc, (theme.Colors()).panelText[2]);
 	CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
@@ -673,7 +699,7 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 			std::string ip = GetLocalIPv4();
 			std::string port = std::to_string(lpCSimpleHttpServer->GetPort());
 			gstrLinkURL = "http://" + ip + ":" + port + "/?token=" + lpCSimpleHttpServer->GetToken();
-			gwstrShowURL = Utf8ToUtf16(ip) + L":" + Utf8ToUtf16(port);
+			gwstrShowURL = Utf8ToWide(ip) + L":" + Utf8ToWide(port);
 			*/
 			/*
 			DrawQrCodeBox(hdc, gstrLinkURL, 588, 134, 110);
@@ -682,25 +708,26 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 			{
 				HDC memDC = CreateCompatibleDC(hdc);
 				HBITMAP old = static_cast<HBITMAP>(SelectObject(memDC, gQRcache.hBitmap));
-				BitBlt(hdc,
-					588, 134,
-					gQRcache.width, gQRcache.height,
+				StretchBlt(hdc,
+					DpiScale(hWnd, 588), DpiScale(hWnd, 134),
+					DpiScale(hWnd, gQRcache.width), DpiScale(hWnd, gQRcache.height),
 					memDC,
 					0, 0,
+					gQRcache.width, gQRcache.height,
 					SRCCOPY);
 				SelectObject(memDC, old);
 				DeleteDC(memDC);
 			}
 
 			SelectObject(hdc, ghFont);
-			RECT rc = { 527, 250, 762, 290 };
-			DrawTextLine(hdc, rc, gwstrShowURL, DT_SINGLELINE | DT_CENTER);
+			RECT rc = { DpiScale(hWnd, 527), DpiScale(hWnd, 250), DpiScale(hWnd, 762), DpiScale(hWnd, 290) };
+			DrawTextLine(hWnd, hdc, rc, gwstrShowURL, DT_SINGLELINE | DT_CENTER);
 		}
 		else {
 			SelectObject(hdc, ghFont);
 			wstr = _T("Server is stopped.\nStart the server to display the QR code.");
-			RECT rc = { 542, 137, 724, 294 };
-			DrawTextLine(hdc, rc, wstr, DT_WORDBREAK | DT_END_ELLIPSIS);
+			RECT rc = { DpiScale(hWnd, 542), DpiScale(hWnd, 137), DpiScale(hWnd, 724), DpiScale(hWnd, 294) };
+			DrawTextLine(hWnd, hdc, rc, wstr, DT_WORDBREAK | DT_END_ELLIPSIS);
 		}
 	}
 
@@ -715,8 +742,7 @@ void DrawLogPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	COLORREF oldtextcolor = SetTextColor(hdc, (theme.Colors()).text);
 	COLORREF oldbkcolor = SetBkColor(hdc, (theme.Colors()).panelBg[3]);
 	std::wstring wstr = _T("Logs");
-	DrawTextLine(hdc, 32, 318, wstr);
-
+	DrawTextLine(hWnd, hdc, 32, 318, wstr);
 
 	SelectObject(hdc, hOldFont);
 	SetTextColor(hdc, oldtextcolor);
@@ -794,17 +820,23 @@ void DrawQrCodeBox(HDC hdc, const std::string& utf8, int x, int y, int size)
 	}
 }
 
-void DrawTextLine(HDC hdc, int x, int y, const std::wstring& strTextLine, UINT format)
+void DrawTextLine(HWND hWnd, HDC hdc, int x, int y, const std::wstring& strTextLine, UINT format)
 {
 	SIZE sz;
 	GetTextExtentPoint32(hdc, strTextLine.c_str(), static_cast<int>(strTextLine.length()), &sz);
 	RECT rc = { x, y, x + sz.cx + 4, y + sz.cy + 4 };
-	DrawTextLine(hdc, rc, strTextLine.c_str(), format);
+	DrawTextLine(hWnd, hdc, rc, strTextLine.c_str(), format);
 }
 
-void DrawTextLine(HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT format)
+void DrawTextLine(HWND hWnd, HDC hdc, RECT& rc, const std::wstring& strTextLine, UINT format)
 {
-	DrawText(hdc, strTextLine.c_str(), -1, &rc, format);
+	RECT rcDpi = { 
+		DpiScale(hWnd, rc.left),
+		DpiScale(hWnd, rc.top),
+		DpiScale(hWnd, rc.right),
+		DpiScale(hWnd, rc.bottom)
+	};
+	DrawText(hdc, strTextLine.c_str(), -1, &rcDpi, format);
 }
 
 void AddLog(HWND hWnd, const LogType type, const std::wstring& text)
@@ -873,10 +905,17 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 {
 	if (hPrevInst != NULL) return 0;
 
+	DpiAware();
+
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	if (FAILED(hr))
+		return 0;
+	
 	HANDLE hMutex = CreateMutex(NULL, TRUE, APP_CLASS);
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		SetForegroundWindow(FindWindow(APP_CLASS, NULL));
 		if (hMutex) CloseHandle(hMutex);
+		CoUninitialize();
 		return 0;
 	}
 
@@ -909,6 +948,7 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 		MessageBox(HWND_DESKTOP,
 			(LPCTSTR)_T("Error RegisterClassEx"), (LPCTSTR)APP_CLASS,
 			MB_OK | MB_ICONSTOP | MB_SYSTEMMODAL);
+		CoUninitialize();
 		return 0;
 	}
 
@@ -950,6 +990,7 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 		MessageBox(HWND_DESKTOP,
 			(LPCTSTR)_T("Error CreateWindowEx"), (LPCTSTR)APP_CLASS,
 			MB_OK | MB_ICONSTOP | MB_SYSTEMMODAL);
+		CoUninitialize();
 		return 0;
 	}
 
@@ -964,6 +1005,8 @@ int APIENTRY _tWinMain(HINSTANCE hCurInst, HINSTANCE hPrevInst, LPTSTR lpsCmdLin
 	}
 
 	if (hMutex) CloseHandle(hMutex);
+
+	CoUninitialize();
 
 	return (int)(msg.wParam);
 }
@@ -985,6 +1028,9 @@ INT_PTR PreCreateWindow(HWND hWnd, LPTSTR lpsCmdLine, int nCmdShow)
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 	if (lpCFlicksyConfig)
 	{
+		logger.SetEnabled(lpCFlicksyConfig->GetLogEnable());
+		logger.SetLogFilePath(lpCFlicksyConfig->GetLogFile());
+
 		if (lpCFlicksyConfig->AlwaysOnTop()) SendMessage(hWnd, WM_COMMAND, IDC_CHECK_TOPMOST, 0L);
 		if (lpCFlicksyConfig->AutoStartServer()) {
 			SendMessage(hWnd, WM_COMMAND, ID_HTTP_START, 0L);
@@ -1008,6 +1054,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		return 1;
 	case WM_PAINT:
 		return (OnPaint(hWnd, msg, wp, lp));
+	case WM_DPICHANGED:
+		return (OnDpiChanged(hWnd, msg, wp, lp));
 	case WM_MEASUREITEM:
 		return (OnMeasureItem(hWnd, msg, wp, lp));
 	case WM_DRAWITEM:
@@ -1034,6 +1082,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		return (OnHttpPopHotkey(hWnd, msg, wp, lp));
 	case UM_HTTPSTATE:
 		return (OnHttpState(hWnd, msg, wp, lp));
+	case UM_HTTPPOPACTION:
+		return (OnHttpPopAction(hWnd, msg, wp, lp));
+	case UM_HTTPPOPMEMO:
+		return (OnHttpPopMemo(hWnd, msg, wp, lp));
 	case UM_HTTPLOG:
 		return (OnHttpLog(hWnd, msg, wp, lp));
 	case UM_TRAYICON:
@@ -1073,22 +1125,38 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)new CFlicksyConfig();
 	SetProp(hWnd, CFLICKSYCONFIG, lpCFlicksyConfig);
 
+	CMemoManager* lpCMemoManager = (CMemoManager*)new CMemoManager();
+	SetProp(hWnd, CMEMOMANAGER, lpCMemoManager);
+
 	CTrayIcon* lpCTrayIcon = (CTrayIcon*)new CTrayIcon();
 	SetProp(hWnd, CTRAYICON, lpCTrayIcon);
 
+	lpCSimpleHttpServer->SetActionProvider(
+		[lpCFlicksyConfig]()
+		{
+			return lpCFlicksyConfig->GetActions();
+		});
+
 	wchar_t path[MAX_PATH] = {};
 	GetModuleFileName(nullptr, path, _countof(path));
-	gflicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
-	lpCFlicksyConfig->Load(gflicksytoml);
+	std::filesystem::path flicksytoml = std::filesystem::path(path).parent_path() / L"flicksy.toml";
+	lpCFlicksyConfig->Load(flicksytoml);
+
+	lpCMemoManager->Load(lpCFlicksyConfig->GetDataFolder());
 
 	//gnInputInterval = lpCFlicksyConfig->GetInputInterval();
 	inputsender.SetInputInterval(lpCFlicksyConfig->GetInputInterval());
 
 	if (CToggleSwitch::RegisterWndClass(hInst)) {
 		HWND hSwitch = CToggleSwitch::Create(hWnd, IDC_SWITCH_THEME,
-			720, 508, 40, 24,
-			lpCAppColorTheme->Colors().windowBg,
-			lpCFlicksyConfig->GetTheme() == CFlicksyConfig::Theme::Dark ? true : false);
+			DpiScale(hWnd, 720),
+			DpiScale(hWnd, 508),
+			DpiScale(hWnd, 40),
+			DpiScale(hWnd, 23));
+		CToggleSwitch::SetBgColor(hSwitch, lpCAppColorTheme->Colors().windowBg);
+		if (lpCFlicksyConfig->GetTheme() == CFlicksyConfig::Theme::Dark) {
+			SendDlgItemMessage(hWnd, IDC_SWITCH_THEME, BM_SETCHECK, static_cast<WPARAM>(BST_CHECKED), 0);
+		}
 		ApplyTheme(hWnd);
 	}
 
@@ -1097,14 +1165,21 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		CPopupLayerWnd::SetDrawContentsProc(ghPopupQrWnd, DrawQrPopupContents);
 	}
 
-	CImgListPng cilp;
-	gpBitmapBanner = cilp.LoadPngBitmap(hInst, IDB_PNG1);
-	ghImgListBtn = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG2));
-	ghImgListBtnHover = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG3));
-	ghImgListBtnPressed = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG4));
-	ghImgListBtnGrayed = cilp.MakeImageListPng(98, cilp.LoadPngResource(hInst, IDB_PNG5));
-	ghImgListBtnPin = cilp.MakeImageListPng(16, cilp.LoadPngResource(hInst, IDB_PNG6));
-	gpBitmapBannerDark = cilp.LoadPngBitmap(hInst, IDB_PNG7);
+	CPngResource png;
+	gpBitmapBanner = png.LoadPngBitmap(hInst, IDB_PNG1);
+	/*
+	ghImgListBtn = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG2));
+	ghImgListBtnHover = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG3));
+	ghImgListBtnPressed = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG4));
+	ghImgListBtnGrayed = png.MakeImageListPng(98, png.LoadPngResource(hInst, IDB_PNG5));
+	ghImgListBtnPin = png.MakeImageListPng(16, png.LoadPngResource(hInst, IDB_PNG6));
+	*/
+	ghImgListBtn = png.LoadPngBitmap(hInst, IDB_PNG2);
+	ghImgListBtnHover = png.LoadPngBitmap(hInst, IDB_PNG3);
+	ghImgListBtnPressed = png.LoadPngBitmap(hInst, IDB_PNG4);
+	ghImgListBtnGrayed = png.LoadPngBitmap(hInst, IDB_PNG5);
+	ghImgListBtnPin = png.LoadPngBitmap(hInst, IDB_PNG6);
+	gpBitmapBannerDark = png.LoadPngBitmap(hInst, IDB_PNG7);
 
 	HDC hdc = GetDC(hWnd);
 	ghFontBold = CreateFont(-MulDiv((INT_PTR)14, GetDeviceCaps(hdc, LOGPIXELSY), 72),
@@ -1131,8 +1206,11 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		WS_EX_CLIENTEDGE,
 		_T("EDIT"),
 		_T("10000"),
-		WS_CHILD | WS_VISIBLE | ES_CENTER | ES_NUMBER,
-		105, 165, 90, 26,
+		WS_CHILD | WS_VISIBLE | ES_READONLY | ES_CENTER | ES_NUMBER,
+		DpiScale(hWnd, 105),
+		DpiScale(hWnd, 165),
+		DpiScale(hWnd, 90),
+		DpiScale(hWnd, 26),
 		hWnd,
 		(HMENU)IDC_EDIT_PORT,
 		hInst,
@@ -1140,6 +1218,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	SendMessage(hEditPort, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
 	SendMessage(hEditPort, EM_LIMITTEXT, (WPARAM)5, 0L);
 
+	/*
 	HWND hSpinPort = CreateWindowEx(0,
 		UPDOWN_CLASS,
 		nullptr,
@@ -1152,6 +1231,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	SendMessage(hSpinPort, UDM_SETBUDDY, (WPARAM)hEditPort, 0);
 	SendMessage(hSpinPort, UDM_SETRANGE32, 1, 65535);
 	SendMessage(hSpinPort, UDM_SETPOS32, 0, 10000);
+	*/
 
 	int port = lpCFlicksyConfig->ServerPort();
 	SetDlgItemInt(hWnd, IDC_EDIT_PORT, port, FALSE);
@@ -1160,10 +1240,13 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		WS_EX_CLIENTEDGE,
 		_T("EDIT"),
 		lpCFlicksyConfig->WebRoot().c_str(),
-		WS_CHILD | WS_VISIBLE,
-		105, 196, 136, 26,
+		WS_CHILD | WS_VISIBLE | ES_READONLY,
+		DpiScale(hWnd, 105),
+		DpiScale(hWnd, 196),
+		DpiScale(hWnd, 136),
+		DpiScale(hWnd, 26),
 		hWnd,
-		(HMENU)IDC_EDIT_ROOT,
+		(HMENU)IDC_EDIT_WEBROOT,
 		hInst,
 		nullptr);
 	SendMessage(hEdiRoot, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
@@ -1173,7 +1256,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("START"),
 		WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW,
-		32, 238, 98, 44,
+		DpiScale(hWnd, 32),
+		DpiScale(hWnd, 238),
+		DpiScale(hWnd, 98),
+		DpiScale(hWnd, 44),
 		hWnd,
 		(HMENU)ID_HTTP_START,
 		hInst,
@@ -1184,7 +1270,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("STOP"),
 		WS_CHILD | WS_VISIBLE | WS_DISABLED | BS_PUSHBUTTON | BS_OWNERDRAW,
-		142, 238, 98, 44,
+		DpiScale(hWnd, 142),
+		DpiScale(hWnd, 238),
+		DpiScale(hWnd, 98),
+		DpiScale(hWnd, 44),
 		hWnd,
 		(HMENU)ID_HTTP_STOP,
 		hInst,
@@ -1195,7 +1284,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("&SendInput (Default)"),
 		WS_CHILD | WS_VISIBLE | WS_GROUP | BS_AUTORADIOBUTTON,
-		296, 160, 180, 24,
+		DpiScale(hWnd, 296),
+		DpiScale(hWnd, 160),
+		DpiScale(hWnd, 180),
+		DpiScale(hWnd, 24),
 		hWnd,
 		(HMENU)IDC_RADIO_SENDINPUT,
 		hInst,
@@ -1206,7 +1298,10 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("&Clipboard (Paste)"),
 		WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON,
-		296, 184, 180, 24,
+		DpiScale(hWnd, 296),
+		DpiScale(hWnd, 184),
+		DpiScale(hWnd, 180),
+		DpiScale(hWnd, 24),
 		hWnd,
 		(HMENU)IDC_RADIO_CLIPBOARD,
 		hInst,
@@ -1223,12 +1318,15 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		_T("BUTTON"),
 		_T("&Always on Top"),
 		WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
-		750, 11, 16, 16,
+		DpiScale(hWnd, 750),
+		DpiScale(hWnd, 11),
+		DpiScale(hWnd, 16),
+		DpiScale(hWnd, 16),
 		hWnd,
 		(HMENU)IDC_CHECK_TOPMOST,
 		hInst,
 		nullptr);
-
+	/*
 	HWND hChk1 = CreateWindowEx(0,
 		_T("BUTTON"),
 		_T("&Start server automatically"),
@@ -1252,13 +1350,16 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		nullptr);
 	SendMessage(hChk2, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
 	CheckDlgButton(hWnd, IDC_CHECK_STARTUP, IsRunAtStartup() ? BST_CHECKED : BST_UNCHECKED);
-
+	*/
 	HWND hList = CreateWindowEx(WS_EX_CLIENTEDGE,
 		_T("LISTBOX"),
 		nullptr,
 		WS_CHILD | WS_VISIBLE | WS_VSCROLL |
 		LBS_OWNERDRAWFIXED | LBS_NOINTEGRALHEIGHT | LBS_NOSEL,
-		32, 351, 716, 128,
+		DpiScale(hWnd, 32),
+		DpiScale(hWnd, 351),
+		DpiScale(hWnd, 716),
+		DpiScale(hWnd, 128),
 		hWnd,
 		(HMENU)IDC_LIST_LOG,
 		hInst,
@@ -1304,6 +1405,76 @@ LRESULT OnPaint(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	return 0L;
 }
 
+LRESULT OnDpiChanged(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	MoveWindow(GetDlgItem(hWnd, IDC_EDIT_PORT),
+		DpiScale(hWnd, 105),
+		DpiScale(hWnd, 165),
+		DpiScale(hWnd, 90),
+		DpiScale(hWnd, 26),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_EDIT_WEBROOT),
+		DpiScale(hWnd, 105),
+		DpiScale(hWnd, 196),
+		DpiScale(hWnd, 136),
+		DpiScale(hWnd, 26),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, ID_HTTP_START),
+		DpiScale(hWnd, 32),
+		DpiScale(hWnd, 238),
+		DpiScale(hWnd, 98),
+		DpiScale(hWnd, 44),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, ID_HTTP_STOP),
+		DpiScale(hWnd, 142),
+		DpiScale(hWnd, 238),
+		DpiScale(hWnd, 98),
+		DpiScale(hWnd, 44),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_RADIO_SENDINPUT),
+		DpiScale(hWnd, 296),
+		DpiScale(hWnd, 160),
+		DpiScale(hWnd, 180),
+		DpiScale(hWnd, 24),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_RADIO_CLIPBOARD),
+		DpiScale(hWnd, 296),
+		DpiScale(hWnd, 184),
+		DpiScale(hWnd, 180),
+		DpiScale(hWnd, 24),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_CHECK_TOPMOST),
+		DpiScale(hWnd, 750),
+		DpiScale(hWnd, 11),
+		DpiScale(hWnd, 16),
+		DpiScale(hWnd, 16),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_LIST_LOG),
+		DpiScale(hWnd, 32),
+		DpiScale(hWnd, 351),
+		DpiScale(hWnd, 716),
+		DpiScale(hWnd, 128),
+		FALSE);
+
+	MoveWindow(GetDlgItem(hWnd, IDC_SWITCH_THEME),
+		DpiScale(hWnd, 720),
+		DpiScale(hWnd, 508),
+		DpiScale(hWnd, 40),
+		DpiScale(hWnd, 23),
+		FALSE);
+
+	InvalidateRect(hWnd, NULL, TRUE);
+
+	return 0L;
+}
+
 LRESULT OnMeasureItem(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	LPMEASUREITEMSTRUCT p = (LPMEASUREITEMSTRUCT)lp;
@@ -1335,29 +1506,92 @@ LRESULT OnDrawStartStopBtn(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 {
 	CAppColorTheme* pTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
 	if (!pTheme) return 0L;
-	FillRect(lpdis->hDC, &(lpdis->rcItem), pTheme->PanelBrush(0));
+
+	HDC hdc = lpdis->hDC;
+	RECT rc = lpdis->rcItem;
+	int w = rc.right - rc.left;
+	int h = rc.bottom - rc.top;
+	HDC memDC = CreateCompatibleDC(hdc);
+	HBITMAP memBmp = CreateCompatibleBitmap(hdc, w, h);
+	HBITMAP oldBmp =
+		static_cast<HBITMAP>(
+			SelectObject(memDC, memBmp));
+
+	FillRect(memDC, &(lpdis->rcItem), pTheme->PanelBrush(0));
 	int img = (lpdis->CtlID == ID_HTTP_START ? 0 : 1);
 	bool hover = GetWindowLongPtr(lpdis->hwndItem,GWLP_USERDATA) != 0;
-	if (lpdis->itemState & ODS_DISABLED)
 	{
-		ImageList_Draw(ghImgListBtnGrayed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
-	}
-	else {
-		if (hover) {
-			ImageList_Draw(ghImgListBtnHover, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+		CPngResource png;
+		Gdiplus::Graphics g(memDC);
+		if (lpdis->itemState & ODS_DISABLED)
+		{
+			//ImageList_Draw(ghImgListBtnGrayed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+			png.DrawSprite(
+				g,
+				ghImgListBtnGrayed,
+				img,
+				lpdis->rcItem.left,
+				lpdis->rcItem.top,
+				98, 44,
+				DpiScale(hWnd, 98),
+				DpiScale(hWnd, 44));
 		}
 		else {
-			if (lpdis->itemState & ODS_SELECTED) {
-				if (!ghImgListBtnPressed) return 0L;
-				ImageList_Draw(ghImgListBtnPressed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+			if (hover) {
+				//ImageList_Draw(ghImgListBtnHover, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+				png.DrawSprite(
+					g,
+					ghImgListBtnHover,
+					img,
+					lpdis->rcItem.left,
+					lpdis->rcItem.top,
+					98, 44,
+					DpiScale(hWnd, 98),
+					DpiScale(hWnd, 44));
 			}
 			else {
-				if (!ghImgListBtn) return 0L;
-				ImageList_Draw(ghImgListBtn, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
-			}
+				if (lpdis->itemState & ODS_SELECTED) {
+					if (!ghImgListBtnPressed) return 0L;
+					//ImageList_Draw(ghImgListBtnPressed, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+					png.DrawSprite(
+						g,
+						ghImgListBtnPressed,
+						img,
+						lpdis->rcItem.left,
+						lpdis->rcItem.top,
+						98, 44,
+						DpiScale(hWnd, 98),
+						DpiScale(hWnd, 44));
+				}
+				else {
+					if (!ghImgListBtn) return 0L;
+					//ImageList_Draw(ghImgListBtn, img, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+					png.DrawSprite(
+						g,
+						ghImgListBtn,
+						img,
+						lpdis->rcItem.left,
+						lpdis->rcItem.top,
+						98, 44,
+						DpiScale(hWnd, 98),
+						DpiScale(hWnd, 44));
+				}
 
+			}
 		}
 	}
+
+	BitBlt(hdc,
+		rc.left, rc.top,
+		w, h,
+		memDC,
+		0, 0,
+		SRCCOPY);
+
+	SelectObject(memDC, oldBmp);
+	DeleteObject(memBmp);
+	DeleteDC(memDC);
+
 	return 0L;
 }
 
@@ -1369,7 +1603,18 @@ LRESULT OnDrawTopmost(HWND hWnd, LPDRAWITEMSTRUCT lpdis)
 	if (!ghImgListBtnPin) return 0L;
 	BOOL checked = (BOOL)GetWindowLongPtr(lpdis->hwndItem, GWLP_USERDATA);
 	int imageIndex = checked ? 0 : 1;
-	ImageList_Draw(ghImgListBtnPin, imageIndex, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+	CPngResource png;
+	Gdiplus::Graphics g(lpdis->hDC);
+	//ImageList_Draw(ghImgListBtnPin, imageIndex, lpdis->hDC, lpdis->rcItem.left, lpdis->rcItem.top, ILD_TRANSPARENT);
+	png.DrawSprite(
+		g,
+		ghImgListBtnPin,
+		imageIndex,
+		lpdis->rcItem.left,
+		lpdis->rcItem.top,
+		16, 16,
+		DpiScale(hWnd, 16),
+		DpiScale(hWnd, 16));
 	return 0L;
 }
 
@@ -1421,8 +1666,8 @@ LRESULT OnCtlColor(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	{
 	case IDC_RADIO_SENDINPUT:
 	case IDC_RADIO_CLIPBOARD:
-	case IDC_CHECK_AUTOSTART:
-	case IDC_CHECK_STARTUP:
+	//case IDC_CHECK_AUTOSTART:
+	//case IDC_CHECK_STARTUP:
 		SetTextColor(hdc, pTheme->Colors().panelText[1]);
 		SetBkColor(hdc, pTheme->Colors().panelBg[1]);
 		return (LRESULT)pTheme->PanelBrush(1);
@@ -1462,6 +1707,11 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		break;
 	case ID_HTTP_START:
 		{
+			CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+			if (!lpCFlicksyConfig) {
+				MessageBox(hWnd, _T("Flicksy config not found"), APP_CLASS, MB_OK | MB_ICONWARNING);
+				break;
+			}
 			int port = GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE);
 			if (port <= 0 || port > 65535)
 			{
@@ -1469,20 +1719,20 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				break;
 			}
 			TCHAR szRoot[MAX_PATH];
-			if (GetDlgItemText(hWnd, IDC_EDIT_ROOT, szRoot, _countof(szRoot)) < 1) {
+			if (GetDlgItemText(hWnd, IDC_EDIT_WEBROOT, szRoot, _countof(szRoot)) < 1) {
 				_tcscpy_s(szRoot, _countof(szRoot), _T("./web"));
 			}
 			lpCSimpleHttpServer =
 				(CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 			if (lpCSimpleHttpServer) {
-				lpCSimpleHttpServer->Start(hWnd, port, szRoot);
+				lpCSimpleHttpServer->Start(hWnd, port, szRoot, lpCFlicksyConfig->UseToken());
 			}
 		}
 		break;
 	case ID_HTTP_STOP:
 		lpCSimpleHttpServer =
 			(CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
-		if (lpCSimpleHttpServer){
+		if (lpCSimpleHttpServer) {
 			lpCSimpleHttpServer->Stop();
 		}
 		break;
@@ -1532,6 +1782,16 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			}
 		}
 		break;
+	case ID_CONFIG:
+		{
+			ConfigContext configContext = {
+				(CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG),
+				(CMemoManager*)GetProp(hWnd, CMEMOMANAGER),
+				(CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME)
+			};
+			ShowConfigDlg(hWnd, &configContext);
+		}
+		break;
 	default:
 		return (DefWindowProc(hWnd, msg, wp, lp));
 	}
@@ -1546,7 +1806,7 @@ LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	std::string strPop;
 	std::wstring wstr;
 	if (lpCSimpleHttpServer->PopMessage(strPop)) {
-		std::wstring strPopW = TextEncoding::Utf8ToUtf16(strPop);
+		std::wstring strPopW = TextEncoding::Utf8ToWide(strPop);
 		if (SendMessage(GetDlgItem(hWnd, IDC_RADIO_SENDINPUT), BM_GETCHECK, 0, 0) == BST_CHECKED) {
 			inputsender.SendUnicodeText(strPopW);
 			wstr = L"Send : " + strPopW + L" (SendInput)";
@@ -1635,7 +1895,7 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				std::string ip = GetLocalIPv4();
 				std::string port = std::to_string(pServer->GetPort());
 				gstrLinkURL = "http://" + ip + ":" + port + "/?token=" + pServer->GetToken();
-				gwstrShowURL = TextEncoding::Utf8ToUtf16(ip) + L":" + TextEncoding::Utf8ToUtf16(port);
+				gwstrShowURL = TextEncoding::Utf8ToWide(ip) + L":" + TextEncoding::Utf8ToWide(port);
 
 				if (lpCTrayIcon) {
 					std::wstring wstrTip = L"Flicksy\nRunning\n" + gwstrShowURL;
@@ -1704,7 +1964,7 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				std::wstring wstrTip = L"Flicksy\nHTTP Server Error";
 				lpCTrayIcon->SetToolTip(wstrTip);
 				if (!IsWindowVisible(hWnd)) {
-					lpCTrayIcon->ShowBalloon(L"Server Error.", TextEncoding::Utf8ToUtf16(pServer->GetLastError()), NIIF_ERROR);
+					lpCTrayIcon->ShowBalloon(L"Server Error.", TextEncoding::Utf8ToWide(pServer->GetLastError()), NIIF_ERROR);
 				}
 			}
 			break;
@@ -1722,13 +1982,205 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	return 0L;
 }
 
+LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+	if (pServer) {
+		std::wstring wstr;
+		size_t id{};
+		pServer->PopActions(id);
+
+		CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+		if (lpCFlicksyConfig) {
+
+			if (id >= lpCFlicksyConfig->GetActionSize())
+				return 0L;
+
+			const auto& action =
+				lpCFlicksyConfig->GetAction(id);
+
+			if (!action.enabled)
+				return 0L;
+
+			wstr = L"Execute Action : " + std::to_wstring(id);
+			AddLog(hWnd, LogType::Server, wstr);
+
+			ExecuteAction(action);
+
+		}
+	}
+
+	return 0L;
+}
+
+LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
+	if (pServer) {
+		MemoRequest memor;
+		if (pServer->PopMemo(memor)) {
+			CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+			CMemoManager* lpCMemoManager = (CMemoManager*)GetProp(hWnd, CMEMOMANAGER);
+			/*
+			if (lpCFlicksyConfig && lpCMemoManager)
+			{
+				MemoItem memo;
+
+				memo.id = lpCMemoManager->MakeMemoId();
+				memo.text = std::move(memor.text);
+				memo.created = lpCMemoManager->GetCurrentDateTimeString();
+				memo.updated = memo.created;
+
+				if (!memor.imageData.empty())
+				{
+					std::filesystem::path dataFolder = lpCFlicksyConfig->GetResolvedDataFolder();
+					std::filesystem::path attachmentFolder =
+						dataFolder / L"attachments";
+					try
+					{
+						if (!std::filesystem::exists(
+							attachmentFolder))
+						{
+							std::filesystem::create_directories(
+								attachmentFolder);
+						}
+
+						std::wstring fileName{};
+						if (memor.imageContentType == "image/jpeg") {
+							fileName = memo.id + L".jpg";
+						}
+						if (memor.imageContentType == "image/png") {
+							fileName = memo.id + L".png";
+						}
+						if (memor.imageContentType == "image/webp") {
+							fileName = memo.id + L".webp";
+						}
+
+						std::filesystem::path filePath =
+							attachmentFolder / fileName;
+
+						std::ofstream ofs(
+							filePath,
+							std::ios::binary |
+							std::ios::trunc);
+
+						if (ofs)
+						{
+							ofs.write(
+								memor.imageData.data(),
+								static_cast<std::streamsize>(
+									memor.imageData.size()));
+
+							if (ofs.good())
+							{
+								memo.attachments.push_back(
+									std::filesystem::path(
+										L"attachments") /
+									fileName);
+							}
+						}
+					}
+					catch (...)
+					{
+					}
+				}
+
+				lpCMemoManager->AddMemo(memo);
+			}
+			*/
+			CommitMemoReq(hWnd, lpCMemoManager, lpCFlicksyConfig, std::move(memor));
+		}
+	}
+
+	return 0L;
+}
+
+bool CommitMemoReq(HWND hWnd,
+	CMemoManager* pMemoManager,
+	CFlicksyConfig* pConfig,
+	MemoRequest&& request)
+{
+	if (pConfig && pMemoManager)
+	{
+		MemoItem memo;
+
+		memo.id = pMemoManager->MakeMemoId();
+		memo.text = std::move(request.text);
+		memo.created = pMemoManager->GetCurrentDateTimeString();
+		memo.updated = memo.created;
+
+		if (!request.imageData.empty())
+		{
+			std::filesystem::path dataFolder = pConfig->GetResolvedDataFolder();
+			std::filesystem::path attachmentFolder =
+				dataFolder / L"attachments";
+			try
+			{
+				if (!std::filesystem::exists(
+					attachmentFolder))
+				{
+					std::filesystem::create_directories(
+						attachmentFolder);
+				}
+
+				std::wstring fileName{};
+				if (request.imageContentType == "image/jpeg") {
+					fileName = memo.id + L".jpg";
+				}
+				else if (request.imageContentType == "image/png") {
+					fileName = memo.id + L".png";
+				}
+				else if (request.imageContentType == "image/webp") {
+					fileName = memo.id + L".webp";
+				}
+				else {
+					std::wstring wstr = L"Unrecognized image format. " + TextEncoding::Utf8ToWide(request.imageContentType);
+					AddLog(hWnd, LogType::Server, wstr);
+					return false;
+				}
+
+				std::filesystem::path filePath =
+					attachmentFolder / fileName;
+
+				std::ofstream ofs(
+					filePath,
+					std::ios::binary |
+					std::ios::trunc);
+
+				if (ofs)
+				{
+					ofs.write(
+						request.imageData.data(),
+						static_cast<std::streamsize>(
+							request.imageData.size()));
+
+					if (ofs.good())
+					{
+						memo.attachments.push_back(
+							std::filesystem::path(
+								L"attachments") /
+							fileName);
+					}
+				}
+			}
+			catch (...)
+			{
+				return false;
+			}
+		}
+
+		pMemoManager->AddMemo(memo);
+	}
+	return true;
+}
+
 LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	CSimpleHttpServer* pServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 	if (pServer) {
 		std::string str;
 		pServer->PopLog(str);
-		std::wstring wstr = TextEncoding::Utf8ToUtf16(str);
+		std::wstring wstr = TextEncoding::Utf8ToWide(str);
 		AddLog(hWnd, LogType::Info, wstr);
 	}
 
@@ -1797,20 +2249,56 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	ReleaseHotkey(hWnd);
 
+	CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+	CMemoManager* lpCMemoManager= (CMemoManager*)GetProp(hWnd, CMEMOMANAGER);
+
+	LeaveSubclassButton(GetDlgItem(hWnd, ID_HTTP_START));
+	LeaveSubclassButton(GetDlgItem(hWnd, ID_HTTP_STOP));
+
+	if (lpCSimpleHttpServer)
+	{
+		lpCSimpleHttpServer->Stop();
+
+		if (lpCMemoManager)
+		{
+			MemoRequest memor;
+			while (lpCSimpleHttpServer->PopMemo(memor))
+			{
+				CommitMemoReq(hWnd, lpCMemoManager, lpCFlicksyConfig, std::move(memor));
+			}
+		}
+
+		RemoveProp(hWnd, CSIMPLEHTTPSERVER);
+		delete lpCSimpleHttpServer;
+	}
+
+	if (lpCMemoManager)
+	{
+		if (lpCFlicksyConfig)
+		{
+			std::wstring dataFolder = lpCFlicksyConfig->GetDataFolder();
+			lpCMemoManager->Save(dataFolder);
+		}
+
+		RemoveProp(hWnd, CMEMOMANAGER);
+		delete lpCMemoManager;
+	}
+
 	if (lpCFlicksyConfig)
 	{
-		lpCFlicksyConfig->SetServerPort(GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE));
+		//lpCFlicksyConfig->SetServerPort(GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE));
 
-		TCHAR szRoot[MAX_PATH];
-		GetDlgItemText(hWnd, IDC_EDIT_ROOT, szRoot, _countof(szRoot));
-		lpCFlicksyConfig->SetWebRoot(szRoot);
+		//TCHAR szRoot[MAX_PATH];
+		//GetDlgItemText(hWnd, IDC_EDIT_WEBROOT, szRoot, _countof(szRoot));
+		//lpCFlicksyConfig->SetWebRoot(szRoot);
 
 		lpCFlicksyConfig->SetInputMode(IsDlgButtonChecked(hWnd, IDC_RADIO_CLIPBOARD) == BST_CHECKED
 			? CFlicksyConfig::InputMode::Clipboard : CFlicksyConfig::InputMode::SendInput);
 
 		lpCFlicksyConfig->SetAlwaysOnTop(static_cast<bool>(GetWindowLongPtr(GetDlgItem(hWnd, IDC_CHECK_TOPMOST), GWLP_USERDATA)));
 
+		/*
 		lpCFlicksyConfig->SetAutoStartServer(IsDlgButtonChecked(hWnd, IDC_CHECK_AUTOSTART) == BST_CHECKED);
 
 		if (IsDlgButtonChecked(hWnd, IDC_CHECK_STARTUP) == BST_CHECKED) {
@@ -1819,27 +2307,16 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		else {
 			SetRunAtStartup(false);
 		}
+		*/
 
 		HWND hSwitch = GetDlgItem(hWnd, IDC_SWITCH_THEME);
 		lpCFlicksyConfig->SetTheme(CToggleSwitch::IsChecked(hSwitch)
 			? CFlicksyConfig::Theme::Dark : CFlicksyConfig::Theme::Light);
 
-		lpCFlicksyConfig->Save(gflicksytoml);
+		lpCFlicksyConfig->Save();
 
 		RemoveProp(hWnd, CFLICKSYCONFIG);
 		delete lpCFlicksyConfig;
-	}
-
-	LeaveSubclassButton(GetDlgItem(hWnd, ID_HTTP_START));
-	LeaveSubclassButton(GetDlgItem(hWnd, ID_HTTP_STOP));
-
-	CSimpleHttpServer* lpCSimpleHttpServer = (CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
-	if (lpCSimpleHttpServer)
-	{
-		lpCSimpleHttpServer->Stop();
-
-		RemoveProp(hWnd, CSIMPLEHTTPSERVER);
-		delete lpCSimpleHttpServer;
 	}
 
 	CAppColorTheme* lpCAppColorTheme  = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
@@ -1869,11 +2346,18 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	}
 
 	if (gpBitmapBanner) delete gpBitmapBanner;
+	/*
 	if (ghImgListBtn) ImageList_Destroy(ghImgListBtn);
 	if (ghImgListBtnHover) ImageList_Destroy(ghImgListBtnHover);
 	if (ghImgListBtnPressed) ImageList_Destroy(ghImgListBtnPressed);
 	if (ghImgListBtnGrayed) ImageList_Destroy(ghImgListBtnGrayed);
 	if (ghImgListBtnPin) ImageList_Destroy(ghImgListBtnPin);
+	*/
+	if (ghImgListBtn) delete ghImgListBtn;
+	if (ghImgListBtnHover) delete ghImgListBtnHover;
+	if (ghImgListBtnPressed) delete ghImgListBtnPressed;
+	if (ghImgListBtnGrayed) delete ghImgListBtnGrayed;
+	if (ghImgListBtnPin) delete ghImgListBtnPin;
 	if (gpBitmapBannerDark) delete gpBitmapBannerDark;
 	if (ghFontBold) DeleteObject(ghFontBold);
 	if (ghFont) DeleteObject(ghFont);
@@ -1929,21 +2413,21 @@ LRESULT CALLBACK StartStopBtnProc(HWND hBtn, UINT uMsg, WPARAM wParam, LPARAM lP
 				tme.dwFlags = TME_LEAVE;
 				tme.hwndTrack = hBtn;
 				TrackMouseEvent(&tme);
-				InvalidateRect(hBtn, NULL, TRUE);
+				InvalidateRect(hBtn, NULL, FALSE);
 			}
 		}
 		break;
 
 	case WM_MOUSELEAVE:
 		SetWindowLongPtr(hBtn, GWLP_USERDATA, FALSE);
-		InvalidateRect(hBtn, NULL, TRUE);
+		InvalidateRect(hBtn, NULL, FALSE);
 		break;
 	}
 
 	WNDPROC oldProc = reinterpret_cast<WNDPROC>(GetProp(hBtn, BUTTONSUBCLASS));
 	return CallWindowProc(oldProc, hBtn, uMsg, wParam, lParam);
 }
-
+/*
 bool SetRunAtStartup(bool enabled)
 {
 	HKEY hKey = nullptr;
@@ -1988,7 +2472,7 @@ bool SetRunAtStartup(bool enabled)
 
 	return result == ERROR_SUCCESS;
 }
-
+*/
 bool MakeQrBitmap(const std::string& text, int size, QrBitmapCache& cache)
 {
 	cache.Clear();
@@ -2060,7 +2544,7 @@ bool MakeQrBitmap(const std::string& text, int size, QrBitmapCache& cache)
 
 	return true;
 }
-
+/*
 bool IsRunAtStartup()
 {
 	HKEY hKey = nullptr;
@@ -2098,7 +2582,7 @@ bool IsRunAtStartup()
 
 	return _tcscmp(exePath, value.c_str()) == 0;
 }
-
+*/
 void ApplyTheme(HWND hWnd)
 {
 	CAppColorTheme* lpCAppColorTheme = (CAppColorTheme*)GetProp(hWnd, CAPPCOLORTHEME);
@@ -2245,4 +2729,83 @@ void DrawQrPopupContents(Gdiplus::Graphics& g, int width, int height, LPVOID lpV
 			&textBrush);
 
 	}
+}
+
+bool ExecuteAction(const ActionConfig& action)
+{
+	switch (action.type)
+	{
+	case ActionType::Url:
+	case ActionType::Application:
+	case ActionType::Folder:
+		{
+			SHELLEXECUTEINFO sei{};
+			sei.cbSize = sizeof(sei);
+			sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+			sei.lpVerb = L"open";
+			sei.lpFile = action.value.c_str();
+			sei.lpParameters = nullptr;
+			sei.nShow = SW_SHOWNORMAL;
+			if (!ShellExecuteEx(&sei))
+			{
+				return false;
+			}
+			return true;
+		}
+		break;
+
+	case ActionType::Lock:
+		LockWorkStation();
+		return true;
+
+	case ActionType::Shutdown:
+		EnableShutdownPrivilege();
+		ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCEIFHUNG,
+			SHTDN_REASON_MAJOR_APPLICATION | SHTDN_REASON_MINOR_MAINTENANCE | SHTDN_REASON_FLAG_PLANNED);
+		return true;
+
+	}
+
+	return false;
+}
+
+bool EnableShutdownPrivilege()
+{
+	HANDLE hToken{};
+
+	if (!OpenProcessToken(
+		GetCurrentProcess(),
+		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+		&hToken))
+	{
+		return false;
+	}
+
+	TOKEN_PRIVILEGES tp{};
+	tp.PrivilegeCount = 1;
+
+	if (!LookupPrivilegeValue(
+		nullptr,
+		SE_SHUTDOWN_NAME,
+		&tp.Privileges[0].Luid))
+	{
+		CloseHandle(hToken);
+		return false;
+	}
+
+	tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+	AdjustTokenPrivileges(
+		hToken,
+		FALSE,
+		&tp,
+		0,
+		nullptr,
+		nullptr);
+
+	DWORD err = GetLastError();
+
+	CloseHandle(hToken);
+
+	return err == ERROR_SUCCESS;
 }

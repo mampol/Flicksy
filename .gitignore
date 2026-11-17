@@ -3,6 +3,7 @@ Debug/
 Release/
 x64/
 x86/
+data/
 
 *.user
 *.suo
@@ -24,3 +25,4 @@ x86/
 
 qrcodegen.cpp
 qrcodegen.hpp
+json.hpp

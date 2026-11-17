@@ -115,7 +115,6 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -132,7 +131,6 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>
@@ -140,29 +138,36 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CFlicksyConfig.cpp" />
-    <ClCompile Include="CImgListPng.cpp" />
+    <ClCompile Include="CPngResource.cpp" />
     <ClCompile Include="CInputSender.cpp" />
+    <ClCompile Include="CMemoManager.cpp" />
+    <ClCompile Include="ConfigDlg.cpp" />
     <ClCompile Include="CPopupLayerWnd.cpp" />
     <ClCompile Include="CScreenshot.cpp" />
     <ClCompile Include="CSimpleHttpServer.cpp" />
     <ClCompile Include="CToggleSwitch.cpp" />
     <ClCompile Include="CTrayIcon.cpp" />
     <ClCompile Include="CLogger.cpp" />
+    <ClCompile Include="GetFileVersion.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="qrcodegen.cpp" />
     <ClCompile Include="TextEncoding.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CFlicksyConfig.h" />
-    <ClInclude Include="CImgListPng.h" />
+    <ClInclude Include="CPngResource.h" />
     <ClInclude Include="CAppColorTheme.h" />
     <ClInclude Include="CInputSender.h" />
+    <ClInclude Include="CMemoManager.h" />
+    <ClInclude Include="ConfigDlg.h" />
     <ClInclude Include="CPopupLayerWnd.h" />
     <ClInclude Include="CScreenshot.h" />
     <ClInclude Include="CSimpleHttpServer.h" />
     <ClInclude Include="CToggleSwitch.h" />
     <ClInclude Include="CTrayIcon.h" />
     <ClInclude Include="CLogger.h" />
+    <ClInclude Include="DpiAware.h" />
+    <ClInclude Include="GetFileVersion.h" />
     <ClInclude Include="qrcodegen.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="TextEncoding.h" />
@@ -180,6 +185,7 @@
     <Image Include="005.png" />
     <Image Include="006.png" />
     <Image Include="007.png" />
+    <Image Include="008.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

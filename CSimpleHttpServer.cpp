@@ -1,8 +1,13 @@
 #include "CSimpleHttpServer.h"
+#include "TextEncoding.h"
+
+#include "json.hpp"
 
 #include <bcrypt.h>
 
 #pragma comment(lib, "bcrypt.lib")
+
+using json = nlohmann::json;
 
 CSimpleHttpServer::CSimpleHttpServer()
 {
@@ -200,7 +205,9 @@ CSimpleHttpServer::CSimpleHttpServer()
 
         });
 
-    m_server.Post("/hotkey", [this](const httplib::Request& req, httplib::Response& res)
+    m_server.Post("/hotkey",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
         {
             if (!CheckToken(req, res)) return;
 
@@ -241,7 +248,7 @@ CSimpleHttpServer::CSimpleHttpServer()
 
         });
 
-    m_server.Get(R"(/screenshot)",
+    m_server.Get("/screenshot",
         [this](const httplib::Request& req,
             httplib::Response& res)
         {
@@ -268,6 +275,171 @@ CSimpleHttpServer::CSimpleHttpServer()
 
             AddHttpLog(req, res.status);
         });
+
+    m_server.Get("/api/actions",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!CheckToken(req, res)) return;
+
+            std::string log =
+                "[" + req.remote_addr + "] " + req.method + " " + req.path;
+            AddServerLog(log);
+
+            json j = json::array();
+
+            if (!m_actionProvider)
+            {
+                res.status = 500;
+                res.set_content(
+                    "Flicksy http 500 error",
+                    "text/plain; charset=UTF-8");
+                AddHttpLog(req, res.status);
+                return;
+            }
+            auto actions = m_actionProvider();
+            for (size_t i = 0; i < actions.size(); ++i)
+            {
+                const auto& action = actions[i];
+
+                if (!action.enabled)
+                    continue;
+
+                j.push_back({
+                    { "id", i },
+                    { "name", TextEncoding::WideToUtf8(action.name) },
+                    { "type", TextEncoding::WideToUtf8(CFlicksyConfig::ActionTypeToString(action.type)) }
+                    });
+            }
+
+            res.status = 200;
+            res.set_content(
+                j.dump(),
+                "application/json; charset=UTF-8");
+
+            AddHttpLog(req, res.status);
+        }); 
+
+    m_server.Post("/api/actions/run",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!CheckToken(req, res))
+                return;
+
+            std::string log =
+                "[" + req.remote_addr + "] " + req.method + " " + req.path;
+            AddServerLog(log);
+
+            if (!req.has_param("id"))
+            {
+                res.status = 400;
+                return;
+            }
+
+            try
+            {
+                size_t id =
+                    static_cast<size_t>(
+                        std::stoull(req.get_param_value("id")));
+
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    m_actions.push(id);
+                }
+
+                PostMsg(UM_HTTPPOPACTION);
+
+                res.status = 200;
+            }
+            catch (...)
+            {
+                res.status = 400;
+            }
+        });
+
+    m_server.Post(
+        "/api/memo",
+        [this](const httplib::Request& req,
+            httplib::Response& res)
+        {
+            if (!CheckToken(req, res))
+                return;
+
+            std::string log =
+                "[" + req.remote_addr + "] " + req.method + " " + req.path;
+            AddServerLog(log);
+
+            if (!req.is_multipart_form_data())
+            {
+                res.status = 400;
+                res.set_content(
+                    "multipart/form-data required",
+                    "text/plain");
+                return;
+            }
+
+            std::string textUtf8;
+
+            if (req.form.has_field("text"))
+            {
+                textUtf8 =
+                    req.form.get_field("text");
+            }
+
+            std::string imageData;
+            std::string imageFileName;
+            std::string imageContentType;
+
+            if (req.form.has_file("image"))
+            {
+                const auto& file =
+                    req.form.get_file("image");
+
+                imageData =
+                    file.content;
+
+                imageFileName =
+                    file.filename;
+
+                imageContentType =
+                    file.content_type;
+            }
+
+            if (textUtf8.empty() &&
+                imageData.empty())
+            {
+                res.status = 400;
+                res.set_content(
+                    "Memo is empty",
+                    "text/plain");
+                return;
+            }
+
+            MemoRequest memo;
+            memo.text =
+                TextEncoding::Utf8ToWide(textUtf8);
+            memo.imageData =
+                std::move(imageData);
+            memo.imageFileName =
+                TextEncoding::Utf8ToWide(imageFileName);
+            memo.imageContentType =
+                imageContentType;
+
+            {
+                std::lock_guard<std::mutex> lock(
+                    m_mutex);
+
+                m_memor.push(
+                    std::move(memo));
+            }
+
+            PostMsg(UM_HTTPPOPMEMO);
+
+            res.status = 200;
+            res.set_content("OK", "text/plain");
+        });
+
 }
 
 CSimpleHttpServer::~CSimpleHttpServer()
@@ -334,6 +506,8 @@ std::string CSimpleHttpServer::GenerateToken()
 
 bool CSimpleHttpServer::CheckToken(const httplib::Request& req, httplib::Response& res)
 {
+    if (!m_usetoken) return true;
+
     if (!req.has_param("token"))
     {
         res.status = 403;
@@ -351,9 +525,11 @@ bool CSimpleHttpServer::CheckToken(const httplib::Request& req, httplib::Respons
     return true;
 }
 
-bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot)
+bool CSimpleHttpServer::Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot, bool usetoken)
 {
     m_lastError.clear();
+
+    m_usetoken = usetoken;
 
     if (m_thread.joinable())
     {
@@ -502,6 +678,32 @@ bool CSimpleHttpServer::PopHotkey(std::string& hotkey)
 
     hotkey = m_hotkey.front();
     m_hotkey.pop();
+
+    return true;
+}
+
+bool CSimpleHttpServer::PopActions(size_t& id)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_actions.empty())
+        return false;
+
+    id = m_actions.front();
+    m_actions.pop();
+
+    return true;
+}
+
+bool CSimpleHttpServer::PopMemo(MemoRequest& memor)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_memor.empty())
+        return false;
+
+    memor = std::move(m_memor.front());
+    m_memor.pop();
 
     return true;
 }

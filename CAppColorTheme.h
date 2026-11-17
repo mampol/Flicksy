@@ -25,7 +25,9 @@ struct AppColors
     COLORREF border;
 
     COLORREF buttonBg;
+    COLORREF buttonSelBg;
     COLORREF buttonText;
+    COLORREF buttonSelText;
     COLORREF buttonHover;
 
     COLORREF accent;
@@ -59,7 +61,9 @@ static const AppColors LIGHT_COLORS =
     RGB(215, 220, 225),    // border
 
     RGB(240, 242, 245),    // buttonBg
+    RGB(30, 140, 254),     // buttonSelBg
     RGB(35, 35, 35),       // buttonText
+    RGB(254, 254, 254),    // buttonSelText
     RGB(225, 228, 232),    // buttonHover
 
     RGB(40, 120, 220)      // accent
@@ -73,7 +77,7 @@ static const AppColors DARK_COLORS =
     RGB(145, 132, 165),     // headerBorder
 
     RGB(108, 86, 92),       // panelBg1 Server
-    RGB(84, 94, 112),       // panelBg2 Options
+    RGB(104, 114, 132),     // panelBg2 Options
     RGB(101, 95, 115),      // panelBg3 QR
     RGB(88, 90, 100),       // panelBg4 Logs
 
@@ -93,7 +97,9 @@ static const AppColors DARK_COLORS =
     RGB(132, 128, 142),     // border
 
     RGB(112, 108, 120),     // buttonBg
+    RGB(30, 140, 254),      // buttonSelBg
     RGB(248, 246, 250),     // buttonText
+    RGB(254, 254, 254),     // buttonSelText
     RGB(128, 122, 138),     // buttonHover
 
     RGB(155, 112, 220)      // accent

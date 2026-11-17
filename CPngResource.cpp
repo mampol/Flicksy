@@ -1,14 +1,14 @@
-﻿#include "CImgListPng.h"
+﻿#include "CPngResource.h"
 
-CImgListPng::CImgListPng()
+CPngResource::CPngResource()
 {
 }
 
-CImgListPng::~CImgListPng()
+CPngResource::~CPngResource()
 {
 }
 
-BOOL CImgListPng::InitGdiPlus()
+BOOL CPngResource::InitGdiPlus()
 {
 	if (GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, nullptr) != Gdiplus::Ok)
 	{
@@ -17,12 +17,12 @@ BOOL CImgListPng::InitGdiPlus()
 	return TRUE;
 }
 
-void CImgListPng::EndGdiPlus()
+void CPngResource::EndGdiPlus()
 {
 	Gdiplus::GdiplusShutdown(m_gdiplusToken);
 }
 
-HBITMAP CImgListPng::LoadPngResource(HINSTANCE hInst, UINT uiPngRes)
+HBITMAP CPngResource::LoadPngResource(HINSTANCE hInst, UINT uiPngRes)
 {
 	HBITMAP hBitmap = NULL;
 
@@ -168,7 +168,7 @@ HBITMAP CImgListPng::LoadPngResource(HINSTANCE hInst, UINT uiPngRes)
 	return hBitmap;
 }
 
-HIMAGELIST CImgListPng::MakeImageListPng(int nWidth, HBITMAP hBmp)
+HIMAGELIST CPngResource::MakeImageListPng(int nWidth, HBITMAP hBmp)
 {
 	if (!hBmp || nWidth <= 0)
 	{
@@ -214,48 +214,213 @@ HIMAGELIST CImgListPng::MakeImageListPng(int nWidth, HBITMAP hBmp)
 	return hImgList;
 }
 
-Gdiplus::Bitmap* CImgListPng::LoadPngBitmap(HINSTANCE hInst, UINT uiPngRes)
+Gdiplus::Bitmap* CPngResource::LoadPngBitmap(
+	HINSTANCE hInst,
+	UINT uiPngRes)
 {
-	HRSRC hRes = FindResource(hInst,
-			MAKEINTRESOURCE(uiPngRes),
-			_T("PNG"));
-	if (!hRes) return nullptr;
+	HRSRC hRes = FindResource(
+		hInst,
+		MAKEINTRESOURCE(uiPngRes),
+		_T("PNG"));
+
+	if (!hRes)
+		return nullptr;
 
 	HGLOBAL hResData = LoadResource(hInst, hRes);
-	if (!hResData) return nullptr;
+	if (!hResData)
+		return nullptr;
 
 	DWORD dwSize = SizeofResource(hInst, hRes);
 
 	const void* pResData = LockResource(hResData);
-	if (!pResData || dwSize == 0) return nullptr;
+	if (!pResData || dwSize == 0)
+		return nullptr;
 
-	HGLOBAL hBuffer = GlobalAlloc(GMEM_MOVEABLE, dwSize);
-	if (!hBuffer) return nullptr;
+	HGLOBAL hBuffer =
+		GlobalAlloc(GMEM_MOVEABLE, dwSize);
+
+	if (!hBuffer)
+		return nullptr;
 
 	void* pBuffer = GlobalLock(hBuffer);
+
 	if (!pBuffer)
 	{
 		GlobalFree(hBuffer);
 		return nullptr;
 	}
-	CopyMemory(pBuffer, pResData, dwSize);
+
+	CopyMemory(
+		pBuffer,
+		pResData,
+		dwSize);
+
 	GlobalUnlock(hBuffer);
 
 	IStream* pStream = nullptr;
-	HRESULT hr = CreateStreamOnHGlobal(hBuffer, TRUE, &pStream);
+
+	HRESULT hr =
+		CreateStreamOnHGlobal(
+			hBuffer,
+			TRUE,
+			&pStream);
+
 	if (FAILED(hr) || !pStream)
 	{
 		GlobalFree(hBuffer);
 		return nullptr;
 	}
-	Gdiplus::Bitmap* pBitmap = Gdiplus::Bitmap::FromStream(pStream);
+
+	Gdiplus::Bitmap* pSrc =
+		Gdiplus::Bitmap::FromStream(pStream);
+
+	if (!pSrc ||
+		pSrc->GetLastStatus() != Gdiplus::Ok)
+	{
+		delete pSrc;
+		pStream->Release();
+		return nullptr;
+	}
+
+	Gdiplus::Bitmap* pBitmap =
+		pSrc->Clone(
+			0,
+			0,
+			pSrc->GetWidth(),
+			pSrc->GetHeight(),
+			PixelFormat32bppPARGB);
+
+	delete pSrc;
+
 	pStream->Release();
 
-	if (!pBitmap || pBitmap->GetLastStatus() != Gdiplus::Ok)
+	if (!pBitmap ||
+		pBitmap->GetLastStatus() != Gdiplus::Ok)
 	{
 		delete pBitmap;
 		return nullptr;
 	}
 
 	return pBitmap;
+}
+
+void CPngResource::DrawPng(
+	Gdiplus::Graphics& g,
+	Gdiplus::Bitmap* bitmap,
+	int x, int y,
+	int width, int height)
+{
+	if (!bitmap || width <= 0 || height <= 0)
+		return;
+
+	g.SetInterpolationMode(
+		Gdiplus::InterpolationModeHighQualityBicubic);
+
+	Gdiplus::Rect destRect(
+		x,
+		y,
+		width,
+		height);
+
+	g.DrawImage(
+		bitmap,
+		destRect);
+}
+
+void CPngResource::DrawSprite(
+	Gdiplus::Graphics& g,
+	Gdiplus::Bitmap* bitmap,
+	int index,
+	int x, int y,
+	int srcw, int srch,
+	int destw, int desth)
+{
+	if (!bitmap)
+		return;
+
+	Gdiplus::Rect destRect(
+		x,
+		y,
+		destw,
+		desth);
+
+	Gdiplus::Rect srcRect(
+		index * srcw,
+		0,
+		srcw,
+		srch);
+
+	g.SetInterpolationMode(
+		Gdiplus::InterpolationModeHighQualityBicubic);
+
+	g.DrawImage(
+		bitmap,
+		destRect,
+		srcRect.X,
+		srcRect.Y,
+		srcRect.Width,
+		srcRect.Height,
+		Gdiplus::UnitPixel);
+}
+
+void CPngResource::DrawSpriteIcon(
+	Gdiplus::Graphics& g,
+	Gdiplus::Bitmap* bitmap,
+	int index,
+	int x, int y,
+	int srcsize,
+	int destsize,
+	COLORREF color)
+{
+	if (!bitmap)
+		return;
+
+	Gdiplus::Rect destRect(
+		x,
+		y,
+		destsize,
+		destsize);
+
+	Gdiplus::Rect srcRect(
+		index * srcsize,
+		0,
+		srcsize,
+		srcsize);
+
+	g.SetInterpolationMode(
+		Gdiplus::InterpolationModeHighQualityBicubic);
+
+	BYTE r = GetRValue(color);
+	BYTE gcol = GetGValue(color);
+	BYTE b = GetBValue(color);
+
+	Gdiplus::ColorMatrix matrix =
+	{
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 1, 0,
+		r / 255.0f,
+		gcol / 255.0f,
+		b / 255.0f,
+		0,
+		1
+	};
+
+	Gdiplus::ImageAttributes attr;
+
+	attr.SetColorMatrix(
+		&matrix,
+		Gdiplus::ColorMatrixFlagsDefault,
+		Gdiplus::ColorAdjustTypeBitmap);
+
+	g.DrawImage(
+		bitmap,
+		destRect,
+		srcRect.X,
+		srcRect.Y,
+		srcRect.Width,
+		srcRect.Height,
+		Gdiplus::UnitPixel,
+		&attr);
 }

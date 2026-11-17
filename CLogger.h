@@ -29,8 +29,11 @@ public:
     void SetEnabled(bool enabled) { m_enabled = enabled; }
     bool IsEnabled() const { return m_enabled; }
 
+    void SetLogFilePath(const std::wstring& logPath) { if(!logPath.empty()) m_LogPath = logPath; }
+    const std::wstring& GetLogFilePath() { return m_LogPath; }
+
 private:
-    std::filesystem::path GetLogFilePath() const;
+    std::filesystem::path GetDefaultLogFilePath() const;
     TCHAR* GetTypeText(LogType type) const;
     void RotateIfNeeded();
     void Rotate();

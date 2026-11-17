@@ -52,8 +52,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,5,2,2
- PRODUCTVERSION 0,5,2,2
+ FILEVERSION 0,6,0,0
+ PRODUCTVERSION 0,6,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,12 +70,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Pol"
             VALUE "FileDescription", "Flicksy for Windows"
-            VALUE "FileVersion", "0.5.2.2"
+            VALUE "FileVersion", "0.6.0.0"
             VALUE "InternalName", "Flicksy.exe"
             VALUE "LegalCopyright", "Copyright (C) 2026 Pol."
             VALUE "OriginalFilename", "Flicksy.exe"
             VALUE "ProductName", "Flicksy"
-            VALUE "ProductVersion", "0.5.2.2"
+            VALUE "ProductVersion", "0.6.0.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -100,7 +100,8 @@ BEGIN
         MENUITEM "Sto&p Server",                ID_HTTP_STOP
         MENUITEM "QR &Code",                    ID_LINK_QRCODE
         MENUITEM SEPARATOR
-        MENUITEM "&About Flicksy",              ID_ABOUT
+        MENUITEM "Confi&g",                     ID_CONFIG
+        MENUITEM SEPARATOR
         MENUITEM "&Quit",                       ID_FILE_QUIT
     END
 END
@@ -134,6 +135,222 @@ IDB_PNG5                PNG                     "005.png"
 IDB_PNG6                PNG                     "006.png"
 
 IDB_PNG7                PNG                     "007.png"
+
+IDB_PNG8                PNG                     "008.png"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_CONFIG DIALOGEX 0, 0, 443, 190
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Flicksy Config"
+FONT 10, "Yu Gothic UI", 400, 0, 0x80
+BEGIN
+    CONTROL         "ACTION",IDD_BTN_ACTION,"Button",BS_OWNERDRAW | WS_TABSTOP,7,59,74,19
+    CONTROL         "MEMO",IDD_BTN_MEMO,"Button",BS_OWNERDRAW | WS_TABSTOP,7,81,74,19
+    CONTROL         "SYSTEM",IDD_BTN_SYSTEM,"Button",BS_OWNERDRAW | WS_TABSTOP,7,36,74,19
+    CONTROL         "SECURITY",IDD_BTN_SECURITY,"Button",BS_OWNERDRAW | WS_TABSTOP,7,104,74,19
+    CONTROL         "INFOMATION",IDD_BTN_INFO,"Button",BS_OWNERDRAW | WS_TABSTOP,7,127,74,19
+END
+
+IDD_CONFIG_SYSTEM DIALOGEX 0, 0, 351, 179
+STYLE DS_SETFONT | DS_CONTROL | WS_CHILD
+FONT 10, "Yu Gothic UI", 400, 0, 0x80
+BEGIN
+    EDITTEXT        IDC_EDIT_WEBROOT,74,61,201,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BTN_WEBROOT,279,61,21,12
+    EDITTEXT        IDC_EDIT_LOGFILE,74,95,201,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BTN_LOGFILE,279,95,21,12
+    EDITTEXT        IDC_EDIT_DATAFOLDER,74,114,201,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BTN_DATAFOLDER,279,114,21,12
+    LTEXT           "&Webroot",IDC_STATIC,15,60,46,12,SS_CENTERIMAGE
+    LTEXT           "Log &enabled",IDC_STATIC,15,77,46,12,SS_CENTERIMAGE
+    LTEXT           "Log &file path",IDC_STATIC,15,94,46,12,SS_CENTERIMAGE
+    LTEXT           "&Data folder",IDC_STATIC,15,113,46,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_PORT,74,43,49,12,ES_CENTER | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "&Port",IDC_STATIC,15,42,46,12,SS_CENTERIMAGE
+    LTEXT           "&Run Flicksy at startup",IDC_STATIC,15,151,46,16
+    LTEXT           "&Start server automatically",IDC_STATIC,15,131,46,16
+    CONTROL         "LogEnabled",IDC_CHK_LOGENABLED,"ToggleSwitch",WS_TABSTOP,74,78,27,12
+    CONTROL         "StartServerAuto",IDC_CHK_AUTOSTART,"ToggleSwitch",WS_TABSTOP,74,134,27,12
+    CONTROL         "RunStartup",IDC_CHK_STARTUP,"ToggleSwitch",WS_TABSTOP,74,154,27,12
+END
+
+IDD_CONFIG_ACTION DIALOGEX 0, 0, 351, 179
+STYLE DS_SETFONT | DS_CONTROL | WS_CHILD
+FONT 10, "Yu Gothic UI", 400, 0, 0x80
+BEGIN
+    LISTBOX         IDC_LIST_ACTION,8,37,333,114,LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_NAME,44,6,67,12,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    COMBOBOX        IDC_CMB_TYPE,116,6,76,62,CBS_DROPDOWNLIST | NOT WS_VISIBLE | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_VALUE,197,6,116,12,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    PUSHBUTTON      "...",IDC_BTN_VALUE,316,6,18,12,NOT WS_VISIBLE
+    PUSHBUTTON      "DELETE ITEM",IDC_BTN_DELETE,79,156,64,14
+    PUSHBUTTON      "＋ ADD ITEM",IDC_BTN_ADD,10,156,64,14
+    CONTROL         "Enable",IDC_CHK_ENABLE,"ToggleSwitch",NOT WS_VISIBLE | WS_TABSTOP,10,6,26,12
+END
+
+IDD_CONFIG_MEMO DIALOGEX 0, 0, 351, 179
+STYLE DS_SETFONT | DS_CONTROL | WS_CHILD
+FONT 10, "Yu Gothic UI", 400, 0, 0x80
+BEGIN
+    CONTROL         "",IDC_LIST_MEMO,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,8,37,333,114
+    PUSHBUTTON      "Add Memo",IDC_BTN_ADDMEMO,11,156,64,16
+    PUSHBUTTON      "Edit Memo",IDC_BTN_EDITMEMO,81,156,64,16
+    PUSHBUTTON      "Delete Memo",IDC_BTN_DELMEMO,152,156,64,16
+END
+
+IDD_CONFIG_SECURITY DIALOGEX 0, 0, 351, 179
+STYLE DS_SETFONT | DS_CONTROL | WS_CHILD
+FONT 10, "Yu Gothic UI", 400, 0, 0x80
+BEGIN
+    LTEXT           "&Password",IDC_STATIC,15,43,46,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_PASS,74,43,108,12,ES_PASSWORD | ES_AUTOHSCROLL
+    PUSHBUTTON      "Set",IDC_BTN_SETPASS,188,43,52,12
+    PUSHBUTTON      "Remove",IDC_BTN_REMPASS,243,43,52,12
+    LTEXT           "Use &token",IDC_STATIC,15,62,46,12,SS_CENTERIMAGE
+    CONTROL         "LogEnabled",IDC_CHK_USETOKEN,"ToggleSwitch",WS_TABSTOP,74,62,27,12
+    LTEXT           "Disabling the authentication token may allow other devices on the same network to access Flicksy.\nUse this option only on trusted networks.",IDC_STATIC_WARN_TOKEN,123,62,203,26
+END
+
+IDD_CONFIG_INFO DIALOGEX 0, 0, 351, 179
+STYLE DS_SETFONT | DS_CONTROL | WS_CHILD
+FONT 10, "Yu Gothic UI", 400, 0, 0x80
+BEGIN
+    LTEXT           "About Flicksy\n\nFlicksy lets you send text and key input to a Windows PC\nand run registered actions from your smartphone.\n",IDC_STATIC,31,115,265,39
+    LTEXT           "---",IDC_STATIC,31,101,258,11
+    GROUPBOX        "",IDC_STATIC,16,46,317,121
+    LTEXT           "Flicksyについて\n\nFlicksyは、スマートフォンからWindows PCへ\n文字入力やキー操作、登録済みアクションの実行を行うためのアプリです。",IDC_STATIC,31,58,265,39
+END
+
+IDD_MEMO_EDIT DIALOGEX 0, 0, 317, 120
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Flicksy Memo"
+FONT 10, "Yu Gothic UI", 400, 0, 0x80
+BEGIN
+    GROUPBOX        "",IDC_STATIC,7,2,303,93
+    EDITTEXT        IDC_EDIT_MEMO_DATE,15,13,177,12,ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
+    EDITTEXT        IDC_EDIT_MEMO_TEXT,15,29,177,58,ES_MULTILINE | ES_AUTOHSCROLL
+    CONTROL         "Preview",IDC_BTN_VIEW,"Button",BS_OWNERDRAW,199,13,104,38
+    PUSHBUTTON      "Save as ...",IDC_BTN_SAVEAS,199,56,104,14,NOT WS_TABSTOP
+    PUSHBUTTON      "Delete",IDC_BTN_DELETE,199,73,104,14,NOT WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,183,99,61,14,NOT WS_TABSTOP
+    PUSHBUTTON      "Cancel",IDCANCEL,249,99,61,14,NOT WS_TABSTOP
+END
+
+IDD_PASSBOX DIALOGEX 0, 0, 141, 50
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "Enter Password"
+FONT 10, "Yu Gothic UI", 400, 0, 0x80
+BEGIN
+    EDITTEXT        IDC_EDIT_PASS,7,7,127,12,ES_PASSWORD | ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "Enter",IDOK,7,29,43,14,NOT WS_TABSTOP
+    PUSHBUTTON      "Cancel",IDCANCEL,91,29,43,14,NOT WS_TABSTOP
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_CONFIG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 436
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 183
+    END
+
+    IDD_CONFIG_SYSTEM, DIALOG
+    BEGIN
+    END
+
+    IDD_CONFIG_ACTION, DIALOG
+    BEGIN
+    END
+
+    IDD_CONFIG_MEMO, DIALOG
+    BEGIN
+    END
+
+    IDD_CONFIG_SECURITY, DIALOG
+    BEGIN
+    END
+
+    IDD_CONFIG_INFO, DIALOG
+    BEGIN
+    END
+
+    IDD_MEMO_EDIT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 310
+        TOPMARGIN, 2
+        BOTTOMMARGIN, 113
+    END
+
+    IDD_PASSBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 134
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 43
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_CONFIG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_CONFIG_SYSTEM AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_CONFIG_ACTION AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_CONFIG_MEMO AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_CONFIG_SECURITY AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_CONFIG_INFO AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_MEMO_EDIT AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_PASSBOX AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
 
 #endif    // 日本語 (日本) resources
 /////////////////////////////////////////////////////////////////////////////

@@ -1,11 +1,99 @@
 #include "CFlicksyConfig.h"
+#include "TextEncoding.h"
 
 #include <Windows.h>
+#include <tchar.h>
 #include <algorithm>
 #include <cctype>
 #include <fstream>
 #include <string>
 #include <toml.hpp>
+#include <bcrypt.h>
+
+#pragma comment(lib, "bcrypt.lib")
+
+bool SetRunAtStartup(bool enabled)
+{
+    HKEY hKey = nullptr;
+
+    if (RegOpenKeyEx(HKEY_CURRENT_USER,
+        REG_STARTUP,
+        0,
+        KEY_SET_VALUE,
+        &hKey) != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    LONG result;
+    if (enabled)
+    {
+        TCHAR exePath[MAX_PATH] = {};
+        GetModuleFileName(
+            nullptr,
+            exePath,
+            _countof(exePath));
+
+        std::basic_string<TCHAR> value = _T("\"");
+        value += exePath;
+        value += _T("\"");
+
+        result = RegSetValueEx(hKey,
+            REG_VALUE,
+            0,
+            REG_SZ,
+            reinterpret_cast<const BYTE*>(value.c_str()),
+            static_cast<DWORD>((value.size() + 1) * sizeof(TCHAR)));
+    }
+    else
+    {
+        result = RegDeleteValue(hKey,
+            REG_VALUE);
+        if (result == ERROR_FILE_NOT_FOUND) result = ERROR_SUCCESS;
+    }
+
+    RegCloseKey(hKey);
+
+    return result == ERROR_SUCCESS;
+}
+
+bool IsRunAtStartup()
+{
+    HKEY hKey = nullptr;
+
+    if (RegOpenKeyEx(HKEY_CURRENT_USER,
+        REG_STARTUP,
+        0,
+        KEY_QUERY_VALUE,
+        &hKey) != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    TCHAR exePath[MAX_PATH] = {};
+    DWORD type = 0;
+    DWORD size = sizeof(exePath);
+
+    LONG result = RegQueryValueEx(hKey,
+        REG_VALUE,
+        nullptr,
+        &type,
+        reinterpret_cast<BYTE*>(exePath),
+        &size);
+
+    RegCloseKey(hKey);
+
+    if (result != ERROR_SUCCESS || type != REG_SZ)
+        return false;
+
+    TCHAR cmpPath[MAX_PATH] = {};
+    GetModuleFileName(nullptr, cmpPath, _countof(cmpPath));
+    std::basic_string<TCHAR> value = _T("\"");
+    value += cmpPath;
+    value += _T("\"");
+
+    return _tcscmp(exePath, value.c_str()) == 0;
+}
 
 CFlicksyConfig::CFlicksyConfig()
 {
@@ -18,12 +106,47 @@ void CFlicksyConfig::SetDefault()
     m_webRoot = L"./webroot";
     m_autoStartServer = false;
 
+    m_actions.clear();
+
+    m_dataFolder = L"./data";
+
     m_inputMode = InputMode::SendInput;
+    m_inputinterval = 5;
+
+    m_log_enable = true;
+    m_log_file = L"./flicksy.log";
+    m_log_input = false;
 
     m_alwaysOnTop = false;
     m_startMinimized = false;
 
+    m_passwordSalt.clear();
+    m_passwordHash.clear();
+    m_useToken = true;
+
     m_theme = Theme::Light;
+}
+
+std::filesystem::path CFlicksyConfig::GetResolvedDataFolder() const
+{
+    std::filesystem::path path(m_dataFolder);
+
+    if (path.is_absolute())
+    {
+        return path;
+    }
+
+    wchar_t exePath[MAX_PATH]{};
+
+    GetModuleFileName(
+        nullptr,
+        exePath,
+        MAX_PATH);
+
+    std::filesystem::path exeDir(exePath);
+    exeDir = exeDir.parent_path();
+
+    return exeDir / path;
 }
 
 void CFlicksyConfig::SetServerPort(int port)
@@ -36,12 +159,188 @@ void CFlicksyConfig::SetServerPort(int port)
     m_port = port;
 }
 
+std::wstring CFlicksyConfig::ActionTypeToString(const ActionType type)
+{
+    switch (type)
+    {
+    case ActionType::Url:
+        return L"url";
+
+    case ActionType::Application:
+        return L"application";
+
+    case ActionType::Folder:
+        return L"folder";
+
+    case ActionType::Lock:
+        return L"lock";
+
+    case ActionType::Shutdown:
+        return L"shutdown";
+
+    default:
+        return L"none";
+    }
+}
+
+ActionType CFlicksyConfig::StringToActionType(const std::string& type)
+{
+    if (type == "url")
+        return ActionType::Url;
+
+    if (type == "application")
+        return ActionType::Application;
+
+    if (type == "folder")
+        return ActionType::Folder;
+
+    if (type == "lock")
+        return ActionType::Lock;
+
+    if (type == "shutdown")
+        return ActionType::Shutdown;
+
+    return ActionType::None;
+}
+
+bool CFlicksyConfig::MakePasswordHash(
+    const std::wstring& password,
+    const std::vector<unsigned char>& salt,
+    std::vector<unsigned char>& hash) const
+{
+    BCRYPT_ALG_HANDLE hAlg = nullptr;
+
+    NTSTATUS status =
+        BCryptOpenAlgorithmProvider(
+            &hAlg,
+            BCRYPT_SHA256_ALGORITHM,
+            nullptr,
+            BCRYPT_ALG_HANDLE_HMAC_FLAG);
+
+    if (!BCRYPT_SUCCESS(status))
+        return false;
+
+    hash.resize(32); // SHA-256 = 32byte
+
+    constexpr ULONGLONG iterations = 200000;
+
+    status =
+        BCryptDeriveKeyPBKDF2(
+            hAlg,
+            reinterpret_cast<PUCHAR>(
+                const_cast<wchar_t*>(password.data())),
+            static_cast<ULONG>(
+                password.size() * sizeof(wchar_t)),
+            const_cast<PUCHAR>(salt.data()),
+            static_cast<ULONG>(salt.size()),
+            iterations,
+            hash.data(),
+            static_cast<ULONG>(hash.size()),
+            0);
+
+    BCryptCloseAlgorithmProvider(hAlg, 0);
+
+    return BCRYPT_SUCCESS(status);
+}
+
+bool CFlicksyConfig::SetPassword(const std::wstring& password)
+{
+    if (password.empty())
+    {
+        RemovePassword();
+        return true;
+    }
+
+    std::vector<UCHAR> salt(16);
+
+    NTSTATUS status =
+        BCryptGenRandom(
+            nullptr,
+            salt.data(),
+            static_cast<ULONG>(salt.size()),
+            BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+
+    if (!BCRYPT_SUCCESS(status))
+        return false;
+
+    std::vector<UCHAR> hash;
+
+    if (!MakePasswordHash(
+        password,
+        salt,
+        hash))
+    {
+        return false;
+    }
+
+    m_passwordSalt =
+        TextEncoding::BytesToHex(salt);
+
+    m_passwordHash =
+        TextEncoding::BytesToHex(hash);
+
+    return true;
+}
+
+bool CFlicksyConfig::VerifyPassword(
+    const std::wstring& password) const
+{
+    if (!HasPassword())
+        return true;
+
+    const std::vector<UCHAR> salt =
+        TextEncoding::HexToBytes(m_passwordSalt);
+
+    const std::vector<UCHAR> expectedHash =
+        TextEncoding::HexToBytes(m_passwordHash);
+
+    if (salt.empty() ||
+        expectedHash.empty())
+    {
+        return false;
+    }
+
+    std::vector<UCHAR> hash;
+
+    if (!MakePasswordHash(
+        password,
+        salt,
+        hash))
+    {
+        return false;
+    }
+
+    return hash == expectedHash;
+}
+
+bool CFlicksyConfig::HasPassword() const
+{
+    return
+        !m_passwordSalt.empty() &&
+        !m_passwordHash.empty();
+}
+
+void CFlicksyConfig::RemovePassword()
+{
+    m_passwordSalt.clear();
+    m_passwordHash.clear();
+}
+
 bool CFlicksyConfig::Load(const std::filesystem::path& file)
 {
+    m_FlicksyConfig = file;
+
     SetDefault();
+
+    if (!std::filesystem::exists(file))
+    {
+        return Save(file);
+    }
 
     try
     {
+        //const auto fullPath = std::filesystem::absolute(file);
+
         std::ifstream ifs(file, std::ios::binary);
         if (!ifs)
             return false;
@@ -55,10 +354,41 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
 
             const std::string webRoot =
                 (*server)["web_root"].value_or<std::string>("./webroot");
-            m_webRoot = Utf8ToWide(webRoot);
+            m_webRoot = TextEncoding::Utf8ToWide(webRoot);
 
             m_autoStartServer =
                 (*server)["auto_start"].value_or(false);
+        }
+
+        m_actions.clear();
+        if (auto* actions = tbl["action"].as_array())
+        {
+            for (auto&& node : *actions)
+            {
+                auto* item = node.as_table();
+                if (!item)
+                    continue;
+                ActionConfig action{};
+                action.enabled =
+                    (*item)["enabled"].value_or(true);
+                action.name =
+                    TextEncoding::Utf8ToWide(
+                        (*item)["name"].value_or(std::string{}));
+                action.type =
+                    StringToActionType(
+                        (*item)["type"].value_or(std::string{ "none" }));
+                action.value =
+                    TextEncoding::Utf8ToWide(
+                        (*item)["value"].value_or(std::string{}));
+                m_actions.push_back(std::move(action));
+            }
+        }
+
+        if (auto data = tbl["data"].as_table())
+        {
+            const std::string dataFolder =
+                (*data)["data_folder"].value_or<std::string>("");
+            m_dataFolder = TextEncoding::Utf8ToWide(dataFolder);
         }
 
         if (auto input = tbl["input"].as_table())
@@ -68,6 +398,16 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
             m_inputMode = StringToInputMode(mode);
 
             SetInputInterval((int)(*input)["interval"].value_or<int64_t>(5));
+        }
+
+        if (auto input = tbl["log"].as_table())
+        {
+            m_log_enable =
+                (*input)["log_enable"].value_or(true);
+
+            const std::string logfile =
+                (*input)["log_file"].value_or<std::string>("");
+            m_log_file = TextEncoding::Utf8ToWide(logfile);
 
             m_log_input =
                 (*input)["log_input"].value_or(false);
@@ -80,6 +420,20 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
 
             m_startMinimized =
                 (*window)["start_minimized"].value_or(false);
+        }
+
+        if (auto security = tbl["security"].as_table())
+        {
+            const std::string passSalt =
+                (*security)["passwordSalt"].value_or<std::string>("");
+            m_passwordSalt = TextEncoding::Utf8ToWide(passSalt);
+
+            const std::string passHash =
+                (*security)["passwordHash"].value_or<std::string>("");
+            m_passwordHash = TextEncoding::Utf8ToWide(passHash);
+
+            m_useToken =
+                (*security)["usetoken"].value_or(true);
         }
 
         if (auto appearance = tbl["appearance"].as_table())
@@ -103,6 +457,11 @@ bool CFlicksyConfig::Load(const std::filesystem::path& file)
     }
 }
 
+bool CFlicksyConfig::Save() const
+{
+    return Save(m_FlicksyConfig);
+}
+
 bool CFlicksyConfig::Save(const std::filesystem::path& file) const
 {
     try
@@ -111,13 +470,34 @@ bool CFlicksyConfig::Save(const std::filesystem::path& file) const
 
         tbl.insert("server", toml::table{
             { "port", m_port },
-            { "web_root", WideToUtf8(m_webRoot) },
+            { "web_root", TextEncoding::WideToUtf8(m_webRoot) },
             { "auto_start", m_autoStartServer }
+        });
+
+        toml::array actions;
+        for (const auto& action : m_actions)
+        {
+            toml::table item;
+            item.insert("type", TextEncoding::WideToUtf8(ActionTypeToString(action.type)));
+            item.insert("enabled", action.enabled);
+            item.insert("name", TextEncoding::WideToUtf8(action.name));
+            item.insert("value", TextEncoding::WideToUtf8(action.value));
+            actions.push_back(std::move(item));
+        }
+        tbl.insert("action", std::move(actions));
+
+        tbl.insert("data", toml::table{
+            { "data_folder", TextEncoding::WideToUtf8(m_dataFolder) }
         });
 
         tbl.insert("input", toml::table{
             { "mode", InputModeToString(m_inputMode) },
-            { "interval", m_inputinterval },
+            { "interval", m_inputinterval }
+        });
+
+        tbl.insert("log", toml::table{
+            { "log_enable", m_log_enable },
+            { "log_file", TextEncoding::WideToUtf8(m_log_file) },
             { "log_input", m_log_input }
         });
 
@@ -125,6 +505,12 @@ bool CFlicksyConfig::Save(const std::filesystem::path& file) const
             { "always_on_top", m_alwaysOnTop },
             { "start_minimized", m_startMinimized }
         });
+
+        tbl.insert("security", toml::table{
+            { "passwordSalt", m_passwordSalt },
+            { "passwordHash", m_passwordHash },
+            { "usetoken", m_useToken }
+            });
 
         tbl.insert("appearance", toml::table{
             { "theme", ThemeToString(m_theme) }
@@ -147,6 +533,7 @@ bool CFlicksyConfig::Save(const std::filesystem::path& file) const
     }
 }
 
+/*
 std::string CFlicksyConfig::WideToUtf8(const std::wstring& text)
 {
     if (text.empty())
@@ -194,6 +581,7 @@ std::wstring CFlicksyConfig::Utf8ToWide(const std::string& text)
 
     return result;
 }
+*/
 
 const char* CFlicksyConfig::InputModeToString(InputMode mode)
 {

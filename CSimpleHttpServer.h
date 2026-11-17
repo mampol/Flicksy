@@ -16,8 +16,10 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
+#include <functional>
 
 #include "httplib.h"
+#include "CFlicksyConfig.h"
 #include "CScreenshot.h"
 
 #define UM_HTTPPOPMSG    (WM_APP+1)
@@ -25,6 +27,8 @@
 #define UM_HTTPPOPHOTKEY (WM_APP+3)
 #define UM_HTTPSTATE     (WM_APP+4)
 #define UM_HTTPLOG       (WM_APP+5)
+#define UM_HTTPPOPACTION (WM_APP+6)
+#define UM_HTTPPOPMEMO   (WM_APP+7)
 
 enum class ServerState
 {
@@ -35,13 +39,24 @@ enum class ServerState
     Error
 };
 
+struct MemoRequest
+{
+    std::wstring text;
+
+    std::string imageData;
+    std::wstring imageFileName;
+    std::string imageContentType;
+};
+
+using ActionProvider = std::function<std::vector<ActionConfig>()>;
+
 class CSimpleHttpServer
 {
 public:
     CSimpleHttpServer();
     ~CSimpleHttpServer();
 
-    bool Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot);
+    bool Start(HWND hMainWnd, int port, const std::filesystem::path& webRoot, bool usetoken);
     void Stop();
 
     int GetPort() { return m_port; };
@@ -65,10 +80,16 @@ public:
     bool PopMessage(std::string& message);
     bool PopKey(WORD& vk);
     bool PopHotkey(std::string& hotkey);
+    bool PopActions(size_t& id);
+    bool PopMemo(MemoRequest& memor);
     bool PopLog(std::string& log);
 
     const std::string& GetLastError() const { return m_lastError; }
 
+    void SetActionProvider(ActionProvider provider)
+    {
+        m_actionProvider = std::move(provider);
+    }
 private:
 //    std::string GetExeDirectory();
     std::filesystem::path GetExeDir()
@@ -151,6 +172,7 @@ private:
         }
     }
 private:
+    bool m_usetoken;
     std::string m_token;
 
     std::atomic<ServerState> m_state = ServerState::Stopped;
@@ -165,8 +187,13 @@ private:
     std::queue<std::string> m_messages;
     std::queue<WORD> m_keys;
     std::queue<std::string> m_hotkey;
+    std::queue<size_t> m_actions;
+    std::queue<MemoRequest> m_memor;
+
     std::queue<std::string> m_logs;
     std::mutex m_mutex;
 
     std::string m_lastError;
+
+    ActionProvider m_actionProvider;
 };
