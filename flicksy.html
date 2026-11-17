@@ -300,7 +300,7 @@ button { touch-action: manipulation; }
     </header>
 
     <section class="app-page active" data-page-panel="input">
-        <h1 class="page-title">入力</h1>
+        <h1 class="page-title">Input</h1>
         <p class="page-subtitle">PCへ文字・キー操作を送信します。</p>
 
         <div class="card">
@@ -333,7 +333,7 @@ button { touch-action: manipulation; }
     </section>
 
     <section class="app-page" data-page-panel="action">
-        <h1 class="page-title">アクション</h1>
+        <h1 class="page-title">Action</h1>
         <p class="page-subtitle">PC側Configで登録した操作をここへ並べる想定。</p>
 
         <div id="actionList" class="action-list">
@@ -342,17 +342,17 @@ button { touch-action: manipulation; }
     </section>
 
     <section class="app-page" data-page-panel="memo">
-        <h1 class="page-title">メモ</h1>
+        <h1 class="page-title">Memo</h1>
         <p class="page-subtitle">メモをPCへ送信して保存します。</p>
 
         <div class="card">
             <div class="memo-field">
-                <label class="memo-label" for="memoBody">メモ</label>
+                <label class="memo-label" for="memoBody">Memo</label>
                 <textarea id="memoBody" class="memo-textarea" placeholder="メモを入力"></textarea>
             </div>
 
             <div class="memo-field">
-                <span class="memo-label">写真</span>
+                <span class="memo-label">Attachment</span>
                 <div class="file-picker">
                     <label class="file-button" for="memoImage">写真を撮る / 選ぶ</label>
                     <span id="memoImageName">写真は選択されていません</span>
@@ -372,7 +372,7 @@ button { touch-action: manipulation; }
 </div>
 
 <nav class="bottom-nav" aria-label="Flicksy navigation">
-    <button class="nav-button active" data-page="input" type="button"><span class="nav-icon">⌨</span><span>入力</span></button>
+    <button class="nav-button active" data-page="input" type="button"><span class="nav-icon">⌨</span><span>Input</span></button>
     <button class="nav-button" data-page="action" type="button"><span class="nav-icon">☷</span><span>Action</span></button>
     <button class="nav-button" data-page="memo" type="button"><span class="nav-icon">▤</span><span>Memo</span></button>
 </nav>
@@ -459,8 +459,6 @@ function sendText()
 
 function sendKey(vk)
 {
-    input.focus();
-
     post(
         "/key",
         "vk=" + encodeURIComponent(vk));
@@ -494,8 +492,6 @@ input.addEventListener("keydown", e =>
 
 document.querySelectorAll("[data-vk]").forEach(button =>
 {
-    button.onpointerdown = () => input.focus();
-
     button.onclick = () =>
         sendKey(Number(button.dataset.vk));
 });

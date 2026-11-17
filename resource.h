@@ -2,6 +2,7 @@
 // Microsoft Visual C++ で生成されたインクルード ファイル。
 // Flicksy.rc で使用
 //
+#define IDC_BTN_SAVEAS                  3
 #define IDR_MENU1                       101
 #define IDI_ICON1                       102
 #define IDD_CONFIG_SYSTEM               102
@@ -40,6 +41,8 @@
 #define IDC_EDIT_DATAFOLDER             1015
 #define IDC_BTN_ADD                     1016
 #define IDC_BTN_DATAFOLDER              1016
+#define IDC_BTN_DELETE2                 1016
+#define IDC_BTN_VIEW                    1016
 #define IDC_EDIT_MAXIMAGESIZE           1017
 #define IDC_EDIT_JPEGQUALITY            1018
 #define IDC_CHK_LOGENABLED              1019

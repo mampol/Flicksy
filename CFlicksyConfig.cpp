@@ -120,6 +120,8 @@ void CFlicksyConfig::SetDefault()
     m_alwaysOnTop = false;
     m_startMinimized = false;
 
+    m_passwordSalt.clear();
+    m_passwordHash.clear();
     m_useToken = true;
 
     m_theme = Theme::Light;

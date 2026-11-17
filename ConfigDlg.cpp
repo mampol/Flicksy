@@ -1,4 +1,6 @@
-﻿#include <windows.h>
+﻿#define NOMINMAX
+
+#include <windows.h>
 #include <ShObjIdl.h>
 #include <ShlObj.h>
 #include <string>
@@ -62,6 +64,9 @@ static int AddMemoItem(HWND hListView, const size_t memoIndex, const struct Memo
 static void ReloadMemoList(HWND hListView, CMemoManager* memoManager);
 
 static INT_PTR CALLBACK MemoEditDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+static std::filesystem::path GetAttachmentPath(HWND hDlg);
+static Gdiplus::Bitmap* LoadBitmapFromFile(const std::filesystem::path& path);
+static bool SaveAttachmentAs(HWND hParent, const std::filesystem::path& src);
 
 static INT_PTR CALLBACK SecurityDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
 
@@ -1493,9 +1498,13 @@ INT_PTR MemoDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             col.pszText = const_cast<LPWSTR>(L"Date");
             ListView_InsertColumn(hListView, 0, &col);
 
-            col.cx = 500;
+            col.cx = 300;
             col.pszText = const_cast<LPWSTR>(L"Memo");
             ListView_InsertColumn(hListView, 1, &col);
+
+            col.cx = 90;
+            col.pszText = const_cast<LPWSTR>(L"Attachment");
+            ListView_InsertColumn(hListView, 2, &col);
 
             for (size_t i = 0;
                 i < lpConfigContext->memoManager->GetMemoCount();
@@ -1538,12 +1547,9 @@ INT_PTR MemoDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                     MemoEditDlgProc,
                     reinterpret_cast<LPARAM>(&ctx));
 
-                if (ret == IDOK)
-                {
-                    ReloadMemoList(
-                        hListView,
-                        lpConfigContext->memoManager);
-                }
+                ReloadMemoList(
+                    hListView,
+                    lpConfigContext->memoManager);
             }
             break;
 
@@ -1590,6 +1596,7 @@ INT_PTR MemoDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                         lpConfigContext->memoManager);
                 }
 
+//                ListView_SetItemState(hListView, -1, 0, LVIS_SELECTED);
             }
             break;
 
@@ -1616,6 +1623,9 @@ INT_PTR MemoDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                 size_t memoIndex =
                     static_cast<size_t>(item.lParam);
 
+                if (memoIndex < 0)
+                    break;
+
                 if (MessageBox(
                     hDlg,
                     L"Delete the selected memo ?",
@@ -1623,6 +1633,14 @@ INT_PTR MemoDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                     MB_YESNO | MB_ICONQUESTION) != IDYES)
                 {
                     break;
+                }
+
+                auto memo = lpConfigContext->memoManager->GetMemo(memoIndex);
+                auto path = lpConfigContext->config->GetResolvedDataFolder() / memo.attachments[0];
+                if (!path.empty())
+                {
+                    // remove attachment
+                    std::filesystem::remove(path);
                 }
 
                 lpConfigContext->memoManager
@@ -1681,6 +1699,19 @@ static int AddMemoItem(
         1,
         const_cast<LPWSTR>(memo.text.c_str()));
 
+    TCHAR szAttachment[10];
+    if (memo.attachments.empty()) {
+        _tcscpy_s(szAttachment, _countof(szAttachment), L"No");
+    }
+    else {
+        _tcscpy_s(szAttachment, _countof(szAttachment), L"Yes");
+    }
+    ListView_SetItemText(
+        hListView,
+        index,
+        2,
+        szAttachment);
+
     return index;
 }
 
@@ -1703,6 +1734,7 @@ static void ReloadMemoList(
 
 INT_PTR MemoEditDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
 {
+    static Gdiplus::Bitmap* s_attachmentBitmap = nullptr;
     switch (msg) {
     case WM_INITDIALOG:
         {
@@ -1735,7 +1767,90 @@ INT_PTR MemoEditDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                     hDlg,
                     IDC_EDIT_MEMO_DATE,
                     memo.created.c_str());
+                
+                auto path = GetAttachmentPath(hDlg);
+
+                if (!path.empty())
+                {
+                    delete s_attachmentBitmap;
+
+                    s_attachmentBitmap =
+                        LoadBitmapFromFile(path);
+                }
+                else {
+                    EnableWindow(GetDlgItem(hDlg, IDC_BTN_VIEW), FALSE);
+                    EnableWindow(GetDlgItem(hDlg, IDC_BTN_SAVEAS), FALSE);
+                    EnableWindow(GetDlgItem(hDlg, IDC_BTN_DELETE), FALSE);
+                }
             }
+
+            return TRUE;
+        }
+        break;
+
+    case WM_DRAWITEM:
+        {
+            auto* dis =
+                reinterpret_cast<DRAWITEMSTRUCT*>(lp);
+
+            if (dis->CtlID != IDC_BTN_VIEW)
+                break;
+
+            RECT rc = dis->rcItem;
+
+            FillRect(
+                dis->hDC,
+                &rc,
+                GetSysColorBrush(COLOR_WINDOW));
+
+            if (!s_attachmentBitmap) {
+                SetBkMode(dis->hDC, TRANSPARENT);
+                DrawText(dis->hDC, L"No Attachment.", -1, &(dis->rcItem), DT_SINGLELINE | DT_VCENTER | DT_CENTER);
+                return TRUE;
+            }
+
+            Gdiplus::Graphics g(dis->hDC);
+
+            g.SetInterpolationMode(
+                Gdiplus::InterpolationModeHighQualityBicubic);
+
+            const int imageW =
+                static_cast<int>(
+                    s_attachmentBitmap->GetWidth());
+
+            const int imageH =
+                static_cast<int>(
+                    s_attachmentBitmap->GetHeight());
+
+            const int areaW =
+                rc.right - rc.left;
+
+            const int areaH =
+                rc.bottom - rc.top;
+
+            const double scale =
+                std::min(
+                    static_cast<double>(areaW) / imageW,
+                    static_cast<double>(areaH) / imageH);
+
+            const int drawW =
+                static_cast<int>(imageW * scale);
+
+            const int drawH =
+                static_cast<int>(imageH * scale);
+
+            const int x =
+                rc.left + (areaW - drawW) / 2;
+
+            const int y =
+                rc.top + (areaH - drawH) / 2;
+
+            g.DrawImage(
+                s_attachmentBitmap,
+                x,
+                y,
+                drawW,
+                drawH);
 
             return TRUE;
         }
@@ -1804,17 +1919,256 @@ INT_PTR MemoEditDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
 
         case IDCANCEL:
             EndDialog(hDlg, IDCANCEL);
-            return TRUE;
+            break;
+
+        case IDC_BTN_VIEW:
+            {
+                const std::filesystem::path src = GetAttachmentPath(hDlg);
+
+                if (src.empty()) break;
+
+                ShellExecute(hDlg, L"open", src.c_str(), nullptr, nullptr, SW_SHOW);
+            }
+            break;
+
+        case IDC_BTN_SAVEAS:
+            {
+                const std::filesystem::path src = GetAttachmentPath(hDlg);
+
+                if (src.empty()) break;
+
+                if (!std::filesystem::exists(src))
+                {
+                    MessageBox(
+                        hDlg,
+                        L"Image file not found.",
+                        L"Flicksy",
+                        MB_OK | MB_ICONERROR);
+
+                    break;
+                }
+
+                if (!SaveAttachmentAs(hDlg, src))
+                {
+                    break;
+                }
+            }
+            break;
+
+        case IDC_BTN_DELETE:
+            {
+                const std::filesystem::path src =
+                    GetAttachmentPath(hDlg);
+
+                if (src.empty())
+                    break;
+
+                delete s_attachmentBitmap;
+                s_attachmentBitmap = nullptr;
+
+                try
+                {
+                    if (!std::filesystem::remove(src))
+                    {
+                        MessageBox(
+                            hDlg,
+                            L"Attachment file was not found.",
+                            L"Flicksy",
+                            MB_OK | MB_ICONWARNING);
+                        break;
+                    }
+
+                    auto* ctx =
+                        reinterpret_cast<MemoEditContext*>(
+                            GetWindowLongPtr(
+                                hDlg,
+                                GWLP_USERDATA));
+
+                    MemoItem memo =
+                        ctx->configContext->memoManager
+                        ->GetMemo(ctx->memoIndex);
+
+                    memo.attachments.clear();
+
+                    ctx->configContext->memoManager
+                        ->SetMemo(ctx->memoIndex, memo);
+
+                    ctx->configContext->memoManager->Save(
+                        ctx->configContext->config
+                        ->GetDataFolder());
+
+                    delete s_attachmentBitmap;
+                    s_attachmentBitmap = nullptr;
+
+                    InvalidateRect(
+                        GetDlgItem(hDlg, IDC_BTN_VIEW),
+                        nullptr,
+                        TRUE);
+
+                    EnableWindow(
+                        GetDlgItem(hDlg, IDC_BTN_VIEW),
+                        FALSE);
+
+                    EnableWindow(
+                        GetDlgItem(hDlg, IDC_BTN_SAVEAS),
+                        FALSE);
+
+                    EnableWindow(
+                        GetDlgItem(hDlg, IDC_BTN_DELETE),
+                        FALSE);
+                }
+                catch (const std::filesystem::filesystem_error&)
+                {
+                    MessageBox(
+                        hDlg,
+                        L"Failed to delete the attachment.",
+                        L"Flicksy",
+                        MB_OK | MB_ICONERROR);
+                }
+            }
+            break;
 
         default:
             return FALSE;
         }
         break;
 
+    case WM_DESTROY:
+        delete s_attachmentBitmap;
+        s_attachmentBitmap = nullptr;
+        break;
+
     default:
         return FALSE;
     }
     return TRUE;
+}
+
+std::filesystem::path GetAttachmentPath(HWND hDlg)
+{
+    auto* ctx =
+        reinterpret_cast<MemoEditContext*>(
+            GetWindowLongPtr(
+                hDlg,
+                GWLP_USERDATA));
+
+    if (!ctx || ctx->isNew)
+        return {};
+
+    const MemoItem& memo =
+        ctx->configContext->memoManager
+        ->GetMemo(ctx->memoIndex);
+
+    if (memo.attachments.empty())
+        return {};
+
+    return
+        ctx->configContext->config
+        ->GetResolvedDataFolder()
+        / memo.attachments[0];
+}
+
+Gdiplus::Bitmap* LoadBitmapFromFile(
+    const std::filesystem::path& path)
+{
+    Gdiplus::Bitmap* src =
+        Gdiplus::Bitmap::FromFile(
+            path.c_str(),
+            FALSE);
+
+    if (!src ||
+        src->GetLastStatus() != Gdiplus::Ok)
+    {
+        delete src;
+        return nullptr;
+    }
+
+    auto* bitmap =
+        src->Clone(
+            0,
+            0,
+            src->GetWidth(),
+            src->GetHeight(),
+            PixelFormat32bppPARGB);
+
+    delete src;
+
+    return bitmap;
+}
+
+static bool SaveAttachmentAs(
+    HWND hParent,
+    const std::filesystem::path& src)
+{
+    IFileSaveDialog* pDialog = nullptr;
+
+    HRESULT hr = CoCreateInstance(
+        CLSID_FileSaveDialog,
+        nullptr,
+        CLSCTX_INPROC_SERVER,
+        IID_PPV_ARGS(&pDialog));
+
+    if (FAILED(hr))
+        return false;
+
+    pDialog->SetFileName(
+        src.filename().c_str());
+
+    DWORD options = 0;
+
+    if (SUCCEEDED(pDialog->GetOptions(&options)))
+    {
+        pDialog->SetOptions(
+            options |
+            FOS_FORCEFILESYSTEM |
+            FOS_PATHMUSTEXIST |
+            FOS_OVERWRITEPROMPT);
+    }
+
+    hr = pDialog->Show(hParent);
+
+    if (SUCCEEDED(hr))
+    {
+        IShellItem* pItem = nullptr;
+
+        hr = pDialog->GetResult(&pItem);
+
+        if (SUCCEEDED(hr))
+        {
+            PWSTR pszPath = nullptr;
+
+            hr = pItem->GetDisplayName(
+                SIGDN_FILESYSPATH,
+                &pszPath);
+
+            if (SUCCEEDED(hr))
+            {
+                std::filesystem::path dst =
+                    pszPath;
+
+                CoTaskMemFree(pszPath);
+
+                try
+                {
+                    std::filesystem::copy_file(
+                        src,
+                        dst,
+                        std::filesystem::copy_options::
+                        overwrite_existing);
+                }
+                catch (...)
+                {
+                    hr = E_FAIL;
+                }
+            }
+
+            pItem->Release();
+        }
+    }
+
+    pDialog->Release();
+
+    return SUCCEEDED(hr);
 }
 
 INT_PTR SecurityDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
@@ -1892,8 +2246,13 @@ INT_PTR SecurityDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                 wchar_t buf[MAX_PATH] = {};
                 if (GetDlgItemText(hDlg, IDC_EDIT_PASS, buf, _countof(buf)) > 0) {
                     std::wstring password = buf;
-                    lpConfigContext->config->SetPassword(password);
-                    lpConfigContext->config->Save();
+                    if (!lpConfigContext->config->SetPassword(password) ||
+                        !lpConfigContext->config->Save())
+                    {
+                        MessageBox(hDlg, L"Password save faild.", L"Flicksy", MB_ICONSTOP);
+                        break;
+                    }
+
                     EnableWindow(GetDlgItem(hDlg, IDC_BTN_SETPASS), FALSE);
                     if (!IsWindowEnabled(GetDlgItem(hDlg, IDC_BTN_REMPASS))) {
                         EnableWindow(GetDlgItem(hDlg, IDC_BTN_REMPASS), TRUE);

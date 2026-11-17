@@ -173,7 +173,7 @@ static LRESULT OnHttpPopHotkey(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
-static bool CommitMemoReq(CMemoManager* pMemoManager, CFlicksyConfig* pConfig, MemoRequest&& request);
+static bool CommitMemoReq(HWND hWnd, CMemoManager* pMemoManager, CFlicksyConfig* pConfig, MemoRequest&& request);
 static LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnTrayIcon(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
@@ -1993,10 +1993,20 @@ LRESULT OnHttpPopAction(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
 		if (lpCFlicksyConfig) {
 
+			if (id >= lpCFlicksyConfig->GetActionSize())
+				return 0L;
+
+			const auto& action =
+				lpCFlicksyConfig->GetAction(id);
+
+			if (!action.enabled)
+				return 0L;
+
 			wstr = L"Execute Action : " + std::to_wstring(id);
 			AddLog(hWnd, LogType::Server, wstr);
 
-			ExecuteAction(lpCFlicksyConfig->GetAction(id));
+			ExecuteAction(action);
+
 		}
 	}
 
@@ -2078,14 +2088,14 @@ LRESULT OnHttpPopMemo(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				lpCMemoManager->AddMemo(memo);
 			}
 			*/
-			CommitMemoReq(lpCMemoManager, lpCFlicksyConfig, std::move(memor));
+			CommitMemoReq(hWnd, lpCMemoManager, lpCFlicksyConfig, std::move(memor));
 		}
 	}
 
 	return 0L;
 }
 
-bool CommitMemoReq(
+bool CommitMemoReq(HWND hWnd,
 	CMemoManager* pMemoManager,
 	CFlicksyConfig* pConfig,
 	MemoRequest&& request)
@@ -2117,11 +2127,16 @@ bool CommitMemoReq(
 				if (request.imageContentType == "image/jpeg") {
 					fileName = memo.id + L".jpg";
 				}
-				if (request.imageContentType == "image/png") {
+				else if (request.imageContentType == "image/png") {
 					fileName = memo.id + L".png";
 				}
-				if (request.imageContentType == "image/webp") {
+				else if (request.imageContentType == "image/webp") {
 					fileName = memo.id + L".webp";
+				}
+				else {
+					std::wstring wstr = L"Unrecognized image format. " + TextEncoding::Utf8ToWide(request.imageContentType);
+					AddLog(hWnd, LogType::Server, wstr);
+					return false;
 				}
 
 				std::filesystem::path filePath =
@@ -2250,7 +2265,7 @@ LRESULT OnClose(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			MemoRequest memor;
 			while (lpCSimpleHttpServer->PopMemo(memor))
 			{
-				CommitMemoReq(lpCMemoManager, lpCFlicksyConfig, std::move(memor));
+				CommitMemoReq(hWnd, lpCMemoManager, lpCFlicksyConfig, std::move(memor));
 			}
 		}
 
