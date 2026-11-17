@@ -19,6 +19,7 @@
 #define IDD_CONFIG_INFO                 114
 #define IDD_MEMO_EDIT                   116
 #define IDB_PNG8                        118
+#define IDD_PASSBOX                     119
 #define IDD_BTN_SYSTEM                  1001
 #define IDD_BTN_ACTION                  1002
 #define IDC_EDIT_WEBROOT                1003
@@ -52,6 +53,11 @@
 #define IDC_EDIT_MEMO_DATE              1024
 #define IDC_CUSTOM1                     1025
 #define IDC_CHK_USETOKEN                1026
+#define IDC_EDIT_PASS                   1027
+#define IDC_BTN_SETPASS                 1028
+#define IDC_BTN_REMPASS                 1029
+#define IDC_STATIC_WARN                 1030
+#define IDC_STATIC_WARN_TOKEN           1030
 #define ID_FILE_QUIT                    40001
 #define ID_FILE_STARTSERVER             40002
 #define ID_HTTP_START                   40003
@@ -71,9 +77,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        119
+#define _APS_NEXT_RESOURCE_VALUE        121
 #define _APS_NEXT_COMMAND_VALUE         40015
-#define _APS_NEXT_CONTROL_VALUE         1027
+#define _APS_NEXT_CONTROL_VALUE         1031
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

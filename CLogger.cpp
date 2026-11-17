@@ -37,7 +37,7 @@ void CLogger::Write(LogType type, const SYSTEMTIME& st, const std::wstring& text
         text +
         L"\r\n";
 
-    std::string utf8 = TextEncoding::Utf16ToUtf8(line);
+    std::string utf8 = TextEncoding::WideToUtf8(line);
 
     std::ofstream ofs(m_LogPath,
         std::ios::binary | std::ios::app);

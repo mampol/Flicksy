@@ -131,16 +131,16 @@ bool CMemoManager::Load(const std::wstring& dataFolder)
 
                 MemoItem memo;
 
-                memo.id = TextEncoding::Utf8ToUtf16(
+                memo.id = TextEncoding::Utf8ToWide(
                     (*item)["id"].value_or<std::string>(""));
 
-                memo.text = TextEncoding::Utf8ToUtf16(
+                memo.text = TextEncoding::Utf8ToWide(
                     (*item)["text"].value_or<std::string>(""));
 
-                memo.created = TextEncoding::Utf8ToUtf16(
+                memo.created = TextEncoding::Utf8ToWide(
                     (*item)["created"].value_or<std::string>(""));
 
-                memo.updated = TextEncoding::Utf8ToUtf16(
+                memo.updated = TextEncoding::Utf8ToWide(
                     (*item)["updated"].value_or<std::string>(""));
 
                 if (auto* attachments =
@@ -152,7 +152,7 @@ bool CMemoManager::Load(const std::wstring& dataFolder)
                             attachment.value<std::string>())
                         {
                             memo.attachments.push_back(
-                                TextEncoding::Utf8ToUtf16(*value));
+                                TextEncoding::Utf8ToWide(*value));
                         }
                     }
                 }
@@ -193,19 +193,19 @@ bool CMemoManager::Save(
 
             item.insert(
                 "id",
-                TextEncoding::Utf16ToUtf8(memo.id));
+                TextEncoding::WideToUtf8(memo.id));
 
             item.insert(
                 "text",
-                TextEncoding::Utf16ToUtf8(memo.text));
+                TextEncoding::WideToUtf8(memo.text));
 
             item.insert(
                 "created",
-                TextEncoding::Utf16ToUtf8(memo.created));
+                TextEncoding::WideToUtf8(memo.created));
 
             item.insert(
                 "updated",
-                TextEncoding::Utf16ToUtf8(memo.updated));
+                TextEncoding::WideToUtf8(memo.updated));
 
             toml::array attachments;
 
@@ -213,7 +213,7 @@ bool CMemoManager::Save(
                 memo.attachments)
             {
                 attachments.push_back(
-                    TextEncoding::Utf16ToUtf8(attachment));
+                    TextEncoding::WideToUtf8(attachment));
             }
 
             item.insert(

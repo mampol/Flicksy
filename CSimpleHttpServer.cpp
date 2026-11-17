@@ -307,8 +307,8 @@ CSimpleHttpServer::CSimpleHttpServer()
 
                 j.push_back({
                     { "id", i },
-                    { "name", TextEncoding::Utf16ToUtf8(action.name) },
-                    { "type", TextEncoding::Utf16ToUtf8(CFlicksyConfig::ActionTypeToString(action.type)) }
+                    { "name", TextEncoding::WideToUtf8(action.name) },
+                    { "type", TextEncoding::WideToUtf8(CFlicksyConfig::ActionTypeToString(action.type)) }
                     });
             }
 
@@ -418,11 +418,11 @@ CSimpleHttpServer::CSimpleHttpServer()
 
             MemoRequest memo;
             memo.text =
-                TextEncoding::Utf8ToUtf16(textUtf8);
+                TextEncoding::Utf8ToWide(textUtf8);
             memo.imageData =
                 std::move(imageData);
             memo.imageFileName =
-                TextEncoding::Utf8ToUtf16(imageFileName);
+                TextEncoding::Utf8ToWide(imageFileName);
             memo.imageContentType =
                 imageContentType;
 

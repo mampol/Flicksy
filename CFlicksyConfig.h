@@ -6,6 +6,7 @@
 
 #define REG_STARTUP				_T("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
 #define REG_VALUE				_T("Flicksy")
+#define MAX_PASSWORD_CHAR       20
 
 bool SetRunAtStartup(bool enabled);
 bool IsRunAtStartup();
@@ -102,6 +103,11 @@ public:
     bool StartMinimized() const { return m_startMinimized; }
     void SetStartMinimized(bool value) { m_startMinimized = value; }
 
+    bool SetPassword(const std::wstring& password);
+    bool VerifyPassword(const std::wstring& password) const;
+    bool HasPassword() const;
+    void RemovePassword();
+
     bool UseToken() const { return m_useToken; }
     void SetUseToken(bool value) { m_useToken  = value; }
 
@@ -109,14 +115,19 @@ public:
     void SetTheme(Theme theme) { m_theme = theme; }
 
 private:
+    /*
     static std::string WideToUtf8(const std::wstring& text);
     static std::wstring Utf8ToWide(const std::string& text);
-
+    */
     static const char* ThemeToString(Theme theme);
     static Theme StringToTheme(const std::string& value);
 
     static const char* InputModeToString(InputMode mode);
     static InputMode StringToInputMode(const std::string& value);
+
+    bool MakePasswordHash(const std::wstring& password,
+        const std::vector<unsigned char>& salt,
+        std::vector<unsigned char>& hash) const;
 
 private:
     std::wstring m_FlicksyConfig;
@@ -138,6 +149,8 @@ private:
     bool         m_alwaysOnTop;
     bool         m_startMinimized;
 
+    std::wstring m_passwordSalt;
+    std::wstring m_passwordHash;
     bool         m_useToken;
 
     Theme        m_theme;

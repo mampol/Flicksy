@@ -84,9 +84,9 @@ struct QrBitmapCache
 static QrBitmapCache gQRcache;
 bool MakeQrBitmap(const std::string& text, int size, QrBitmapCache& cache);
 /*
-std::wstring Utf8ToUtf16(const std::string& src);
-std::wstring SjisToUtf16(const std::string& s);
-std::string Utf16ToUtf8(const std::wstring& s);
+std::wstring Utf8ToWide(const std::string& src);
+std::wstring SJisToWide(const std::string& s);
+std::string WideToUtf8(const std::wstring& s);
 std::string SjisToUtf8(const std::string& s);
 */
 /*
@@ -181,7 +181,7 @@ static LRESULT OnDestroy(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp);
 
 static void ApplyTheme(HWND hWnd);
 /*
-std::wstring Utf8ToUtf16(const std::string& src)
+std::wstring Utf8ToWide(const std::string& src)
 {
 	if (src.empty()) return L"";
 
@@ -208,7 +208,7 @@ std::wstring Utf8ToUtf16(const std::string& src)
 	return dst;
 }
 
-std::wstring SjisToUtf16(const std::string& s)
+std::wstring SJisToWide(const std::string& s)
 {
 	if (s.empty()) return L"";
 
@@ -233,7 +233,7 @@ std::wstring SjisToUtf16(const std::string& s)
 	return dst;
 }
 
-std::string Utf16ToUtf8(const std::wstring& s)
+std::string WideToUtf8(const std::wstring& s)
 {
 	if (s.empty()) return "";
 
@@ -264,8 +264,8 @@ std::string Utf16ToUtf8(const std::wstring& s)
 
 std::string SjisToUtf8(const std::string& s)
 {
-	std::wstring utf16 = SjisToUtf16(s);
-	std::string utf8 = Utf16ToUtf8(utf16);
+	std::wstring utf16 = SJisToWide(s);
+	std::string utf8 = WideToUtf8(utf16);
 	return utf8;
 }
 */
@@ -699,7 +699,7 @@ void DrawQrPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 			std::string ip = GetLocalIPv4();
 			std::string port = std::to_string(lpCSimpleHttpServer->GetPort());
 			gstrLinkURL = "http://" + ip + ":" + port + "/?token=" + lpCSimpleHttpServer->GetToken();
-			gwstrShowURL = Utf8ToUtf16(ip) + L":" + Utf8ToUtf16(port);
+			gwstrShowURL = Utf8ToWide(ip) + L":" + Utf8ToWide(port);
 			*/
 			/*
 			DrawQrCodeBox(hdc, gstrLinkURL, 588, 134, 110);
@@ -1806,7 +1806,7 @@ LRESULT OnHttpPopMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	std::string strPop;
 	std::wstring wstr;
 	if (lpCSimpleHttpServer->PopMessage(strPop)) {
-		std::wstring strPopW = TextEncoding::Utf8ToUtf16(strPop);
+		std::wstring strPopW = TextEncoding::Utf8ToWide(strPop);
 		if (SendMessage(GetDlgItem(hWnd, IDC_RADIO_SENDINPUT), BM_GETCHECK, 0, 0) == BST_CHECKED) {
 			inputsender.SendUnicodeText(strPopW);
 			wstr = L"Send : " + strPopW + L" (SendInput)";
@@ -1895,7 +1895,7 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				std::string ip = GetLocalIPv4();
 				std::string port = std::to_string(pServer->GetPort());
 				gstrLinkURL = "http://" + ip + ":" + port + "/?token=" + pServer->GetToken();
-				gwstrShowURL = TextEncoding::Utf8ToUtf16(ip) + L":" + TextEncoding::Utf8ToUtf16(port);
+				gwstrShowURL = TextEncoding::Utf8ToWide(ip) + L":" + TextEncoding::Utf8ToWide(port);
 
 				if (lpCTrayIcon) {
 					std::wstring wstrTip = L"Flicksy\nRunning\n" + gwstrShowURL;
@@ -1964,7 +1964,7 @@ LRESULT OnHttpState(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				std::wstring wstrTip = L"Flicksy\nHTTP Server Error";
 				lpCTrayIcon->SetToolTip(wstrTip);
 				if (!IsWindowVisible(hWnd)) {
-					lpCTrayIcon->ShowBalloon(L"Server Error.", TextEncoding::Utf8ToUtf16(pServer->GetLastError()), NIIF_ERROR);
+					lpCTrayIcon->ShowBalloon(L"Server Error.", TextEncoding::Utf8ToWide(pServer->GetLastError()), NIIF_ERROR);
 				}
 			}
 			break;
@@ -2152,9 +2152,9 @@ bool CommitMemoReq(
 			{
 				return false;
 			}
-
-			pMemoManager->AddMemo(memo);
 		}
+
+		pMemoManager->AddMemo(memo);
 	}
 	return true;
 }
@@ -2165,7 +2165,7 @@ LRESULT OnHttpLog(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	if (pServer) {
 		std::string str;
 		pServer->PopLog(str);
-		std::wstring wstr = TextEncoding::Utf8ToUtf16(str);
+		std::wstring wstr = TextEncoding::Utf8ToWide(str);
 		AddLog(hWnd, LogType::Info, wstr);
 	}
 

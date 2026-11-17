@@ -38,6 +38,8 @@ static bool SelectFile(HWND hParent, std::wstring& file);
 static bool SelectFolder(HWND hParent, std::wstring& folder);
 static bool SetInitialFolder(IFileOpenDialog* pDialog, const std::wstring& folderPath);
 
+static INT_PTR CALLBACK PasswordDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+
 static INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
 static LRESULT OnPaintConfigDlg(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp, CAppColorTheme& appTheme);
 static void LayoutControls(HWND hParent, HWND hDlg);
@@ -209,18 +211,85 @@ bool SetInitialFolder(IFileOpenDialog* pDialog, const std::wstring& folderPath)
     return SUCCEEDED(hr);
 }
 
+INT_PTR PasswordDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
+{
+    static ConfigContext* lpConfigContext = nullptr;
+
+    switch (msg)
+    {
+    case WM_INITDIALOG:
+        {
+            lpConfigContext =
+                reinterpret_cast<ConfigContext*>(lp);
+            if (!lpConfigContext ||
+                !lpConfigContext->config ||
+                !lpConfigContext->memoManager ||
+                !lpConfigContext->appColorTheme)
+            {
+                return FALSE;
+            }
+
+            SendDlgItemMessage(hDlg, IDC_EDIT_PASS, EM_LIMITTEXT, static_cast<WPARAM>(MAX_PASSWORD_CHAR), 0);
+        }
+        break;
+
+    case WM_COMMAND:
+        switch (LOWORD(wp)){
+        case IDOK:
+            {
+                wchar_t szpass[MAX_PASSWORD_CHAR + 1]{};
+                GetDlgItemText(
+                    hDlg,
+                    IDC_EDIT_PASS,
+                    szpass,
+                    _countof(szpass));
+                std::wstring wstrpass = szpass;
+                if (!lpConfigContext->config->VerifyPassword(wstrpass)) {
+                    MessageBox(hDlg, L"Incorrect password.", L"Flicksy", MB_ICONSTOP);
+                    break;
+                }
+                EndDialog(hDlg, IDOK);
+            }
+            break;
+        case IDCANCEL:
+            EndDialog(hDlg, IDCANCEL);
+            break;
+        }
+        break;
+
+    default:
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 void ShowConfigDlg(HWND hParent, ConfigContext* lpConfigContext)
 {
     HINSTANCE hInst =
         reinterpret_cast<HINSTANCE>(
             GetWindowLongPtr(hParent, GWLP_HINSTANCE));
 
+    japanese =
+        PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_JAPANESE;
+
+    if (lpConfigContext->config->HasPassword())
+    {
+        INT_PTR ret = DialogBoxParam(
+            hInst,
+            MAKEINTRESOURCE(IDD_PASSBOX),
+            hParent,
+            PasswordDlgProc,
+            reinterpret_cast<LPARAM>(lpConfigContext));
+
+        if (ret != IDOK)
+            return;
+    }
+
     CPngResource png;
     gBmpBanner = png.LoadPngBitmap(hInst, IDB_PNG1);
     gBmpIcon = png.LoadPngBitmap(hInst, IDB_PNG8);
 
-    bool japanese =
-        PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_JAPANESE;
     const wchar_t* fontName =
         japanese
         ? L"Noto Sans JP"
@@ -793,7 +862,7 @@ INT_PTR ActionDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
             HPEN hPen = CreatePen(PS_SOLID, 1, RGB(187, 206, 204));
             HPEN hOldPen = static_cast<HPEN>(SelectObject(dis->hDC, hPen));
             MoveToEx(dis->hDC, DpiScale(hDlg, 12), dis->rcItem.bottom - 1, NULL);
-            LineTo(dis->hDC, DpiScale(hDlg, dis->rcItem.right - 12), dis->rcItem.bottom - 1);
+            LineTo(dis->hDC, dis->rcItem.right - DpiScale(hDlg, 12), dis->rcItem.bottom - 1);
             SelectObject(dis->hDC, hOldPen);
             DeleteObject(hPen);
 
@@ -1765,10 +1834,27 @@ INT_PTR SecurityDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
                 return FALSE;
             }
 
+            if (lpConfigContext->config->HasPassword()) {
+                SetDlgItemText(hDlg, IDC_EDIT_PASS, L"*******");
+                EnableWindow(GetDlgItem(hDlg, IDC_BTN_REMPASS), TRUE);
+            }
+            else {
+                SetDlgItemText(hDlg, IDC_EDIT_PASS, L"");
+                EnableWindow(GetDlgItem(hDlg, IDC_BTN_REMPASS), FALSE);
+            }
+            EnableWindow(GetDlgItem(hDlg, IDC_BTN_SETPASS), FALSE);
+
             if (lpConfigContext->config->UseToken()) {
                 SendDlgItemMessage(hDlg, IDC_CHK_USETOKEN, BM_SETCHECK, static_cast<WPARAM>(BST_CHECKED), 0);
             }
 
+            if (japanese) {
+                SetDlgItemText(hDlg, IDC_STATIC_WARN_TOKEN,
+                    L"認証トークンを無効にすると、同一ネットワーク上の他の端末からFlicksyへアクセスできる可能性があります。\n"
+                    L"信頼できるネットワークでのみ使用してください。");
+            }
+
+            SendDlgItemMessage(hDlg, IDC_EDIT_PASS, EM_LIMITTEXT, static_cast<WPARAM>(MAX_PASSWORD_CHAR), 0);
             SendDlgItemMessage(hDlg, IDC_CHK_USETOKEN, TSM_SETBGCOLOR, 0, static_cast<LPARAM>(lpConfigContext->appColorTheme->Colors().panelBg[1]));
 
             return TRUE;
@@ -1781,6 +1867,45 @@ INT_PTR SecurityDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_COMMAND:
         switch (LOWORD(wp)) {
+        case IDC_EDIT_PASS:
+            if (HIWORD(wp) == EN_SETFOCUS) {
+                SetDlgItemText(hDlg, IDC_EDIT_PASS, L"");
+            }
+            else if (HIWORD(wp) == EN_CHANGE) {
+                wchar_t buf[MAX_PATH] = {};
+                if (GetDlgItemText(hDlg, IDC_EDIT_PASS, buf, _countof(buf)) > 0) {
+                    if (!IsWindowEnabled(GetDlgItem(hDlg, IDC_BTN_SETPASS))) {
+                        EnableWindow(GetDlgItem(hDlg, IDC_BTN_SETPASS), TRUE);
+                    }
+                }
+                else {
+                    if (IsWindowEnabled(GetDlgItem(hDlg, IDC_BTN_SETPASS))) {
+                        EnableWindow(GetDlgItem(hDlg, IDC_BTN_SETPASS), FALSE);
+                    }
+                }
+            }
+
+            break;
+
+        case IDC_BTN_SETPASS:
+            {
+                wchar_t buf[MAX_PATH] = {};
+                if (GetDlgItemText(hDlg, IDC_EDIT_PASS, buf, _countof(buf)) > 0) {
+                    std::wstring password = buf;
+                    lpConfigContext->config->SetPassword(password);
+                    lpConfigContext->config->Save();
+                    EnableWindow(GetDlgItem(hDlg, IDC_BTN_SETPASS), FALSE);
+                    if (!IsWindowEnabled(GetDlgItem(hDlg, IDC_BTN_REMPASS))) {
+                        EnableWindow(GetDlgItem(hDlg, IDC_BTN_REMPASS), TRUE);
+                    }
+                }
+            }
+            break;
+        case IDC_BTN_REMPASS:
+            lpConfigContext->config->RemovePassword();
+            lpConfigContext->config->Save();
+            SetDlgItemText(hDlg, IDC_EDIT_PASS, L"");
+            break;
         case IDC_CHK_USETOKEN:
             if (HIWORD(wp) == BN_CLICKED)
             {
