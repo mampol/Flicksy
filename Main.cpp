@@ -656,6 +656,13 @@ void DrawServerPanel(HWND hWnd, HDC hdc, const CAppColorTheme& theme)
 	SetTextColor(hdc, colState);
 	DrawTextLine(hWnd, hdc, 106, 138, wstrState);
 
+	CFlicksyConfig* lpCFlicksyConfig = (CFlicksyConfig*)GetProp(hWnd, CFLICKSYCONFIG);
+	if (lpCFlicksyConfig) {
+		SetTextColor(hdc, (theme.Colors()).subText);
+		DrawTextLine(hWnd, hdc, 106, 167, std::to_wstring(lpCFlicksyConfig->ServerPort()));
+		DrawTextLine(hWnd, hdc, 106, 198, lpCFlicksyConfig->WebRoot());
+	}
+
 	SelectObject(hdc, hOldFont);
 	SetTextColor(hdc, oldtextcolor);
 	SetBkColor(hdc, oldbkcolor);
@@ -1201,7 +1208,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		DEFAULT_PITCH | FF_DONTCARE,
 		_T("Segoe UI"));
 	ReleaseDC(hWnd, hdc);
-
+	/*
 	HWND hEditPort = CreateWindowEx(
 		WS_EX_CLIENTEDGE,
 		_T("EDIT"),
@@ -1217,7 +1224,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		nullptr);
 	SendMessage(hEditPort, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
 	SendMessage(hEditPort, EM_LIMITTEXT, (WPARAM)5, 0L);
-
+	*/
 	/*
 	HWND hSpinPort = CreateWindowEx(0,
 		UPDOWN_CLASS,
@@ -1231,7 +1238,6 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 	SendMessage(hSpinPort, UDM_SETBUDDY, (WPARAM)hEditPort, 0);
 	SendMessage(hSpinPort, UDM_SETRANGE32, 1, 65535);
 	SendMessage(hSpinPort, UDM_SETPOS32, 0, 10000);
-	*/
 
 	int port = lpCFlicksyConfig->ServerPort();
 	SetDlgItemInt(hWnd, IDC_EDIT_PORT, port, FALSE);
@@ -1251,7 +1257,7 @@ LRESULT OnCreateWindow(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		nullptr);
 	SendMessage(hEdiRoot, WM_SETFONT, (WPARAM)ghFont, (LPARAM)TRUE);
 	SendMessage(hEdiRoot, EM_LIMITTEXT, (WPARAM)MAX_PATH, 0L);
-
+	*/
 	HWND hBtnStart = CreateWindowEx(0,
 		_T("BUTTON"),
 		_T("START"),
@@ -1407,6 +1413,7 @@ LRESULT OnPaint(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 
 LRESULT OnDpiChanged(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
+	/*
 	MoveWindow(GetDlgItem(hWnd, IDC_EDIT_PORT),
 		DpiScale(hWnd, 105),
 		DpiScale(hWnd, 165),
@@ -1420,7 +1427,7 @@ LRESULT OnDpiChanged(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		DpiScale(hWnd, 136),
 		DpiScale(hWnd, 26),
 		FALSE);
-
+	*/
 	MoveWindow(GetDlgItem(hWnd, ID_HTTP_START),
 		DpiScale(hWnd, 32),
 		DpiScale(hWnd, 238),
@@ -1712,6 +1719,7 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 				MessageBox(hWnd, _T("Flicksy config not found"), APP_CLASS, MB_OK | MB_ICONWARNING);
 				break;
 			}
+			/*
 			int port = GetDlgItemInt(hWnd, IDC_EDIT_PORT, nullptr, FALSE);
 			if (port <= 0 || port > 65535)
 			{
@@ -1722,10 +1730,11 @@ LRESULT OnCommand(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 			if (GetDlgItemText(hWnd, IDC_EDIT_WEBROOT, szRoot, _countof(szRoot)) < 1) {
 				_tcscpy_s(szRoot, _countof(szRoot), _T("./web"));
 			}
+			*/
 			lpCSimpleHttpServer =
 				(CSimpleHttpServer*)GetProp(hWnd, CSIMPLEHTTPSERVER);
 			if (lpCSimpleHttpServer) {
-				lpCSimpleHttpServer->Start(hWnd, port, szRoot, lpCFlicksyConfig->UseToken());
+				lpCSimpleHttpServer->Start(hWnd, lpCFlicksyConfig->ServerPort(), lpCFlicksyConfig->WebRoot(), lpCFlicksyConfig->UseToken());
 			}
 		}
 		break;
