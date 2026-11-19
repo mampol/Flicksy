@@ -1110,7 +1110,6 @@ if (memoSendButton)
             if (!response.ok)
                 throw new Error(`HTTP ${response.status}`);
 
-            // 送信成功時だけ入力内容をクリア
             memoBody.value = '';
 
             if (memoImageInput)

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-# Flicksy v0.6.0.0
+# Flicksy v0.6.1.0
 
 ### Control your Windows PC from a smartphone browser over your local network / Wi-Fi.
 

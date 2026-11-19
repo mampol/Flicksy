@@ -2,7 +2,7 @@
 
 <div align="center">
 
-# Flicksy v0.6.0.0
+# Flicksy v0.6.1.0
 
 ### スマートフォンのブラウザから、ローカルネットワーク / Wi-Fi 経由でWindows PCを操作できます。
 
