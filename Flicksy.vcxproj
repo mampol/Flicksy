@@ -18,6 +18,62 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CFlicksyConfig.cpp" />
+    <ClCompile Include="src\CInputSender.cpp" />
+    <ClCompile Include="src\CLogger.cpp" />
+    <ClCompile Include="src\CMemoManager.cpp" />
+    <ClCompile Include="src\ConfigDlg.cpp" />
+    <ClCompile Include="src\CPngResource.cpp" />
+    <ClCompile Include="src\CPopupLayerWnd.cpp" />
+    <ClCompile Include="src\CScreenshot.cpp" />
+    <ClCompile Include="src\CSimpleHttpServer.cpp" />
+    <ClCompile Include="src\CToggleSwitch.cpp" />
+    <ClCompile Include="src\CTrayIcon.cpp" />
+    <ClCompile Include="src\GetFileVersion.cpp" />
+    <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\qrcodegen.cpp" />
+    <ClCompile Include="src\TextEncoding.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="res\resource.h" />
+    <ClInclude Include="src\CAppColorTheme.h" />
+    <ClInclude Include="src\CFlicksyConfig.h" />
+    <ClInclude Include="src\CInputSender.h" />
+    <ClInclude Include="src\CLogger.h" />
+    <ClInclude Include="src\CMemoManager.h" />
+    <ClInclude Include="src\ConfigDlg.h" />
+    <ClInclude Include="src\CPngResource.h" />
+    <ClInclude Include="src\CPopupLayerWnd.h" />
+    <ClInclude Include="src\CScreenshot.h" />
+    <ClInclude Include="src\CSimpleHttpServer.h" />
+    <ClInclude Include="src\CToggleSwitch.h" />
+    <ClInclude Include="src\CTrayIcon.h" />
+    <ClInclude Include="src\DpiAware.h" />
+    <ClInclude Include="src\GetFileVersion.h" />
+    <ClInclude Include="src\json.hpp" />
+    <ClInclude Include="src\qrcodegen.hpp" />
+    <ClInclude Include="src\TextEncoding.h" />
+    <ClInclude Include="src\Win32VisualStyle.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\Flicksy.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\001.ico" />
+    <Image Include="res\001.png" />
+    <Image Include="res\002.png" />
+    <Image Include="res\003.png" />
+    <Image Include="res\004.png" />
+    <Image Include="res\005.png" />
+    <Image Include="res\006.png" />
+    <Image Include="res\007.png" />
+    <Image Include="res\008.png" />
+    <Image Include="res\banner.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\flicksy.html" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -112,10 +168,14 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <PreprocessToFile>false</PreprocessToFile>
       <ShowIncludes>false</ShowIncludes>
+      <AdditionalIncludeDirectories>$(ProjectDir)res</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -128,65 +188,15 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(ProjectDir)res</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
     <Manifest>
-      <EnableDpiAwareness>true</EnableDpiAwareness>
+      <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="CFlicksyConfig.cpp" />
-    <ClCompile Include="CPngResource.cpp" />
-    <ClCompile Include="CInputSender.cpp" />
-    <ClCompile Include="CMemoManager.cpp" />
-    <ClCompile Include="ConfigDlg.cpp" />
-    <ClCompile Include="CPopupLayerWnd.cpp" />
-    <ClCompile Include="CScreenshot.cpp" />
-    <ClCompile Include="CSimpleHttpServer.cpp" />
-    <ClCompile Include="CToggleSwitch.cpp" />
-    <ClCompile Include="CTrayIcon.cpp" />
-    <ClCompile Include="CLogger.cpp" />
-    <ClCompile Include="GetFileVersion.cpp" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="qrcodegen.cpp" />
-    <ClCompile Include="TextEncoding.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CFlicksyConfig.h" />
-    <ClInclude Include="CPngResource.h" />
-    <ClInclude Include="CAppColorTheme.h" />
-    <ClInclude Include="CInputSender.h" />
-    <ClInclude Include="CMemoManager.h" />
-    <ClInclude Include="ConfigDlg.h" />
-    <ClInclude Include="CPopupLayerWnd.h" />
-    <ClInclude Include="CScreenshot.h" />
-    <ClInclude Include="CSimpleHttpServer.h" />
-    <ClInclude Include="CToggleSwitch.h" />
-    <ClInclude Include="CTrayIcon.h" />
-    <ClInclude Include="CLogger.h" />
-    <ClInclude Include="DpiAware.h" />
-    <ClInclude Include="GetFileVersion.h" />
-    <ClInclude Include="qrcodegen.hpp" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="TextEncoding.h" />
-    <ClInclude Include="Win32VisualStyle.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Flicksy.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="001.ico" />
-    <Image Include="001.png" />
-    <Image Include="002.png" />
-    <Image Include="003.png" />
-    <Image Include="004.png" />
-    <Image Include="005.png" />
-    <Image Include="006.png" />
-    <Image Include="007.png" />
-    <Image Include="008.png" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -43,17 +43,18 @@ button { touch-action: manipulation; }
 .app-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     padding: 8px 4px 14px;
 }
 #banner {
     width: 128px;
-    max-width: 38vw;
+    max-width: 30vw;
     height: auto;
     display: block;
 }
 .connection-pill {
     margin-left: auto;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 7px;
@@ -64,7 +65,20 @@ button { touch-action: manipulation; }
     font-size: 12px;
     font-weight: 700;
 }
-.connection-dot { width: 8px; height: 8px; border-radius: 50%; background: #35b66b; }
+.connection-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: #35b66b; }
+
+#host { overflow-wrap: anywhere; }
+.language-button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 800;
+}
 
 .app-page { display: none; }
 .app-page.active { display: block; }
@@ -240,6 +254,21 @@ button { touch-action: manipulation; }
     box-shadow: 0 5px 14px rgba(38,140,255,.20);
 }
 
+.action-confirm-dialog {
+    width: min(calc(100% - 32px), 360px);
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--text);
+    box-shadow: var(--shadow);
+}
+.action-confirm-dialog::backdrop { background: rgba(16, 24, 39, .55); }
+#actionConfirmMessage { margin: 0 0 16px; overflow-wrap: anywhere; }
+.action-confirm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.action-confirm-buttons button { min-height: 44px; }
+.action-confirm-buttons .soft-button { background: #edf2f8; color: var(--navy); }
+
 .screenshot-overlay {
     position: fixed; inset:0; z-index:1000; display:none; flex-direction:column;
     background:var(--bg); color:var(--text);
@@ -295,21 +324,22 @@ button { touch-action: manipulation; }
             <span class="connection-dot"></span>
             <span id="host"></span>
         </div>
+        <button id="languageButton" class="language-button" type="button" lang="en" aria-label="英語に切り替え">EN</button>
     </header>
 
     <section class="app-page active" data-page-panel="input">
-        <h1 class="page-title">Input</h1>
-        <p class="page-subtitle">PCへ文字・キー操作を送信します。</p>
+        <h1 class="page-title" data-i18n="input">入力</h1>
+        <p class="page-subtitle" data-i18n="inputDescription">PCへ文字・キー操作を送信します。</p>
 
         <div class="card">
             <div class="screenshot-preview-row">
                 <div id="screenshotPreview" class="screenshot-preview">
-                    <div id="screenshotPreviewStatus">Loading screenshot...</div>
-                    <img id="screenshotPreviewImage" alt="Screenshot preview" hidden>
+                    <div id="screenshotPreviewStatus" data-i18n="screenshotLoading">スクリーンショットを読み込み中…</div>
+                    <img id="screenshotPreviewImage" alt="スクリーンショットのプレビュー" data-i18n-alt="screenshotPreview" hidden>
                 </div>
             </div>
 
-            <input id="text" class="text-input" type="text" enterkeyhint="send" autocomplete="off" placeholder="文字を入力してEnter">
+            <input id="text" class="text-input" type="text" enterkeyhint="send" autocomplete="off" placeholder="文字を入力してEnter" data-i18n-placeholder="inputPlaceholder">
 
             <div class="key-grid two">
                 <button class="key-button strong" data-hotkey="alt-tab" tabindex="-1">ALT+TAB</button>
@@ -330,58 +360,68 @@ button { touch-action: manipulation; }
     </section>
 
     <section class="app-page" data-page-panel="action">
-        <h1 class="page-title">Action</h1>
-        <p class="page-subtitle">設定されているアクションの一覧。</p>
+        <h1 class="page-title" data-i18n="action">アクション</h1>
+        <p class="page-subtitle" data-i18n="actionDescription">設定されているアクションの一覧。</p>
 
         <div id="actionList" class="action-list">
-            <div class="card" id="actionStatus">Action一覧を読み込み中...</div>
+            <div class="card" id="actionStatus" data-i18n="actionsLoading">アクション一覧を読み込み中…</div>
         </div>
     </section>
 
     <section class="app-page" data-page-panel="memo">
-        <h1 class="page-title">Memo</h1>
-        <p class="page-subtitle">メモをPCへ送信して保存します。</p>
+        <h1 class="page-title" data-i18n="memo">メモ</h1>
+        <p class="page-subtitle" data-i18n="memoDescription">メモをPCへ送信して保存します。</p>
 
         <div class="card">
             <div class="memo-field">
-                <label class="memo-label" for="memoBody">Memo</label>
-                <textarea id="memoBody" class="memo-textarea" placeholder="メモを入力"></textarea>
+                <label class="memo-label" for="memoBody" data-i18n="memo">メモ</label>
+                <textarea id="memoBody" class="memo-textarea" placeholder="メモを入力" data-i18n-placeholder="memoPlaceholder"></textarea>
             </div>
 
             <div class="memo-field">
-                <span class="memo-label">Attachment</span>
+                <span class="memo-label" data-i18n="attachment">添付ファイル</span>
                 <div class="file-picker">
-                    <label class="file-button" for="memoImage">写真を撮る / 選ぶ</label>
-                    <span id="memoImageName">写真は選択されていません</span>
+                    <label class="file-button" for="memoImage" data-i18n="choosePhoto">写真を撮る / 選ぶ</label>
+                    <span id="memoImageName" data-i18n="noPhoto">写真は選択されていません</span>
                     <input
                         id="memoImage"
                         type="file"
                         accept="image/*"
                         capture="environment">
                 </div>
-                <img id="memoPreview" alt="Memo preview" hidden>
+                <img id="memoPreview" alt="添付写真のプレビュー" data-i18n-alt="memoPreview" hidden>
             </div>
 
-            <button id="memoSendButton" class="memo-send" type="button">メモを送信</button>
+            <button id="memoSendButton" class="memo-send" type="button" data-i18n="sendMemo">メモを送信</button>
             <div id="memoSendStatus" class="memo-send-status" aria-live="polite"></div>
         </div>
     </section>
 </div>
 
-<nav class="bottom-nav" aria-label="Flicksy navigation">
-    <button class="nav-button active" data-page="input" type="button"><span class="nav-icon">⌨</span><span>Input</span></button>
-    <button class="nav-button" data-page="action" type="button"><span class="nav-icon">☷</span><span>Action</span></button>
-    <button class="nav-button" data-page="memo" type="button"><span class="nav-icon">▤</span><span>Memo</span></button>
+<nav class="bottom-nav" aria-label="Flicksyのナビゲーション" data-i18n-aria-label="navigation">
+    <button class="nav-button active" data-page="input" type="button"><span class="nav-icon">⌨</span><span data-i18n="input">入力</span></button>
+    <button class="nav-button" data-page="action" type="button"><span class="nav-icon">☷</span><span data-i18n="action">アクション</span></button>
+    <button class="nav-button" data-page="memo" type="button"><span class="nav-icon">▤</span><span data-i18n="memo">メモ</span></button>
 </nav>
+
+<dialog id="actionConfirmDialog" class="action-confirm-dialog" aria-labelledby="actionConfirmMessage">
+    <form id="actionConfirmForm" method="dialog">
+        <p id="actionConfirmMessage"></p>
+        <div class="action-confirm-buttons">
+            <button class="soft-button" type="submit" value="no" data-i18n="confirmNo" autofocus>いいえ</button>
+            <button class="primary-button" type="submit" value="yes" data-i18n="confirmYes">はい</button>
+        </div>
+    </form>
+</dialog>
 
 <div id="screenshotOverlay" class="screenshot-overlay">
     <div class="screenshot-toolbar">
-        <button id="screenshotCloseButton" type="button">CLOSE</button>
-        <button id="screenshotRefreshButton" type="button">REFRESH</button>
+        <button id="screenshotCloseButton" type="button" data-i18n="close">閉じる</button>
+        <button id="screenshotRefreshButton" type="button" data-i18n="refresh">更新</button>
     </div>
     <div class="screenshot-view">
-        <div id="screenshotStatus">Loading screenshot...</div>
-        <img id="screenshotImage" alt="Screenshot" hidden>
+        <div id="screenshotStatus" data-i18n="screenshotLoading">スクリーンショットを読み込み中…</div>
+        <img id="screenshotImage" alt="スクリーンショット" data-i18n-alt="screenshot" hidden>
     </div>
     <div class="screenshot-controls">
         <button id="screenshotAltTabButton" type="button">ALT+TAB</button>
@@ -397,6 +437,151 @@ button { touch-action: manipulation; }
 </div>
 
 <script>
+
+const translations = {
+    ja: {
+        input: "入力",
+        inputDescription: "PCへ文字・キー操作を送信します。",
+        inputPlaceholder: "文字を入力してEnter",
+        action: "アクション",
+        actionDescription: "設定されているアクションの一覧。",
+        actionsLoading: "アクション一覧を読み込み中…",
+        actionsEmpty: "登録されているアクションはありません。",
+        actionsFailed: "アクション一覧を取得できませんでした。",
+        actionName: "アクション {id}",
+        actionNumber: "アクション No. {id}",
+        actionConfirm: "「{name}」を実行しますか？",
+        confirmNo: "いいえ",
+        confirmYes: "はい",
+        memo: "メモ",
+        memoDescription: "メモをPCへ送信して保存します。",
+        memoPlaceholder: "メモを入力",
+        attachment: "添付ファイル",
+        choosePhoto: "写真を撮る / 選ぶ",
+        noPhoto: "写真は選択されていません",
+        memoPreview: "添付写真のプレビュー",
+        sendMemo: "メモを送信",
+        memoSending: "送信中…",
+        memoRequired: "メモを入力するか、写真を選んでください。",
+        memoSent: "送信しました。",
+        memoFailed: "送信に失敗しました。",
+        navigation: "Flicksyのナビゲーション",
+        close: "閉じる",
+        refresh: "更新",
+        screenshotPreview: "スクリーンショットのプレビュー",
+        screenshot: "スクリーンショット",
+        screenshotLoading: "スクリーンショットを読み込み中…",
+        screenshotFailed: "スクリーンショットを読み込めませんでした。",
+        switchLanguage: "英語に切り替え"
+    },
+    en: {
+        input: "Input",
+        inputDescription: "Send text and keystrokes to your PC.",
+        inputPlaceholder: "Type text and press Enter",
+        action: "Actions",
+        actionDescription: "View the actions configured on your PC.",
+        actionsLoading: "Loading actions…",
+        actionsEmpty: "No actions have been configured.",
+        actionsFailed: "Failed to load actions.",
+        actionName: "Action {id}",
+        actionNumber: "Action No. {id}",
+        actionConfirm: "Run “{name}”?",
+        confirmNo: "No",
+        confirmYes: "Yes",
+        memo: "Memo",
+        memoDescription: "Send a memo to your PC to save it.",
+        memoPlaceholder: "Enter a memo",
+        attachment: "Attachment",
+        choosePhoto: "Take or choose a photo",
+        noPhoto: "No photo selected",
+        memoPreview: "Attached photo preview",
+        sendMemo: "Send memo",
+        memoSending: "Sending…",
+        memoRequired: "Enter a memo or choose a photo.",
+        memoSent: "Memo sent.",
+        memoFailed: "Failed to send the memo.",
+        navigation: "Flicksy navigation",
+        close: "Close",
+        refresh: "Refresh",
+        screenshotPreview: "Screenshot preview",
+        screenshot: "Screenshot",
+        screenshotLoading: "Loading screenshot…",
+        screenshotFailed: "Failed to load screenshot.",
+        switchLanguage: "Switch to Japanese"
+    }
+};
+
+const languageStorageKey = "flicksy.language";
+const languageButton = document.getElementById("languageButton");
+let language = /^ja(?:-|$)/i.test(navigator.language) ? "ja" : "en";
+
+try
+{
+    const savedLanguage = localStorage.getItem(languageStorageKey);
+    if (savedLanguage === "ja" || savedLanguage === "en")
+        language = savedLanguage;
+}
+catch
+{
+    // Language switching still works when browser storage is unavailable.
+}
+
+function updateLocalizedText(element)
+{
+    const message = translations[language][element.dataset.i18n];
+    element.textContent = element.hasAttribute("data-i18n-id")
+        ? message.replace("{id}", () => element.dataset.i18nId)
+        : message;
+}
+
+function setLocalizedText(element, key)
+{
+    element.dataset.i18n = key;
+    updateLocalizedText(element);
+}
+
+function setPlainText(element, value)
+{
+    delete element.dataset.i18n;
+    element.textContent = value;
+}
+
+function applyLanguage()
+{
+    document.documentElement.lang = language;
+    document.querySelectorAll("[data-i18n]").forEach(updateLocalizedText);
+
+    for (const attribute of ["placeholder", "alt", "aria-label"])
+    {
+        const dataAttribute = "data-i18n-" + attribute;
+        document.querySelectorAll("[" + dataAttribute + "]").forEach(element =>
+        {
+            const key = element.getAttribute(dataAttribute);
+            element.setAttribute(attribute, translations[language][key]);
+        });
+    }
+
+    languageButton.lang = language === "ja" ? "en" : "ja";
+    languageButton.textContent = language === "ja" ? "EN" : "JA";
+    languageButton.setAttribute("aria-label", translations[language].switchLanguage);
+}
+
+languageButton.addEventListener("click", () =>
+{
+    language = languageButton.lang;
+    applyLanguage();
+
+    try
+    {
+        localStorage.setItem(languageStorageKey, language);
+    }
+    catch
+    {
+        // Keep the choice for this page even if it cannot be saved.
+    }
+});
+
+applyLanguage();
 
 const input = document.getElementById("text");
 
@@ -570,7 +755,7 @@ function refreshScreenshotPreview()
 {
     screenshotPreviewImage.hidden = true;
     screenshotPreviewStatus.hidden = false;
-    screenshotPreviewStatus.textContent = "Loading screenshot...";
+    setLocalizedText(screenshotPreviewStatus, "screenshotLoading");
 
     const image = new Image();
 
@@ -585,7 +770,7 @@ function refreshScreenshotPreview()
     {
         screenshotPreviewImage.hidden = true;
         screenshotPreviewStatus.hidden = false;
-        screenshotPreviewStatus.textContent = "Failed to load screenshot.";
+        setLocalizedText(screenshotPreviewStatus, "screenshotFailed");
     };
 
     image.src = makeScreenshotUrl();
@@ -595,7 +780,7 @@ function refreshScreenshot()
 {
     screenshotImage.hidden = true;
     screenshotStatus.hidden = false;
-    screenshotStatus.textContent = "Loading screenshot...";
+    setLocalizedText(screenshotStatus, "screenshotLoading");
 
     const image = new Image();
 
@@ -614,7 +799,7 @@ function refreshScreenshot()
     {
         screenshotImage.hidden = true;
         screenshotStatus.hidden = false;
-        screenshotStatus.textContent = "Failed to load screenshot.";
+        setLocalizedText(screenshotStatus, "screenshotFailed");
     };
 
     image.src = makeScreenshotUrl();
@@ -704,6 +889,9 @@ refreshScreenshotPreview();
 // --------------------------------------------------
 const actionList = document.getElementById('actionList');
 const actionStatus = document.getElementById('actionStatus');
+const actionConfirmDialog = document.getElementById('actionConfirmDialog');
+const actionConfirmForm = document.getElementById('actionConfirmForm');
+const actionConfirmMessage = document.getElementById('actionConfirmMessage');
 
 function renderActionList(actions)
 {
@@ -711,7 +899,8 @@ function renderActionList(actions)
 
     if (!Array.isArray(actions) || actions.length === 0)
     {
-        actionList.innerHTML = '<div class="card">登録されているActionはありません。</div>';
+        setLocalizedText(actionStatus, "actionsEmpty");
+        actionList.appendChild(actionStatus);
         return;
     }
 
@@ -730,33 +919,55 @@ function renderActionList(actions)
         text.className = 'action-text';
 
         const strong = document.createElement('strong');
-        strong.textContent = action.name ?? `Action ${action.id}`;
+        if (action.name == null)
+        {
+            strong.dataset.i18nId = action.id;
+            setLocalizedText(strong, "actionName");
+        }
+        else
+        {
+            strong.textContent = action.name;
+        }
 
         const small = document.createElement('small');
-        small.textContent = `Action No. ${action.id}`;
+        small.dataset.i18nId = action.id;
+        setLocalizedText(small, "actionNumber");
 
         text.appendChild(strong);
         text.appendChild(small);
         button.appendChild(icon);
         button.appendChild(text);
 
-        button.addEventListener('click', async () =>
+        button.addEventListener('click', () =>
         {
-            try
-            {
-                const response = await post(
-                    "/api/actions/run",
-                    "id=" + encodeURIComponent(action.id));
+            actionConfirmMessage.textContent = translations[language].actionConfirm.replace(
+                '{name}', () => strong.textContent);
 
-                if (!response.ok)
-                    throw new Error(`HTTP ${response.status}`);
-
-                console.log('Action executed:', action.id);
-            }
-            catch (error)
+            actionConfirmForm.onsubmit = async event =>
             {
-                console.error('Action execute failed:', error);
-            }
+                event.preventDefault();
+                actionConfirmDialog.close();
+                if (event.submitter?.value !== 'yes')
+                    return;
+
+                try
+                {
+                    const response = await post(
+                        "/api/actions/run",
+                        "id=" + encodeURIComponent(action.id));
+
+                    if (!response.ok)
+                        throw new Error(`HTTP ${response.status}`);
+
+                    console.log('Action executed:', action.id);
+                }
+                catch (error)
+                {
+                    console.error('Action execute failed:', error);
+                }
+            };
+
+            actionConfirmDialog.showModal();
         });
 
         actionList.appendChild(button);
@@ -780,8 +991,8 @@ async function loadActions()
     catch (error)
     {
         console.error('Action load failed:', error);
-        actionList.innerHTML =
-            '<div class="card">Action一覧を取得できませんでした。</div>';
+        setLocalizedText(actionStatus, "actionsFailed");
+        actionList.replaceChildren(actionStatus);
     }
 }
 
@@ -842,15 +1053,14 @@ if (memoImageInput)
 
         if (!file)
         {
-            memoImageName.textContent =
-                '写真は選択されていません';
+            setLocalizedText(memoImageName, "noPhoto");
 
             memoPreview.hidden = true;
             memoPreview.removeAttribute('src');
             return;
         }
 
-        memoImageName.textContent = file.name;
+        setPlainText(memoImageName, file.name);
 
         memoPreviewUrl =
             URL.createObjectURL(file);
@@ -882,16 +1092,15 @@ if (memoSendButton)
         if (!text && !file)
         {
             memoSendStatus.classList.remove('error');
-            memoSendStatus.textContent =
-                'メモか写真を入力してください。';
+            setLocalizedText(memoSendStatus, "memoRequired");
             memoBody.focus();
             return;
         }
 
         memoSendButton.disabled = true;
-        memoSendButton.textContent = '送信中...';
+        setLocalizedText(memoSendButton, "memoSending");
         memoSendStatus.classList.remove('error');
-        memoSendStatus.textContent = '';
+        setPlainText(memoSendStatus, "");
 
         try
         {
@@ -908,8 +1117,7 @@ if (memoSendButton)
                 memoImageInput.value = '';
 
             if (memoImageName)
-                memoImageName.textContent =
-                    '写真は選択されていません';
+                setLocalizedText(memoImageName, "noPhoto");
 
             if (memoPreview)
             {
@@ -923,18 +1131,18 @@ if (memoSendButton)
                 memoPreviewUrl = null;
             }
 
-            memoSendStatus.textContent = '送信しました。';
+            setLocalizedText(memoSendStatus, "memoSent");
         }
         catch (error)
         {
             console.error('Memo send failed:', error);
             memoSendStatus.classList.add('error');
-            memoSendStatus.textContent = '送信に失敗しました。';
+            setLocalizedText(memoSendStatus, "memoFailed");
         }
         finally
         {
             memoSendButton.disabled = false;
-            memoSendButton.textContent = 'メモを送信';
+            setLocalizedText(memoSendButton, "sendMemo");
         }
     });
 }

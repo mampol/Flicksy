@@ -15,140 +15,151 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
+    <ClCompile Include="src\CFlicksyConfig.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CSimpleHttpServer.cpp">
+    <ClCompile Include="src\CInputSender.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="qrcodegen.cpp">
+    <ClCompile Include="src\CLogger.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CPngResource.cpp">
+    <ClCompile Include="src\CMemoManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CFlicksyConfig.cpp">
+    <ClCompile Include="src\ConfigDlg.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CTrayIcon.cpp">
+    <ClCompile Include="src\CPngResource.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CToggleSwitch.cpp">
+    <ClCompile Include="src\CPopupLayerWnd.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CPopupLayerWnd.cpp">
+    <ClCompile Include="src\CScreenshot.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CLogger.cpp">
+    <ClCompile Include="src\CSimpleHttpServer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="TextEncoding.cpp">
+    <ClCompile Include="src\CToggleSwitch.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CInputSender.cpp">
+    <ClCompile Include="src\CTrayIcon.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CScreenshot.cpp">
+    <ClCompile Include="src\GetFileVersion.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ConfigDlg.cpp">
+    <ClCompile Include="src\Main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="CMemoManager.cpp">
+    <ClCompile Include="src\qrcodegen.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="GetFileVersion.cpp">
+    <ClCompile Include="src\TextEncoding.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h">
+    <ClInclude Include="src\CAppColorTheme.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CSimpleHttpServer.h">
+    <ClInclude Include="src\CFlicksyConfig.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="qrcodegen.hpp">
+    <ClInclude Include="src\CInputSender.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Win32VisualStyle.h">
+    <ClInclude Include="src\CLogger.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CPngResource.h">
+    <ClInclude Include="src\CMemoManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CAppColorTheme.h">
+    <ClInclude Include="src\ConfigDlg.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CFlicksyConfig.h">
+    <ClInclude Include="src\CPngResource.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CTrayIcon.h">
+    <ClInclude Include="src\CPopupLayerWnd.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CToggleSwitch.h">
+    <ClInclude Include="src\CScreenshot.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CPopupLayerWnd.h">
+    <ClInclude Include="src\CSimpleHttpServer.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CLogger.h">
+    <ClInclude Include="src\CToggleSwitch.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="TextEncoding.h">
+    <ClInclude Include="src\CTrayIcon.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CInputSender.h">
+    <ClInclude Include="src\DpiAware.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CScreenshot.h">
+    <ClInclude Include="src\GetFileVersion.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ConfigDlg.h">
+    <ClInclude Include="src\json.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="DpiAware.h">
+    <ClInclude Include="src\qrcodegen.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="CMemoManager.h">
+    <ClInclude Include="src\TextEncoding.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="GetFileVersion.h">
+    <ClInclude Include="src\Win32VisualStyle.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="res\resource.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Flicksy.rc">
+    <ResourceCompile Include="res\Flicksy.rc">
       <Filter>リソース ファイル</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="001.ico">
+    <Image Include="res\001.ico">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="001.png">
+    <Image Include="res\001.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="002.png">
+    <Image Include="res\002.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="003.png">
+    <Image Include="res\003.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="004.png">
+    <Image Include="res\004.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="005.png">
+    <Image Include="res\005.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="006.png">
+    <Image Include="res\006.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="007.png">
+    <Image Include="res\007.png">
       <Filter>リソース ファイル</Filter>
     </Image>
-    <Image Include="008.png">
+    <Image Include="res\008.png">
       <Filter>リソース ファイル</Filter>
     </Image>
+    <Image Include="res\banner.png">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\flicksy.html">
+      <Filter>リソース ファイル</Filter>
+    </None>
   </ItemGroup>
 </Project>
